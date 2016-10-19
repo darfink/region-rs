@@ -1,0 +1,25 @@
+[package]
+authors = ["Elliott Linder <elliott.darfink@gmail.com>"]
+description = "A library for dealing with memory regions\n"
+homepage = "https://github.com/darfink/memreg"
+license = "MIT"
+name = "memreg"
+readme = "README.md"
+repository = "https://github.com/darfink/memreg"
+version = "0.1.0"
+
+[dependencies]
+errno = "0.1.8"
+lazy_static = "0.2.1"
+libc = "0.2"
+regex = "0.1.77"
+
+[dependencies.bitflags]
+branch = "associated-constants"
+git = "https://github.com/tamird/bitflags"
+
+[target."cfg(target_os = \"macos\")".dependencies]
+mach = "0.0.6"
+
+[target."cfg(windows)".dependencies]
+winapi = "0.2"
