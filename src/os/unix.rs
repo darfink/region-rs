@@ -9,7 +9,7 @@ pub fn page_size() -> usize {
         static ref PAGESIZE: usize = unsafe { libc::sysconf(libc::_SC_PAGESIZE) as usize };
     }
 
-    return *PAGESIZE;
+    *PAGESIZE
 }
 
 impl<'t> From<&'t str> for Protection {
