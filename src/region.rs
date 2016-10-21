@@ -36,8 +36,8 @@ impl Region {
         Self::with_size_impl(address, Some(size))
     }
 
-    pub fn exec_with_prot<T: FnOnce()>(&mut self, protection: Protection, callback: T) -> Result<()> {
-        try!(self.set_prot(Access::Type(protection)));
+    pub fn exec_with_prot<T: FnOnce()>(&mut self, prot: Protection, callback: T) -> Result<()> {
+        try!(self.set_prot(Access::Type(prot)));
         callback();
         try!(self.set_prot(Access::Previous));
         Ok(())
@@ -130,7 +130,6 @@ impl Region {
         try!(region.update());
         Ok(region)
     }
-
 }
 
 
@@ -138,12 +137,14 @@ impl Region {
 impl Region {
     fn set_page_prot(page: &Page, protection: Protection) -> Result<Protection> {
         let result = unsafe {
-            ::libc::mprotect(page.base as *mut ::libc::c_void, page.size, protection.into())
+            ::libc::mprotect(page.base as *mut ::libc::c_void,
+                             page.size,
+                             protection.into())
         };
 
         match result {
             0 => Ok(page.previous_protection),
-            _ => Err(Error::Mprotect(::errno::errno()))
+            _ => Err(Error::Mprotect(::errno::errno())),
         }
     }
 
@@ -165,7 +166,14 @@ impl Region {
             let line = try!(line.map_err(Error::ProcfsIo));
             match RE.captures(&line) {
                 Some(ref captures) if captures.len() == 3 => {
-                    let address_range: Vec<usize> = try!(captures.iter().take(2).map(|capture| captures.ok_or(Error::ProcfsGroup).and_then(|capture| usize::from_str_radix(capture, 16).map_err(Error::ProcfsParse))).collect());
+                    let address_range: Vec<usize> = try!(captures.iter()
+                        .take(2)
+                        .map(|capture| {
+                            captures.ok_or(Error::ProcfsGroup).and_then(|capture| {
+                                usize::from_str_radix(capture, 16).map_err(Error::ProcfsParse)
+                            })
+                        })
+                        .collect());
                     let (lower, upper) = (address_range[0], address_range[1]);
 
                     if address >= lower && address < upper {
@@ -199,23 +207,24 @@ impl Region {
             let mut object_name: mach::port::mach_port_t = 0;
 
             // Query the OS about the memory region
-            mach::vm::mach_vm_region(
-                mach::traps::mach_task_self(),
-                &mut region_base,
-                &mut region_size,
-                mach::vm_region::VM_REGION_EXTENDED_INFO,
-                (&mut info as *mut _) as mach::vm_region::vm_region_info_t,
-                &mut mach::vm_region::vm_region_extended_info::count(),
-                &mut object_name)
+            mach::vm::mach_vm_region(mach::traps::mach_task_self(),
+                                     &mut region_base,
+                                     &mut region_size,
+                                     mach::vm_region::VM_REGION_EXTENDED_INFO,
+                                     (&mut info as *mut _) as mach::vm_region::vm_region_info_t,
+                                     &mut mach::vm_region::vm_region_extended_info::count(),
+                                     &mut object_name)
         };
 
         match result {
-            mach::kern_return::KERN_SUCCESS => Ok(Query {
-                base: region_base as *mut u8,
-                size: region_size as usize,
-                protection: info.protection.into(),
-                guarded: false,//(info.user_tag == mach::vm_statistics::VM_MEMORY_GUARD),
-            }),
+            mach::kern_return::KERN_SUCCESS => {
+                Ok(Query {
+                    base: region_base as *mut u8,
+                    size: region_size as usize,
+                    protection: info.protection.into(),
+                    guarded: false, // (info.user_tag == mach::vm_statistics::VM_MEMORY_GUARD),
+                })
+            }
             _ => Err(Error::MachRegion(result)),
         }
     }
@@ -226,7 +235,10 @@ impl Region {
     fn set_page_prot(page: &Page, protection: Protection) -> Result<Protection> {
         let mut prev_flags = 0;
         let result = unsafe {
-            winapi::VirtualProtect(page.base as winapi::PVOID, page.size, protection.into(), &mut prev_flags);
+            winapi::VirtualProtect(page.base as winapi::PVOID,
+                                   page.size,
+                                   protection.into(),
+                                   &mut prev_flags);
         };
 
         match result {
@@ -239,16 +251,22 @@ impl Region {
         extern crate winapi;
 
         let mut info: winapi::MEMORY_BASIC_INFORMATION = unsafe { std::mem::zeroed() };
-        let result = unsafe { winapi::VirtualQuery(address, &mut info, std::mem::size_of::<winapi::MEMORY_BASIC_INFORMATION>()) };
+        let result = unsafe {
+            winapi::VirtualQuery(address,
+                                 &mut info,
+                                 std::mem::size_of::<winapi::MEMORY_BASIC_INFORMATION>())
+        };
 
         match result {
-            winapi::ERROR_SUCCESS => Ok(Query {
-                base: info.BaseAddress,
-                size: info.RegionSize,
-                protection: info.Protect.into(),
-                guarded: (info.Protect & winapi::PAGE_GUARD) != 0,
-            }),
-            _ => Err(Error::VirtualQuery(::errno::Errno(result)))
+            winapi::ERROR_SUCCESS => {
+                Ok(Query {
+                    base: info.BaseAddress,
+                    size: info.RegionSize,
+                    protection: info.Protect.into(),
+                    guarded: (info.Protect & winapi::PAGE_GUARD) != 0,
+                })
+            }
+            _ => Err(Error::VirtualQuery(::errno::Errno(result))),
         }
     }
 }

@@ -26,16 +26,16 @@ pub enum Error {
 impl fmt::Display for Error {
     fn fmt(&self, out: &mut fmt::Formatter) -> fmt::Result {
         let str = match *self {
-            Error::Null               => "Invalid address",
-            Error::ProcfsGroup        => "Empty match group",
-            Error::ProcfsIo(..)       => "Failed to open procfs",
-            Error::ProcfsMatches      => "Invalid match count",
-            Error::ProcfsParse(..)    => "Failed to parse address",
-            Error::ProcfsRange        => "Address range not found",
-            Error::VirtualQuery(..)   => "Call 'VirtualQuery' failed",
+            Error::Null => "Invalid address",
+            Error::ProcfsGroup => "Empty match group",
+            Error::ProcfsIo(..) => "Failed to open procfs",
+            Error::ProcfsMatches => "Invalid match count",
+            Error::ProcfsParse(..) => "Failed to parse address",
+            Error::ProcfsRange => "Address range not found",
+            Error::VirtualQuery(..) => "Call 'VirtualQuery' failed",
             Error::VirtualProtect(..) => "Call 'VirtualProtect' failed",
-            Error::MachRegion(..)     => "Call 'mach_vm_region' failed",
-            Error::Mprotect(..)       => "Call 'mprotect' failed",
+            Error::MachRegion(..) => "Call 'mach_vm_region' failed",
+            Error::Mprotect(..) => "Call 'mprotect' failed",
         };
 
         write!(out, "{}", str)
@@ -43,5 +43,7 @@ impl fmt::Display for Error {
 }
 
 impl ::std::error::Error for Error {
-    fn description(&self) -> &str { "memory region error" }
+    fn description(&self) -> &str {
+        "memory region error"
+    }
 }

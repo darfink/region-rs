@@ -16,7 +16,11 @@ impl From<vm_prot_t> for Protection {
         }
 
         (*MAP).iter().fold(Protection::None, |prot, (key, val)| {
-            if (protection & *key) == *key { prot | *val } else { prot }
+            if (protection & *key) == *key {
+                prot | *val
+            } else {
+                prot
+            }
         })
     }
 }

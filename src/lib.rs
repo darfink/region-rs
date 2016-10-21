@@ -1,8 +1,12 @@
 #![feature(associated_consts)]
 #![feature(step_by)]
 
-#[macro_use] extern crate lazy_static;
-#[macro_use] extern crate bitflags;
+#[macro_use]
+extern crate bitflags;
+
+#[macro_use]
+extern crate lazy_static;
+
 extern crate libc;
 extern crate errno;
 
@@ -28,8 +32,9 @@ mod tests {
         let mut region = Region::with_size(&ret5[0] as *const u8, ret5.len()).unwrap();
 
         region.exec_with_prot(Protection::ReadWriteExecute, || {
-            let x: extern fn() -> i32 = unsafe { mem::transmute(&ret5[0]) };
-            println!("Result: {}", x());
-        }).unwrap();
+                let x: extern "C" fn() -> i32 = unsafe { mem::transmute(&ret5[0]) };
+                println!("Result: {}", x());
+            })
+            .unwrap();
     }
 }

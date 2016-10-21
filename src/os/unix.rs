@@ -23,7 +23,11 @@ impl<'t> From<&'t str> for Protection {
         }
 
         (*MAP).iter().fold(Protection::None, |prot, (key, val)| {
-            if protection.find(*key).is_some() { prot | *val } else { prot }
+            if protection.find(*key).is_some() {
+                prot | *val
+            } else {
+                prot
+            }
         })
     }
 }
@@ -41,7 +45,11 @@ impl From<Protection> for ::libc::c_int {
         }
 
         (*MAP).iter().fold(PROT_NONE, |prot, (key, val)| {
-            if protection.contains(*key) { prot | *val } else { prot }
+            if protection.contains(*key) {
+                prot | *val
+            } else {
+                prot
+            }
         })
     }
 }

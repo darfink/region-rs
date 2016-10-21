@@ -1,11 +1,20 @@
-#[cfg(unix)] pub mod unix;
-#[cfg(unix)] pub use self::unix::*;
+#[cfg(unix)]
+pub mod unix;
 
-#[cfg(windows)] pub mod windows;
-#[cfg(windows)] pub use self::windows::*;
+#[cfg(unix)]
+pub use self::unix::*;
 
-#[cfg(target_os = "macos")] pub mod macos;
-#[cfg(target_os = "macos")] pub use self::macos::*;
+#[cfg(windows)]
+pub mod windows;
+
+#[cfg(windows)]
+pub use self::windows::*;
+
+#[cfg(target_os = "macos")]
+pub mod macos;
+
+#[cfg(target_os = "macos")]
+pub use self::macos::*;
 
 pub fn truncate_page(address: usize) -> usize {
     address & !(page_size() - 1)
