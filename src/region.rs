@@ -4,7 +4,7 @@ use {std, os, Error, Protection, Access};
 type Result<T> = std::result::Result<T, Error>;
 
 #[derive(Debug)]
-struct QueryInfo {
+struct Query {
     base: *mut u8,
     size: usize,
     protection: Protection,
@@ -60,7 +60,6 @@ impl Region {
 
     pub fn update(&mut self) -> Result<()> {
         self.pages.clear();
-
         let page_size = os::page_size();
 
         // Iterate over one page at a time
@@ -144,7 +143,7 @@ impl Region {
     }
 
     #[cfg(target_os = "linux")]
-    fn query(address: *const u8) -> Result<QueryInfo> {
+    fn query(address: *const u8) -> Result<Query> {
         use std::fs::File;
         use std::io::{BufReader, BufRead};
         use self::regex::Regex;
@@ -181,7 +180,7 @@ impl Region {
     }
 
     #[cfg(target_os = "macos")]
-    fn query(address: *const u8) -> Result<QueryInfo> {
+    fn query(address: *const u8) -> Result<Query> {
         extern crate mach;
 
         // The address is aligned to the enclosing region
@@ -205,7 +204,7 @@ impl Region {
         };
 
         match result {
-            mach::kern_return::KERN_SUCCESS => Ok(QueryInfo {
+            mach::kern_return::KERN_SUCCESS => Ok(Query {
                 base: region_base as *mut u8,
                 size: region_size as usize,
                 protection: info.protection.into(),
@@ -230,7 +229,7 @@ impl Region {
         }
     }
 
-    fn query(address: *const u8) -> Result<QueryInfo> {
+    fn query(address: *const u8) -> Result<Query> {
         extern crate winapi;
 
         // When a memory region is queried on Windows, the size is equal to all
@@ -242,7 +241,7 @@ impl Region {
         let result = unsafe { winapi::VirtualQuery(address, &mut info, std::mem::size_of::<winapi::MEMORY_BASIC_INFORMATION>()) };
 
         match result {
-            winapi::ERROR_SUCCESS => Ok(QueryInfo {
+            winapi::ERROR_SUCCESS => Ok(Query {
                 base: info.BaseAddress,
                 size: info.RegionSize,
                 protection: info.Protect.into(),
