@@ -3,7 +3,7 @@ extern crate winapi;
 use Protection;
 
 pub fn page_size() -> usize {
-    use winapi::{GetSystemInfo, SYSTEM_INFO}
+    use winapi::{GetSystemInfo, SYSTEM_INFO};
 
     lazy_static! {
         static ref PAGESIZE: usize = unsafe {
