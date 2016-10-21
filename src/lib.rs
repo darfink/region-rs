@@ -1,5 +1,5 @@
-#![feature(step_by)]
 #![feature(associated_consts)]
+#![feature(step_by)]
 
 #[macro_use] extern crate lazy_static;
 #[macro_use] extern crate bitflags;
