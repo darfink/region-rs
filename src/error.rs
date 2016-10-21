@@ -6,6 +6,7 @@ pub enum Error {
     Null,
 
     // Specific for Linux
+    ProcfsGroup,
     ProcfsIo(::std::io::Error),
     ProcfsMatches,
     ProcfsParse(::std::num::ParseIntError),
@@ -26,6 +27,7 @@ impl fmt::Display for Error {
     fn fmt(&self, out: &mut fmt::Formatter) -> fmt::Result {
         let str = match *self {
             Error::Null               => "Invalid address",
+            Error::ProcfsGroup        => "Empty match group",
             Error::ProcfsIo(..)       => "Failed to open procfs",
             Error::ProcfsMatches      => "Invalid match count",
             Error::ProcfsParse(..)    => "Failed to parse address",

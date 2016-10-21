@@ -163,22 +163,23 @@ impl Region {
 
         for line in reader {
             let line = try!(line.map_err(Error::ProcfsIo));
-            if let Some(captures) = RE.captures(&line) && captures.len() == 3 {
-                let lower = try!(usize::from_str_radix(captures.at(0), 16).map_err(Error::ProcsfsParse));
-                let upper = try!(usize::from_str_radix(captures.at(1), 16).map_err(Error::ProcsfsParse));
+            match RE.captures(&line) {
+                Some(ref captures) if captures.len() == 3 => {
+                    let address_range: Vec<usize> = try!(captures.iter().take(2).map(|capture| captures.ok_or(Error::ProcfsGroup).and_then(|capture| usize::from_str_radix(capture, 16).map_err(Error::ProcfsParse))).collect());
+                    let (lower, upper) = (address_range[0], address_range[1]);
 
-                if address >= lower && address < upper {
-                    let protection = captures.at(2).unwrap();
-                    return Ok(QueryInfo {
-                        base: lower as *mut u8,
-                        size: upper - lower,
-                        protection: protection.into(),
-                        guarded: false,
-                    });
+                    if address >= lower && address < upper {
+                        let protection = captures.at(2).unwrap();
+                        return Ok(Query {
+                            base: lower as *mut u8,
+                            size: upper - lower,
+                            protection: protection.into(),
+                            guarded: false,
+                        });
+                    }
                 }
-            } else {
-                return Err(Error::ProcfsMatches);
-            }
+                _ => return Err(Error::ProcfsMatches),
+            };
         }
 
         Err(Error::ProcfsRange)
