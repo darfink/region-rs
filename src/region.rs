@@ -67,16 +67,20 @@ impl Region {
 
         // Iterator is mutated inside the loop, so use 'while' instead of 'for'
         while let Some(page_base) = iter.next() {
-            // Retrieve the base address and size of the enclosing region
+            // When a memory region is queried, the size is equal to all memory
+            // pages that lie consecutively in memory with the same flags. To
+            // avoid unnecessary API calls, one might be enough to retrieve the
+            // memory information for all pages within the address range.
             let region = try!(Self::query(page_base as *const u8));
 
-            // Calculate the number of pages from 'page_base' .. 'region_end'
-            let pages = std::cmp::min(
-                (region.base as usize + region.size - page_base) / page_size,
-                self.pages.capacity() - self.pages.len());
+            // Number of pages required to cover the specified address range
+            let pages_left = self.pages.capacity() - self.pages.len();
 
-            for page in 0..pages {
-                // Add each page from the memory region
+            // Number of pages left in the region, relative to the current base address
+            let pages_range = (region.base as usize + region.size - page_base) / page_size;
+
+            for page in 0..std::cmp::min(pages_left, pages_range) {
+                // Add each page from the region
                 self.pages.push(Page {
                     size: page_size,
                     base: (page_base + page * page_size) as *mut u8,
@@ -87,7 +91,8 @@ impl Region {
                 });
 
                 if page > 0 {
-                    // Advance the iterator as well
+                    // When more than one page is added per query, the iterator
+                    // needs to advance to the consecutive page boundary.
                     iter.next();
                 }
             }
@@ -232,11 +237,6 @@ impl Region {
     fn query(address: *const u8) -> Result<Query> {
         extern crate winapi;
 
-        // When a memory region is queried on Windows, the size is equal to all
-        // memory pages that lie consecutively in memory with the same flags.
-        // To avoid unnecessary API calls, one might be enough to retrieve the
-        // memory information relative to the supplied page count. In case the
-        // page count is zero, we retrieve all pages within the region.
         let mut info: winapi::MEMORY_BASIC_INFORMATION = unsafe { std::mem::zeroed() };
         let result = unsafe { winapi::VirtualQuery(address, &mut info, std::mem::size_of::<winapi::MEMORY_BASIC_INFORMATION>()) };
 
