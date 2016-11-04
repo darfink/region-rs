@@ -1,26 +1,66 @@
 extern crate mach;
 
-use std::collections::HashMap;
 use self::mach::vm_prot::*;
 
+use Error;
 use Protection;
+use Region;
 
-impl From<vm_prot_t> for Protection {
-    fn from(protection: vm_prot_t) -> Self {
-        lazy_static! {
-            static ref MAP: HashMap<vm_prot_t, Protection> = map![
-                VM_PROT_READ => Protection::Read,
-                VM_PROT_WRITE => Protection::Write,
-                VM_PROT_EXECUTE => Protection::Execute
-            ];
+fn convert_from_native(protection: vm_prot_t) -> Protection::Flag {
+    let mut result = Protection::None;
+
+    if (protection & VM_PROT_READ) == VM_PROT_READ {
+        result |= Protection::Read;
+    }
+
+    if (protection & VM_PROT_WRITE) == VM_PROT_WRITE {
+        result |= Protection::Write;
+    }
+
+    if (protection & VM_PROT_EXECUTE) == VM_PROT_EXECUTE {
+        result |= Protection::Execute;
+    }
+
+    result
+}
+
+pub fn get_region(base: *const u8) -> Result<Region, Error> {
+    extern crate mach;
+
+    // Defines the different share modes available
+    const SHARE_MODES: [u8; 3] = [mach::vm_region::SM_SHARED,
+                                  mach::vm_region::SM_TRUESHARED,
+                                  mach::vm_region::SM_SHARED_ALIASED];
+
+    // The address is aligned to the enclosing region
+    let mut region_base = base as mach::vm_types::mach_vm_address_t;
+    let mut region_size: mach::vm_types::mach_vm_size_t = 0;
+    let mut info: mach::vm_region::vm_region_extended_info = unsafe { ::std::mem::zeroed() };
+
+    let result = unsafe {
+        // This information is of no interest
+        let mut object_name: mach::port::mach_port_t = 0;
+
+        // Query the OS about the memory region
+        mach::vm::mach_vm_region(mach::traps::mach_task_self(),
+                                 &mut region_base,
+                                 &mut region_size,
+                                 mach::vm_region::VM_REGION_EXTENDED_INFO,
+                                 (&mut info as *mut _) as mach::vm_region::vm_region_info_t,
+                                 &mut mach::vm_region::vm_region_extended_info::count(),
+                                 &mut object_name)
+    };
+
+    match result {
+        mach::kern_return::KERN_SUCCESS => {
+            Ok(Region {
+                base: region_base as *mut u8,
+                guarded: false, // (info.user_tag == mach::vm_statistics::VM_MEMORY_GUARD),
+                protection: convert_from_native(info.protection),
+                shared: SHARE_MODES.contains(&info.share_mode),
+                size: region_size as usize,
+            })
         }
-
-        (*MAP).iter().fold(Protection::None, |prot, (key, val)| {
-            if (protection & *key) == *key {
-                prot | *val
-            } else {
-                prot
-            }
-        })
+        _ => Err(Error::MachRegion(result)),
     }
 }

@@ -1,33 +1,55 @@
 #[cfg(unix)]
-pub mod unix;
+mod unix;
 
 #[cfg(unix)]
 pub use self::unix::*;
 
 #[cfg(windows)]
-pub mod windows;
-
-#[cfg(windows)]
-pub use self::windows::*;
+mod windows;
 
 #[cfg(target_os = "macos")]
-pub mod macos;
+mod macos;
 
 #[cfg(target_os = "macos")]
 pub use self::macos::*;
 
-pub fn truncate_page(address: usize) -> usize {
+#[cfg(target_os = "linux")]
+mod linux;
+
+pub fn page_floor(address: usize) -> usize {
     address & !(page_size() - 1)
 }
 
-pub fn round_page(address: usize) -> usize {
+pub fn page_ceil(address: usize) -> usize {
     let page_size = page_size();
     (address + page_size - 1) & !(page_size - 1)
 }
 
-#[test]
-fn test_page_alignment() {
-    let page_size = page_size();
-    assert_eq!(truncate_page(1), 0);
-    assert_eq!(round_page(1), page_size);
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn page_size_value() {
+        let pz = page_size();
+
+        assert!(pz > 0);
+        assert!(pz % 2 == 0);
+    }
+
+    #[test]
+    fn page_rounding() {
+        let pz = page_size();
+
+        // Truncates down
+        assert_eq!(page_floor(1), 0);
+        assert_eq!(page_floor(pz), pz);
+        assert_eq!(page_floor(pz + 1), pz);
+
+        // Rounds up
+        assert_eq!(page_ceil(0), 0);
+        assert_eq!(page_ceil(1), pz);
+        assert_eq!(page_ceil(pz), pz);
+        assert_eq!(page_ceil(pz + 1), pz * 2);
+    }
 }

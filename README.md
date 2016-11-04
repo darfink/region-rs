@@ -9,11 +9,11 @@ Add this to your `Cargo.toml`:
 
 ```toml
 [dependencies]
-memory_region = "*"
+region = "*"
 ```
 
 and this to your crate root:
 
 ```rust
-extern crate memory_region;
+extern crate region;
 ```

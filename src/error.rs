@@ -4,12 +4,13 @@ use std::fmt;
 #[derive(Debug)]
 pub enum Error {
     Null,
+    Freed,
 
     // Specific for Linux
     ProcfsGroup,
     ProcfsIo(::std::io::Error),
     ProcfsMatches,
-    ProcfsParse(::std::num::ParseIntError),
+    ProcfsConvert(::std::num::ParseIntError),
     ProcfsRange,
 
     // Specific for Windows
@@ -26,11 +27,12 @@ pub enum Error {
 impl fmt::Display for Error {
     fn fmt(&self, out: &mut fmt::Formatter) -> fmt::Result {
         let str = match *self {
-            Error::Null => "Invalid address",
-            Error::ProcfsGroup => "Empty match group",
-            Error::ProcfsIo(..) => "Failed to open procfs",
-            Error::ProcfsMatches => "Invalid match count",
-            Error::ProcfsParse(..) => "Failed to parse address",
+            Error::Null => "Address must not be null",
+            Error::Freed => "Address does not contain allocated memory",
+            Error::ProcfsGroup => "Capture group is empty",
+            Error::ProcfsIo(..) => "Procfs could not be opened",
+            Error::ProcfsMatches => "Invalid capture group count",
+            Error::ProcfsConvert(..) => "Failed to convert address to integral",
             Error::ProcfsRange => "Address range not found",
             Error::VirtualQuery(..) => "Call 'VirtualQuery' failed",
             Error::VirtualProtect(..) => "Call 'VirtualProtect' failed",
