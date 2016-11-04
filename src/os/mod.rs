@@ -16,6 +16,9 @@ pub use self::macos::*;
 #[cfg(target_os = "linux")]
 mod linux;
 
+#[cfg(target_os = "linux")]
+pub use self::linux::*;
+
 pub fn page_floor(address: usize) -> usize {
     address & !(page_size() - 1)
 }

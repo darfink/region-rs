@@ -1,29 +1,27 @@
 extern crate regex;
 
-use std::collections::HashMap;
-
 use Error;
 use Protection;
 use Region;
 
 /// Parses flags from /proc/[pid]/maps (e.g 'r--p')
-fn parse_procfs_flags(protection: &str) -> (Protection, bool) {
+fn parse_procfs_flags(protection: &str) -> (Protection::Flag, bool) {
     let shared = protection.ends_with('s');
-    let protection = 0;
+    let mut result = Protection::None;
 
     if protection.find('r') != None {
-        protection |= Protection::Read;
+        result |= Protection::Read;
     }
 
     if protection.find('w') != None {
-        protection |= Protection::Read;
+        result |= Protection::Write;
     }
 
     if protection.find('x') != None {
-        protection |= Protection::Read;
+        result |= Protection::Execute;
     }
 
-    (protection as Protection, shared)
+    (result as Protection::Flag, shared)
 }
 
 /// Parses a region from /proc/[pid]/maps (i.e a single line)
@@ -31,12 +29,13 @@ fn parse_procfs_region(input: &str) -> Result<Region, Error> {
     use self::regex::Regex;
 
     lazy_static! {
-        static ref RE: Regex = Regex::new("^([0-9a-fA-F]+)-([0-9a-fA-F]+) (\\w|-){4}").unwrap();
+        static ref RE: Regex = Regex::new("^([0-9a-fA-F]+)-([0-9a-fA-F]+) ((?:\\w|-){4})").unwrap();
     }
 
     match RE.captures(input) {
-        Some(ref captures) if captures.len() == 3 => {
+        Some(ref captures) if captures.len() == 4 => {
             let region_boundary: Vec<usize> = try!(captures.iter()
+                .skip(1)
                 .take(2)
                 .map(|subcapture| {
                     subcapture.ok_or(Error::ProcfsGroup).and_then(|address| {
@@ -46,7 +45,7 @@ fn parse_procfs_region(input: &str) -> Result<Region, Error> {
                 .collect());
 
             let (lower, upper) = (region_boundary[0], region_boundary[1]);
-            let (protection, shared) = parse_procfs_flags(captures.at(2).unwrap());
+            let (protection, shared) = parse_procfs_flags(captures.at(3).unwrap());
 
             Ok(Region {
                 base: lower as *mut u8,
@@ -54,13 +53,13 @@ fn parse_procfs_region(input: &str) -> Result<Region, Error> {
                 protection: protection,
                 shared: shared,
                 size: upper - lower,
-            });
+            })
         }
         _ => Err(Error::ProcfsMatches),
     }
 }
 
-pub fn get_region(address: *const u8) -> Result<Region> {
+pub fn get_region(address: *const u8) -> Result<Region, Error> {
     use std::fs::File;
     use std::io::{BufReader, BufRead};
 
@@ -70,10 +69,11 @@ pub fn get_region(address: *const u8) -> Result<Region> {
 
     for line in reader {
         let line = try!(line.map_err(Error::ProcfsIo));
-        let query = try!(parse_procfs_region(line));
+        let region = try!(parse_procfs_region(&line));
+        let region_base = region.base as usize;
 
-        if query.base >= address && address < query.upper() {
-            return query;
+        if region_base >= address && address < region_base + region.size {
+            return Ok(region);
         }
     }
 
@@ -102,7 +102,7 @@ mod tests {
                                           /usr/bin/head")
             .unwrap();
 
-        assert_eq!(region.base, 0x400000);
+        assert_eq!(region.base, 0x400000 as *mut u8);
         assert_eq!(region.guarded, false);
         assert_eq!(region.protection, Protection::ReadExecute);
         assert_eq!(region.shared, true);
