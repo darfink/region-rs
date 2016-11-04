@@ -72,7 +72,7 @@ pub fn get_region(address: *const u8) -> Result<Region, Error> {
         let region = try!(parse_procfs_region(&line));
         let region_base = region.base as usize;
 
-        if region_base >= address && address < region_base + region.size {
+        if address >= region_base && address < region_base + region.size {
             return Ok(region);
         }
     }
