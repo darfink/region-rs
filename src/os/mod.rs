@@ -7,6 +7,9 @@ pub use self::unix::*;
 #[cfg(windows)]
 mod windows;
 
+#[cfg(windows)]
+pub use self::windows::*;
+
 #[cfg(target_os = "macos")]
 mod macos;
 

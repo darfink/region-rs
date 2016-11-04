@@ -1,10 +1,11 @@
 extern crate winapi;
+extern crate kernel32;
 
 use Error;
 use Protection;
 use Region;
 
-fn convert_to_native(protection: Protection) -> winapi::DWORD {
+fn convert_to_native(protection: Protection::Flag) -> winapi::DWORD {
     match protection {
         Protection::Read => winapi::PAGE_READONLY,
         Protection::ReadWrite => winapi::PAGE_READWRITE,
@@ -14,9 +15,9 @@ fn convert_to_native(protection: Protection) -> winapi::DWORD {
     }
 }
 
-fn convert_from_native(protection: winapi::DWORD) -> Protection {
+fn convert_from_native(protection: winapi::DWORD) -> Protection::Flag {
     // Ignore miscellaneous flags (such as 'PAGE_NOCACHE')
-    match (protection & 0xFF) {
+    match protection & 0xFF {
         winapi::PAGE_EXECUTE => Protection::Execute,
         winapi::PAGE_EXECUTE_READ => Protection::ReadExecute,
         winapi::PAGE_EXECUTE_READWRITE => Protection::ReadWriteExecute,
@@ -30,11 +31,12 @@ fn convert_from_native(protection: winapi::DWORD) -> Protection {
 }
 
 pub fn page_size() -> usize {
-    use winapi::{GetSystemInfo, SYSTEM_INFO};
+    use self::kernel32::GetSystemInfo;
+    use self::winapi::SYSTEM_INFO;
 
     lazy_static! {
         static ref PAGESIZE: usize = unsafe {
-            let mut info: SYSTEM_INFO = std::mem::zeroed();
+            let mut info: SYSTEM_INFO = ::std::mem::zeroed();
             GetSystemInfo(&mut info);
             return info.dwPageSize as usize;
         };
@@ -43,45 +45,47 @@ pub fn page_size() -> usize {
     return *PAGESIZE;
 }
 
-pub fn get_region(base: *const u8) -> Result<Region> {
-    extern crate winapi;
+pub fn get_region(base: *const u8) -> Result<Region, Error> {
+    use self::kernel32::VirtualQuery;
 
-    let mut info: winapi::MEMORY_BASIC_INFORMATION = unsafe { std::mem::zeroed() };
-    let result = unsafe {
-        winapi::VirtualQuery(base,
-                             &mut info,
-                             std::mem::size_of::<winapi::MEMORY_BASIC_INFORMATION>())
+    let mut info: winapi::MEMORY_BASIC_INFORMATION = unsafe { ::std::mem::zeroed() };
+    let bytes = unsafe {
+        VirtualQuery(base as winapi::PVOID,
+                     &mut info,
+                     ::std::mem::size_of::<winapi::MEMORY_BASIC_INFORMATION>() as winapi::SIZE_T)
     };
 
-    match result {
-        winapi::ERROR_SUCCESS => {
-            if info.State == winapi::MEM_FREE {
-                return Err(Error::Freed);
-            }
-
-            Ok(Region {
-                base: info.BaseAddress,
-                guarded: (info.Protect & winapi::PAGE_GUARD) != 0,
-                protection: convert_from_native(info.Protect),
-                shared: !(info.Type & winapi::MEM_PRIVATE),
-                size: info.RegionSize,
-            })
+    if bytes > 0 {
+        if info.State == winapi::MEM_FREE {
+            return Err(Error::Freed);
         }
-        _ => Err(Error::VirtualQuery(::errno::Errno(result))),
+
+        Ok(Region {
+            base: info.BaseAddress as *mut u8,
+            guarded: (info.Protect & winapi::PAGE_GUARD) != 0,
+            protection: convert_from_native(info.Protect),
+            shared: (info.Type & winapi::MEM_PRIVATE) == 0,
+            size: info.RegionSize as usize,
+        })
+    } else {
+        Err(Error::VirtualQuery(::errno::errno()))
     }
 }
 
-pub fn set_prot(base: *const u8, size: usize, protection: Protection) -> Result<()> {
+pub fn set_prot(base: *const u8, size: usize, protection: Protection::Flag) -> Result<(), Error> {
+    use self::kernel32::VirtualProtect;
+
     let mut prev_flags = 0;
     let result = unsafe {
-        winapi::VirtualProtect(base as winapi::PVOID,
-                               size,
+        VirtualProtect(base as winapi::PVOID,
+                               size as winapi::SIZE_T,
                                convert_to_native(protection),
-                               &mut prev_flags);
+                               &mut prev_flags)
     };
 
-    match result {
-        winapi::ERROR_SUCCESS => Ok(()),
-        _ => Err(Error::VirtualProtect(::errno::Errno(result))),
+    if result == winapi::FALSE {
+        Err(Error::VirtualProtect(::errno::errno()))
+    } else {
+        Ok(())
     }
 }
