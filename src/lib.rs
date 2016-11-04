@@ -76,7 +76,6 @@ mod tests {
 
         assert_eq!(region.guarded, false);
         assert_eq!(region.protection, Protection::ReadExecute);
-        assert_eq!(region.shared, false);
         assert!(!region.base.is_null() && region.base <= map.mut_ptr());
         assert!(region.size >= size);
     }
