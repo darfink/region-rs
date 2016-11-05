@@ -15,6 +15,9 @@ mod os;
 mod protection;
 mod region;
 
+//pub fn lock(address: *const u8, size: usize) -> Result<()> { }
+//pub fn unlock(address: *const u8, size: usize) -> Result<()> { }
+
 pub fn query(address: *const u8) -> Result<Region, Error> {
     if address.is_null() {
         return Err(Error::Null);
@@ -22,6 +25,24 @@ pub fn query(address: *const u8) -> Result<Region, Error> {
 
     // The address must be aligned to the closest page boundary
     os::get_region(os::page_floor(address as usize) as *const u8)
+}
+
+pub fn query_area(address: *const u8, size: usize) -> Result<Vec<Region>, Error> {
+    let mut result = Vec::new();
+    let mut base = os::page_floor(address as usize);
+    let limit = address as usize + size;
+
+    loop {
+        let region = try!(query(base as *const u8));
+        result.push(region);
+        base = region.upper();
+
+        if limit <= region.upper() {
+            break;
+        }
+    }
+
+    Ok(result)
 }
 
 pub fn protect(address: *const u8, size: usize, protection: Protection::Flag) -> Result<(), Error> {
@@ -54,6 +75,19 @@ mod tests {
     use self::memmap::Mmap;
     use super::*;
 
+    fn alloc_pages(prots: &[Protection::Flag]) -> Mmap {
+        let pz = ::os::page_size();
+        let map = Mmap::anonymous(pz * prots.len(), memmap::Protection::Read).unwrap();
+        let mut base = map.ptr();
+
+        for protection in prots {
+            protect(base, pz, *protection).unwrap();
+            base = unsafe { base.offset(pz as isize) };
+        }
+
+        map
+    }
+
     #[test]
     fn query_null() {
         assert!(query(::std::ptr::null()).is_err());
@@ -78,6 +112,47 @@ mod tests {
         assert_eq!(region.protection, Protection::ReadExecute);
         assert!(!region.base.is_null() && region.base <= map.mut_ptr());
         assert!(region.size >= size);
+    }
+
+    #[test]
+    fn query_area_zero() {
+        let region = query_area(&query_area_zero as *const _ as *const u8, 0).unwrap();
+        assert_eq!(region.len(), 1);
+    }
+
+    #[test]
+    fn query_area_overlap() {
+        let pz = ::os::page_size();
+        let prots = [Protection::ReadExecute, Protection::ReadWrite];
+        let map = alloc_pages(&prots);
+
+        let address = unsafe { map.ptr().offset(pz as isize - 1) };
+        let result = query_area(address, 2).unwrap();
+
+        assert_eq!(result.len(), prots.len());
+        for i in 0..prots.len() {
+            assert_eq!(result[i].protection, prots[i]);
+        }
+    }
+
+    #[test]
+    fn query_area_alloc() {
+        let pz = ::os::page_size();
+        let prots = [Protection::Read, Protection::ReadWrite, Protection::ReadExecute];
+        let map = alloc_pages(&prots);
+
+        // Confirm only one page is retrieved
+        let result = query_area(map.ptr(), pz).unwrap();
+        assert_eq!(result.len(), 1);
+        assert_eq!(result[0].protection, prots[0]);
+
+        // Retrieve all allocated pages
+        let result = query_area(map.ptr(), pz * prots.len()).unwrap();
+        assert_eq!(result.len(), prots.len());
+        assert_eq!(result[1].size, pz);
+        for i in 0..prots.len() {
+            assert_eq!(result[i].protection, prots[i]);
+        }
     }
 
     #[test]
@@ -107,30 +182,22 @@ mod tests {
 
     #[test]
     fn alloc_query_protect() {
-        let pz = ::os::page_size();
-        let size = pz * 2;
+        let page_size = ::os::page_size();
+        let prots = [Protection::Read, Protection::ReadWrite];
+        let mut map = alloc_pages(&prots);
 
-        // Allocate memory that is at least two pages
-        let mut map = Mmap::anonymous(size, memmap::Protection::Read).unwrap();
-
-        // Validate the properties of the allocated memory
+        // Validate the properties of the first page
         let region = query(map.ptr()).unwrap();
-        assert_eq!(region.protection, Protection::Read);
+        assert_eq!(region.protection, prots[0]);
         assert!(!region.base.is_null() && region.base <= map.mut_ptr());
-        assert!(region.size >= size);
-
-        // Update the protection flags of the adjacent page
-        let adjacent_page = unsafe { map.mut_ptr().offset(pz as isize) };
-        protect(adjacent_page, pz, Protection::ReadWrite).unwrap();
+        assert!(region.size >= page_size);
 
         // Assert that the adjacent page has the new properties
+        let adjacent_page = unsafe { map.ptr().offset(page_size as isize) };
         let region = query(adjacent_page).unwrap();
-        assert_eq!(region.base, adjacent_page);
-        assert_eq!(region.protection, Protection::ReadWrite);
-        assert!(region.size >= pz);
 
-        // Ensure the first page retain the same properties
-        let region = query(map.ptr()).unwrap();
-        assert_eq!(region.protection, Protection::Read);
+        assert_eq!(region.base as *const u8, adjacent_page);
+        assert_eq!(region.protection, prots[1]);
+        assert!(region.size >= page_size);
     }
 }
