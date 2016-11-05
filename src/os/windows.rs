@@ -72,19 +72,44 @@ pub fn get_region(base: *const u8) -> Result<Region, Error> {
     }
 }
 
-pub fn set_protection(base: *const u8, size: usize, protection: Protection::Flag) -> Result<(), Error> {
+pub fn set_protection(base: *const u8,
+                      size: usize,
+                      protection: Protection::Flag)
+                      -> Result<(), Error> {
     use self::kernel32::VirtualProtect;
 
     let mut prev_flags = 0;
     let result = unsafe {
         VirtualProtect(base as winapi::PVOID,
-                               size as winapi::SIZE_T,
-                               convert_to_native(protection),
-                               &mut prev_flags)
+                       size as winapi::SIZE_T,
+                       convert_to_native(protection),
+                       &mut prev_flags)
     };
 
     if result == winapi::FALSE {
         Err(Error::VirtualProtect(::errno::errno()))
+    } else {
+        Ok(())
+    }
+}
+
+pub fn lock(base: *const u8, size: usize) -> Result<(), Error> {
+    use self::kernel32::VirtualLock;
+    let result = unsafe { VirtualLock(base as winapi::PVOID, size as winapi::SIZE_T) };
+
+    if result == winapi::FALSE {
+        Err(Error::VirtualLock(::errno::errno()))
+    } else {
+        Ok(())
+    }
+}
+
+pub fn unlock(base: *const u8, size: usize) -> Result<(), Error> {
+    use self::kernel32::VirtualUnlock;
+    let result = unsafe { VirtualUnlock(base as winapi::PVOID, size as winapi::SIZE_T) };
+
+    if result == winapi::FALSE {
+        Err(Error::VirtualUnlock(::errno::errno()))
     } else {
         Ok(())
     }

@@ -14,14 +14,18 @@ pub enum Error {
     ProcfsRange,
 
     // Specific for Windows
-    VirtualQuery(::errno::Errno),
+    VirtualLock(::errno::Errno),
+    VirtualUnlock(::errno::Errno),
     VirtualProtect(::errno::Errno),
+    VirtualQuery(::errno::Errno),
 
     // Specific for macOS
     MachRegion(::libc::c_int),
 
     // Specific for Unix
     Mprotect(::errno::Errno),
+    Munlock(::errno::Errno),
+    Mlock(::errno::Errno),
 }
 
 impl fmt::Display for Error {
@@ -34,10 +38,14 @@ impl fmt::Display for Error {
             Error::ProcfsMatches => "Invalid capture group count",
             Error::ProcfsConvert(..) => "Failed to convert address to integral",
             Error::ProcfsRange => "Address range not found",
-            Error::VirtualQuery(..) => "Call 'VirtualQuery' failed",
+            Error::VirtualLock(..) => "Call 'VirtualLock' failed",
+            Error::VirtualUnlock(..) => "Call 'VirtualUnlock' failed",
             Error::VirtualProtect(..) => "Call 'VirtualProtect' failed",
+            Error::VirtualQuery(..) => "Call 'VirtualQuery' failed",
             Error::MachRegion(..) => "Call 'mach_vm_region' failed",
             Error::Mprotect(..) => "Call 'mprotect' failed",
+            Error::Munlock(..) => "Call 'munlock' failed",
+            Error::Mlock(..) => "Call 'mlock' failed",
         };
 
         write!(out, "{}", str)

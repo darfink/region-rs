@@ -6,6 +6,7 @@ extern crate lazy_static;
 extern crate errno;
 extern crate libc;
 
+pub use os::page_size;
 pub use error::Error;
 pub use protection::Protection;
 pub use region::Region;
@@ -15,8 +16,15 @@ mod os;
 mod protection;
 mod region;
 
-//pub fn lock(address: *const u8, size: usize) -> Result<()> { }
-//pub fn unlock(address: *const u8, size: usize) -> Result<()> { }
+pub fn lock(address: *const u8, size: usize) -> Result<(), Error> {
+    os::lock(os::page_floor(address as usize) as *const u8,
+             os::page_size_from_range(address, size))
+}
+
+pub fn unlock(address: *const u8, size: usize) -> Result<(), Error> {
+    os::unlock(os::page_floor(address as usize) as *const u8,
+               os::page_size_from_range(address, size))
+}
 
 pub fn query(address: *const u8) -> Result<Region, Error> {
     if address.is_null() {
@@ -50,22 +58,10 @@ pub fn protect(address: *const u8, size: usize, protection: Protection::Flag) ->
         return Err(Error::Null);
     }
 
-    let size = if size == 0 {
-        os::page_size()
-    } else {
-        size
-    };
-
-    // The address must be aligned to the closest page boundary
-    let base = os::page_floor(address as usize);
-
-    // The [address+size] may straddle between two or more pages; e.g if the
-    // address is 4095 and the size is 2 this will be rounded up to 8192 (on
-    // x86). Therefore more than one page may be affected by this call.
-    let size = os::page_ceil((address as usize) % os::page_size() + size);
-
     // Ignore the preservation of previous protection flags
-    os::set_protection(base as *const u8, size, protection)
+    os::set_protection(os::page_floor(address as usize) as *const u8,
+                       os::page_size_from_range(address, size),
+                       protection)
 }
 
 #[cfg(test)]
@@ -86,6 +82,13 @@ mod tests {
         }
 
         map
+    }
+
+    #[test]
+    fn lock_page() {
+        let map = alloc_pages(&[Protection::ReadWrite]);
+        lock(map.ptr(), page_size()).unwrap();
+        unlock(map.ptr(), page_size()).unwrap();
     }
 
     #[test]
@@ -182,14 +185,11 @@ mod tests {
     #[test]
     fn protect_overlap() {
         let pz = ::os::page_size();
-        let prots = [
-            // Create a page boundary with different protection flags in the
-            // upper and lower span, so the intermediate page sizes are fixed.
-            Protection::Read,
-            Protection::ReadExecute,
-            Protection::ReadWrite,
-            Protection::Read
-        ];
+
+        // Create a page boundary with different protection flags in the
+        // upper and lower span, so the intermediate page sizes are fixed.
+        let prots =
+            [Protection::Read, Protection::ReadExecute, Protection::ReadWrite, Protection::Read];
 
         let map = alloc_pages(&prots);
         let base_exec = unsafe { map.ptr().offset(pz as isize) };

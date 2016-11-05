@@ -29,7 +29,10 @@ pub fn page_size() -> usize {
     *PAGESIZE
 }
 
-pub fn set_protection(base: *const u8, size: usize, protection: Protection::Flag) -> Result<(), Error> {
+pub fn set_protection(base: *const u8,
+                      size: usize,
+                      protection: Protection::Flag)
+                      -> Result<(), Error> {
     let result = unsafe {
         ::libc::mprotect(base as *mut ::libc::c_void,
                          size,
@@ -39,5 +42,21 @@ pub fn set_protection(base: *const u8, size: usize, protection: Protection::Flag
     match result {
         0 => Ok(()),
         _ => Err(Error::Mprotect(::errno::errno())),
+    }
+}
+
+pub fn lock(base: *const u8, size: usize) -> Result<(), Error> {
+    let result = unsafe { ::libc::mlock(base as *const ::libc::c_void, size) };
+    match result {
+        0 => Ok(()),
+        _ => Err(Error::Mlock(::errno::errno())),
+    }
+}
+
+pub fn unlock(base: *const u8, size: usize) -> Result<(), Error> {
+    let result = unsafe { ::libc::munlock(base as *const ::libc::c_void, size) };
+    match result {
+        0 => Ok(()),
+        _ => Err(Error::Munlock(::errno::errno())),
     }
 }
