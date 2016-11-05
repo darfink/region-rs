@@ -72,7 +72,7 @@ pub fn get_region(base: *const u8) -> Result<Region, Error> {
     }
 }
 
-pub fn set_prot(base: *const u8, size: usize, protection: Protection::Flag) -> Result<(), Error> {
+pub fn set_protection(base: *const u8, size: usize, protection: Protection::Flag) -> Result<(), Error> {
     use self::kernel32::VirtualProtect;
 
     let mut prev_flags = 0;

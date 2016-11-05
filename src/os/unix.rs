@@ -29,7 +29,7 @@ pub fn page_size() -> usize {
     *PAGESIZE
 }
 
-pub fn set_prot(base: *const u8, size: usize, protection: Protection::Flag) -> Result<(), Error> {
+pub fn set_protection(base: *const u8, size: usize, protection: Protection::Flag) -> Result<(), Error> {
     let result = unsafe {
         ::libc::mprotect(base as *mut ::libc::c_void,
                          size,

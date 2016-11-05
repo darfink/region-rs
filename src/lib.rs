@@ -44,7 +44,7 @@ pub fn protect(address: *const u8, size: usize, protection: Protection::Flag) ->
     let size = os::page_ceil((address as usize) % os::page_size() + size);
 
     // Ignore the preservation of previous protection flags
-    os::set_prot(base as *const u8, size, protection)
+    os::set_protection(base as *const u8, size, protection)
 }
 
 #[cfg(test)]
