@@ -1,6 +1,9 @@
 use Protection;
 
 /// A descriptor for a memory region
+///
+/// This type acts as a POD-type, i.e it has no functionality but merely
+/// stores region information.
 #[derive(Debug, Clone, Copy)]
 pub struct Region {
     /// Base address of the region
@@ -16,12 +19,12 @@ pub struct Region {
 }
 
 impl Region {
-    /// Returns the regions lower bound.
+    /// Returns the region's lower bound.
     pub fn lower(&self) -> usize {
         self.base as usize
     }
 
-    /// Returns the regions upper bound.
+    /// Returns the region's upper bound.
     pub fn upper(&self) -> usize {
         self.lower() + self.size
     }
