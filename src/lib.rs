@@ -35,46 +35,17 @@ extern crate lazy_static;
 extern crate errno;
 extern crate libc;
 
-pub use os::page_size;
 pub use error::Error;
+pub use lock::*;
+pub use os::page_size;
 pub use protection::Protection;
 pub use region::Region;
 
 mod error;
+mod lock;
 mod os;
 mod protection;
 mod region;
-
-/// Locks memory regions to RAM.
-///
-/// The memory pages within the address range is guaranteed to stay in RAM
-/// except for cases such as hibernation and memory starvation.
-///
-/// - The address is rounded down to the closest page boundary.
-/// - The size is rounded up to the closest page boundary, relative to the
-///   address.
-///
-/// # Examples
-///
-/// ```
-/// let data = [0; 100];
-/// region::lock(data.as_ptr(), data.len()).unwrap();
-/// region::unlock(data.as_ptr(), data.len()).unwrap();
-/// ```
-pub fn lock(address: *const u8, size: usize) -> Result<(), Error> {
-    os::lock(os::page_floor(address as usize) as *const u8,
-             os::page_size_from_range(address, size))
-}
-
-/// Unlocks memory regions from RAM.
-///
-/// - The address is rounded down to the closest page boundary.
-/// - The size is rounded up to the closest page boundary, relative to the
-///   address.
-pub fn unlock(address: *const u8, size: usize) -> Result<(), Error> {
-    os::unlock(os::page_floor(address as usize) as *const u8,
-               os::page_size_from_range(address, size))
-}
 
 /// Queries the OS with an address, returning the region it resides within.
 ///
@@ -182,7 +153,7 @@ mod tests {
     use self::memmap::Mmap;
     use super::*;
 
-    fn alloc_pages(prots: &[Protection::Flag]) -> Mmap {
+    pub fn alloc_pages(prots: &[Protection::Flag]) -> Mmap {
         let pz = ::os::page_size();
         let map = Mmap::anonymous(pz * prots.len(), memmap::Protection::Read).unwrap();
         let mut base = map.ptr();
@@ -193,13 +164,6 @@ mod tests {
         }
 
         map
-    }
-
-    #[test]
-    fn lock_page() {
-        let map = alloc_pages(&[Protection::ReadWrite]);
-        lock(map.ptr(), page_size()).unwrap();
-        unlock(map.ptr(), page_size()).unwrap();
     }
 
     #[test]
