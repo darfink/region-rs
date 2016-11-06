@@ -1,6 +1,7 @@
 [package]
 authors = ["Elliott Linder <elliott.darfink@gmail.com>"]
 description = "A library for manipulating memory regions"
+documentation = "https://docs.rs/region"
 homepage = "https://github.com/darfink/region-rs"
 keywords = ["region", "page", "lock", "protect", "maps"]
 license = "MIT"
