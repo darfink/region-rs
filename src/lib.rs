@@ -8,6 +8,9 @@
 //! enforce memory pages to be readable whilst other may prevent pages from
 //! becoming executable (i.e DEP).
 //!
+//! *A region is a collection of one or more pages laying consecutively in
+//! memory, with the same properties.*
+//!
 //! # Installation
 //!
 //! This crate is [on crates.io](https://crates.io/crates/region) and can be
