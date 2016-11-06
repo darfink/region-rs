@@ -1,17 +1,20 @@
 use std::fmt;
 
-/// Possible errors when creating a map.
+/// Possible errors when altering region properties.
 #[derive(Debug)]
 pub enum Error {
+    /// The supplied address is null.
     Null,
+    /// The queried memory is free.
     Freed,
-
-    // Specific for Linux
+    /// Invalid regex group match.
     ProcfsGroup,
+    /// Procfs/maps could not be opened.
     ProcfsIo(::std::io::Error),
+    /// Invalid regex group count.
     ProcfsMatches,
+    /// Failed to parse number ranges.
     ProcfsConvert(::std::num::ParseIntError),
-    ProcfsRange,
 
     // Specific for Windows
     VirtualLock(::errno::Errno),
@@ -19,7 +22,7 @@ pub enum Error {
     VirtualProtect(::errno::Errno),
     VirtualQuery(::errno::Errno),
 
-    // Specific for macOS
+    /// Call to `mach_vm_region` failed (kernel error code).
     MachRegion(::libc::c_int),
 
     // Specific for Unix
@@ -37,7 +40,6 @@ impl fmt::Display for Error {
             Error::ProcfsIo(..) => "Procfs could not be opened",
             Error::ProcfsMatches => "Invalid capture group count",
             Error::ProcfsConvert(..) => "Failed to convert address to integral",
-            Error::ProcfsRange => "Address range not found",
             Error::VirtualLock(..) => "Call 'VirtualLock' failed",
             Error::VirtualUnlock(..) => "Call 'VirtualUnlock' failed",
             Error::VirtualProtect(..) => "Call 'VirtualProtect' failed",

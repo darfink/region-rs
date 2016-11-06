@@ -16,10 +16,12 @@ pub struct Region {
 }
 
 impl Region {
+    /// Returns the regions lower bound.
     pub fn lower(&self) -> usize {
         self.base as usize
     }
 
+    /// Returns the regions upper bound.
     pub fn upper(&self) -> usize {
         self.lower() + self.size
     }

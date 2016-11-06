@@ -40,7 +40,7 @@ pub fn page_size_from_range(address: *const u8, size: usize) -> usize {
 
     // The [address+size] may straddle between two or more pages; e.g if the
     // address is 4095 and the size is 2 this will be rounded up to 8192 (on
-    // x86). Therefore more than one page may be affected by this call.
+    // x86).
     page_ceil(address as usize % page_size() + size)
 }
 

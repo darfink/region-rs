@@ -77,7 +77,7 @@ pub fn get_region(address: *const u8) -> Result<Region, Error> {
         }
     }
 
-    Err(Error::ProcfsRange)
+    Err(Error::Freed)
 }
 
 #[cfg(test)]
