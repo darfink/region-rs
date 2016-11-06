@@ -1,14 +1,14 @@
 //! A library for manipulating memory regions
 //!
 //! This crate provides several functions for handling memory pages and regions.
-//! It is implemented using platform specific APIs. The library is relatively
-//! bare metal.
+//! It is implemented using platform specific APIs. The library exposes both low
+//! and high level functionality for manipulating pages.
 //!
 //! Not all OS specific quirks are abstracted away. For instance; some OSs
 //! enforce memory pages to be readable whilst other may prevent pages from
 //! becoming executable (i.e DEP).
 //!
-//! *A region is a collection of one or more pages laying consecutively in
+//! *Note: a region is a collection of one or more pages laying consecutively in
 //! memory, with the same properties.*
 //!
 //! # Installation
@@ -77,11 +77,11 @@ pub fn query(address: *const u8) -> Result<Region, Error> {
 
 /// Queries the OS with a range, returning the regions it contains.
 ///
-/// The range is from `address` (inclusive) to `address + size` (exclusive).
-/// Therefore a 2-byte range straddling a page boundary will return both pages
-/// (or one region, if the pages have the same properties). The implementation
-/// uses `query` internally.
+/// A 2-byte range straddling a page boundary will return both pages (or one
+/// region, if the pages have the same properties). The implementation uses
+/// `query` internally.
 ///
+/// - The range is `[address, address + size)`
 /// - The address is rounded down to the closest page boundary.
 /// - The address may not be null.
 ///
@@ -120,6 +120,8 @@ pub fn query_range(address: *const u8, size: usize) -> Result<Vec<Region>, Error
 ///
 /// If the size is zero this will affect the whole page located at the address
 ///
+/// - The range is `[address, address + size)`
+/// - The address is rounded down to the closest page boundary.
 /// - The address may not be null.
 /// - The size is rounded up to the closest page boundary, relative to the
 ///   address.
