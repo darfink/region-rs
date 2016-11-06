@@ -3,6 +3,9 @@ Memory Region
 
 A Rust library for dealing with memory regions.
 
+## Documentation
+https://docs.rs/region
+
 ## Usage
 
 Add this to your `Cargo.toml`:
