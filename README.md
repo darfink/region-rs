@@ -7,6 +7,7 @@ It is implemented using platform specific APIs (e.g `VirtualQuery`,
 `VirtualLock`, `mprotect`, `mlock`).
 
 ## Documentation
+
 https://docs.rs/region
 
 ## Installation
@@ -23,3 +24,7 @@ and this to your crate root:
 ```rust
 extern crate region;
 ```
+
+## Platforms
+
+This library has (so far) support for `Windows`, `Linux` & `macOS`.
