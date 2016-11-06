@@ -26,6 +26,33 @@
 //! ```rust
 //! extern crate region;
 //! ```
+//!
+//! # Examples
+//!
+//! - Using `View` to retrieve and change the state of memory pages.
+//!
+//!   ```rust
+//!   # use region::{Access, View, Protection};
+//!   let data = vec![0xFF; 500];
+//!   let mut view = View::new(data.as_ptr(), data.len()).unwrap();
+//!
+//!   // Change memory protection to Read | Write | Execute
+//!   view.set_prot(Protection::ReadWriteExecute.into()).unwrap();
+//!   assert_eq!(view.get_prot(), Some(Protection::ReadWriteExecute));
+//!
+//!   // Restore to the previous memory protection
+//!   view.set_prot(Access::Previous).unwrap();
+//!   assert_eq!(view.get_prot(), Some(Protection::ReadWrite));
+//!
+//!   // Temporarily change memory protection
+//!   view.exec_with_prot(Protection::Read, || {
+//!       // This would result in a memory violation
+//!       // data[0] = 0xCC;
+//!   }).unwrap();
+//!
+//!   // Lock the memory page(s) to RAM
+//!   let _guard = view.lock().unwrap();
+//!   ```
 
 #[macro_use]
 extern crate bitflags;
@@ -40,12 +67,15 @@ pub use lock::*;
 pub use os::page_size;
 pub use protection::Protection;
 pub use region::Region;
+pub use view::*;
+
 
 mod error;
 mod lock;
 mod os;
 mod protection;
 mod region;
+mod view;
 
 /// Queries the OS with an address, returning the region it resides within.
 ///
