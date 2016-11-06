@@ -8,7 +8,7 @@
 //! enforce memory pages to be readable whilst other may prevent pages from
 //! becoming executable (i.e DEP).
 //!
-//! # Usage
+//! # Installation
 //!
 //! This crate is [on crates.io](https://crates.io/crates/region) and can be
 //! used by adding `region` to your dependencies in your project's `Cargo.toml`.

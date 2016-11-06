@@ -1,12 +1,15 @@
-Memory Region
-=========
+region
+======
 
 A Rust library for dealing with memory regions.
+
+It is implemented using platform specific APIs (e.g `VirtualQuery`,
+`VirtualLock`, `mprotect`, `mlock`).
 
 ## Documentation
 https://docs.rs/region
 
-## Usage
+## Installation
 
 Add this to your `Cargo.toml`:
 
