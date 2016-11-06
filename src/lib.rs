@@ -18,7 +18,7 @@
 //!
 //! ```toml
 //! [dependencies]
-//! region = "0.0.1"
+//! region = "0.0.2"
 //! ```
 //!
 //! and this to your crate root:
@@ -68,7 +68,6 @@ pub use os::page_size;
 pub use protection::Protection;
 pub use region::Region;
 pub use view::*;
-
 
 mod error;
 mod lock;
