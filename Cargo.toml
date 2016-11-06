@@ -1,7 +1,8 @@
 [package]
 authors = ["Elliott Linder <elliott.darfink@gmail.com>"]
-description = "A library for dealing with memory regions"
+description = "A library for manipulating memory regions"
 homepage = "https://github.com/darfink/region-rs"
+keywords = ["region", "page", "lock", "unlock", "protect", "query", "maps"]
 license = "MIT"
 name = "region"
 readme = "README.md"
