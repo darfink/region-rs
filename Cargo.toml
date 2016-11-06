@@ -2,7 +2,7 @@
 authors = ["Elliott Linder <elliott.darfink@gmail.com>"]
 description = "A library for manipulating memory regions"
 homepage = "https://github.com/darfink/region-rs"
-keywords = ["region", "page", "lock", "unlock", "protect", "query", "maps"]
+keywords = ["region", "page", "lock", "protect", "maps"]
 license = "MIT"
 name = "region"
 readme = "README.md"
