@@ -25,11 +25,15 @@ pub fn lock(address: *const u8, size: usize) -> Result<LockGuard, Error> {
 
 /// Unlocks one or more memory regions from RAM.
 ///
+/// This function is unsafe since it cannot be known whether it is called on a
+/// locked region or not. In normal uses cases, the `LockGuard` is recommended
+/// for safe code.
+///
 /// - The range is `[address, address + size)`
 /// - The address is rounded down to the closest page boundary.
 /// - The size is rounded up to the closest page boundary, relative to the
 ///   address.
-pub fn unlock(address: *const u8, size: usize) -> Result<(), Error> {
+pub unsafe fn unlock(address: *const u8, size: usize) -> Result<(), Error> {
     os::unlock(os::page_floor(address as usize) as *const u8,
                os::page_size_from_range(address, size))
 }
@@ -60,7 +64,7 @@ impl LockGuard {
 impl Drop for LockGuard {
     fn drop(&mut self) {
         if self.free {
-            assert!(::unlock(self.address, self.size).is_ok());
+            assert!(unsafe { ::unlock(self.address, self.size).is_ok() });
         }
     }
 }
@@ -81,8 +85,11 @@ mod tests {
     #[test]
     fn lock_page_release() {
         let map = alloc_pages(&[Protection::ReadWrite]);
-        unsafe { lock(map.ptr(), page_size()).unwrap().release() };
-        unlock(map.ptr(), page_size()).unwrap();
+
+        unsafe {
+            lock(map.ptr(), page_size()).unwrap().release();
+            unlock(map.ptr(), page_size()).unwrap();
+        }
     }
 
 }
