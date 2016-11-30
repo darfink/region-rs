@@ -2,7 +2,7 @@ extern crate mach;
 
 use self::mach::vm_prot::*;
 
-use Error;
+use error::*;
 use Protection;
 use Region;
 
@@ -24,7 +24,7 @@ fn convert_from_native(protection: vm_prot_t) -> Protection::Flag {
     result
 }
 
-pub fn get_region(base: *const u8) -> Result<Region, Error> {
+pub fn get_region(base: *const u8) -> Result<Region> {
     extern crate mach;
 
     // Defines the different share modes available
@@ -61,6 +61,6 @@ pub fn get_region(base: *const u8) -> Result<Region, Error> {
                 size: region_size as usize,
             })
         }
-        _ => Err(Error::MachRegion(result)),
+        _ => Err(ErrorKind::MachRegion(result).into()),
     }
 }

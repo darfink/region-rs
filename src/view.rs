@@ -1,4 +1,4 @@
-use Error;
+use error::*;
 use Protection;
 use Region;
 use os;
@@ -69,10 +69,12 @@ impl From<Protection::Flag> for Access {
 /// let ret5 = [0xB8, 0x05, 0x00, 0x00, 0x00, 0xC3];
 /// let mut view = View::new(ret5.as_ptr(), ret5.len()).unwrap();
 ///
-/// view.exec_with_prot(Protection::ReadWriteExecute, || {
-///   let x: extern "C" fn() -> i32 = unsafe { std::mem::transmute(ret5.as_ptr()) };
-///   assert_eq!(x(), 5);
-/// }).unwrap()
+/// unsafe {
+///   view.exec_with_prot(Protection::ReadWriteExecute, || {
+///     let x: extern "C" fn() -> i32 = unsafe { std::mem::transmute(ret5.as_ptr()) };
+///     assert_eq!(x(), 5);
+///   }).unwrap()
+/// }
 /// ```
 pub struct View {
     regions: Vec<RegionMeta>,
@@ -86,7 +88,7 @@ impl View {
     /// - The address is aligned to the closest page boundary.
     /// - The upper bound (`address + size`) is rounded up to the closest page
     ///   boundary.
-    pub fn new(address: *const u8, size: usize) -> Result<Self, Error> {
+    pub fn new(address: *const u8, size: usize) -> Result<Self> {
         let mut regions = try!(::query_range(address, size));
 
         let lower = os::page_floor(address as usize);
@@ -142,7 +144,7 @@ impl View {
     ///
     /// If an access value besides `Access::Type` is used, it may result in
     /// multiple OS calls depending on the number of pages.
-    pub fn set_prot(&mut self, access: Access) -> Result<(), Error> {
+    pub unsafe fn set_prot(&mut self, access: Access) -> Result<()> {
         match access {
             Access::Type(protection) => {
                 // Alter the protection of the whole view at once
@@ -177,10 +179,10 @@ impl View {
     /// This is a comfortable shorthand method, functionally equivalent to
     /// calling `set_prot(prot.into())`, executing arbitrary code, followed by
     /// `set_prot(Access::Previous)`.
-    pub fn exec_with_prot<T: FnOnce()>(&mut self,
+    pub unsafe fn exec_with_prot<T: FnOnce()>(&mut self,
                                        prot: Protection::Flag,
                                        callback: T)
-                                       -> Result<(), Error> {
+                                       -> Result<()> {
         try!(self.set_prot(prot.into()));
         callback();
         try!(self.set_prot(Access::Previous));
@@ -191,7 +193,7 @@ impl View {
     ///
     /// The view itself does not do any bookkeeping related to whether the pages
     /// are locked or not (since the state can change from outside the library).
-    pub fn lock(&mut self) -> Result<::LockGuard, Error> {
+    pub fn lock(&mut self) -> Result<::LockGuard> {
         ::lock(self.ptr(), self.len())
     }
 
@@ -252,10 +254,9 @@ mod tests {
         let mut map = alloc_pages(&[Protection::Read]);
 
         let mut view = View::new(map.ptr(), pz).unwrap();
-        view.exec_with_prot(Protection::ReadWrite, || unsafe {
-                *map.mut_ptr() = 0x10;
-            })
-            .unwrap();
+        unsafe {
+            view.exec_with_prot(Protection::ReadWrite, || *map.mut_ptr() = 0x10).unwrap();
+        }
 
         // Ensure that the protection returned to its previous state
         let region = ::query(view.ptr()).unwrap();
@@ -268,8 +269,10 @@ mod tests {
         let map = alloc_pages(&[Protection::Read]);
 
         let mut view = View::new(map.ptr(), pz).unwrap();
-        view.set_prot(Protection::ReadWrite.into()).unwrap();
-        view.set_prot(Access::Previous).unwrap();
+        unsafe {
+            view.set_prot(Protection::ReadWrite.into()).unwrap();
+            view.set_prot(Access::Previous).unwrap();
+        }
 
         let region = ::query(view.ptr()).unwrap();
         assert_eq!(region.protection, Protection::Read);
@@ -281,9 +284,11 @@ mod tests {
         let map = alloc_pages(&[Protection::Read]);
 
         let mut view = View::new(map.ptr(), pz).unwrap();
-        view.set_prot(Protection::ReadWrite.into()).unwrap();
-        view.set_prot(Protection::ReadWriteExecute.into()).unwrap();
-        view.set_prot(Access::Initial).unwrap();
+        unsafe {
+            view.set_prot(Protection::ReadWrite.into()).unwrap();
+            view.set_prot(Protection::ReadWriteExecute.into()).unwrap();
+            view.set_prot(Access::Initial).unwrap();
+        }
 
         let region = ::query(view.ptr()).unwrap();
         assert_eq!(region.protection, Protection::Read);
@@ -298,7 +303,7 @@ mod tests {
         assert_eq!(view.len(), pz * 2);
         assert_eq!(view.get_prot(), None);
 
-        view.set_prot(Protection::Read.into()).unwrap();
+        unsafe { view.set_prot(Protection::Read.into()).unwrap() };
         assert_eq!(view.get_prot(), Some(Protection::Read));
     }
 }

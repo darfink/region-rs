@@ -8,23 +8,26 @@ license = "MIT"
 name = "region"
 readme = "README.md"
 repository = "https://github.com/darfink/region-rs"
-version = "0.0.2"
+version = "0.0.3"
 
 [dependencies]
+bitflags = "0.7"
 errno = "0.1.8"
+error-chain = "0.6.2"
 lazy_static = "0.2.1"
 libc = "0.2"
-bitflags = "0.7"
 
-[target."cfg(target_os = \"macos\")".dependencies]
-mach = "0.0.6"
+[dev-dependencies]
+memmap = "0.5.0"
+
+[target]
 
 [target."cfg(target_os = \"linux\")".dependencies]
 regex = "0.1.80"
 
-[target."cfg(windows)".dependencies]
-winapi = "0.2"
-kernel32-sys = "0.2.2"
+[target."cfg(target_os = \"macos\")".dependencies]
+mach = "0.0.6"
 
-[dev-dependencies]
-memmap = "0.5.0"
+[target."cfg(windows)".dependencies]
+kernel32-sys = "0.2.2"
+winapi = "0.2"

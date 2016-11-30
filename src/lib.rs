@@ -1,3 +1,4 @@
+#![recursion_limit = "1024"]
 //! A library for manipulating memory regions
 //!
 //! This crate provides several functions for handling memory pages and regions.
@@ -18,7 +19,7 @@
 //!
 //! ```toml
 //! [dependencies]
-//! region = "0.0.2"
+//! region = "0.0.3"
 //! ```
 //!
 //! and this to your crate root:
@@ -37,18 +38,20 @@
 //!   let mut view = View::new(data.as_ptr(), data.len()).unwrap();
 //!
 //!   // Change memory protection to Read | Write | Execute
-//!   view.set_prot(Protection::ReadWriteExecute.into()).unwrap();
+//!   unsafe { view.set_prot(Protection::ReadWriteExecute.into()).unwrap() };
 //!   assert_eq!(view.get_prot(), Some(Protection::ReadWriteExecute));
 //!
 //!   // Restore to the previous memory protection
-//!   view.set_prot(Access::Previous).unwrap();
+//!   unsafe { view.set_prot(Access::Previous).unwrap() };
 //!   assert_eq!(view.get_prot(), Some(Protection::ReadWrite));
 //!
 //!   // Temporarily change memory protection
-//!   view.exec_with_prot(Protection::Read, || {
-//!       // This would result in a memory violation
-//!       // data[0] = 0xCC;
-//!   }).unwrap();
+//!   unsafe {
+//!       view.exec_with_prot(Protection::Read, || {
+//!           // This would result in a memory violation
+//!           // data[0] = 0xCC;
+//!       }).unwrap();
+//!   }
 //!
 //!   // Lock the memory page(s) to RAM
 //!   let _guard = view.lock().unwrap();
@@ -58,23 +61,53 @@
 extern crate bitflags;
 
 #[macro_use]
+extern crate error_chain;
+
+#[macro_use]
 extern crate lazy_static;
 extern crate errno;
 extern crate libc;
 
-pub use error::Error;
 pub use lock::*;
 pub use os::page_size;
 pub use protection::Protection;
-pub use region::Region;
 pub use view::*;
 
-mod error;
+pub mod error;
 mod lock;
 mod os;
 mod protection;
-mod region;
 mod view;
+
+/// A descriptor for a memory region
+///
+/// This type acts as a POD-type, i.e it has no functionality but merely
+/// stores region information.
+#[derive(Debug, Clone, Copy)]
+pub struct Region {
+    /// Base address of the region
+    pub base: *mut u8,
+    /// Whether the region is guarded or not
+    pub guarded: bool,
+    /// Protection of the region
+    pub protection: Protection::Flag,
+    /// Whether the region is shared or not
+    pub shared: bool,
+    /// Size of the region (multiple of page size)
+    pub size: usize,
+}
+
+impl Region {
+    /// Returns the region's lower bound.
+    pub fn lower(&self) -> usize {
+        self.base as usize
+    }
+
+    /// Returns the region's upper bound.
+    pub fn upper(&self) -> usize {
+        self.lower() + self.size
+    }
+}
 
 /// Queries the OS with an address, returning the region it resides within.
 ///
@@ -95,9 +128,9 @@ mod view;
 ///
 /// assert_eq!(region.protection, Protection::ReadWrite);
 /// ```
-pub fn query(address: *const u8) -> Result<Region, Error> {
+pub fn query(address: *const u8) -> error::Result<Region> {
     if address.is_null() {
-        return Err(Error::Null);
+        return Err(error::ErrorKind::Null.into());
     }
 
     // The address must be aligned to the closest page boundary
@@ -122,7 +155,7 @@ pub fn query(address: *const u8) -> Result<Region, Error> {
 ///
 /// assert!(region.len() > 0);
 /// ```
-pub fn query_range(address: *const u8, size: usize) -> Result<Vec<Region>, Error> {
+pub fn query_range(address: *const u8, size: usize) -> error::Result<Vec<Region>> {
     let mut result = Vec::new();
     let mut base = os::page_floor(address as usize);
     let limit = address as usize + size;
@@ -161,14 +194,15 @@ pub fn query_range(address: *const u8, size: usize) -> Result<Vec<Region>, Error
 /// use region::{Protection};
 ///
 /// let ret5 = [0xB8, 0x05, 0x00, 0x00, 0x00, 0xC3];
-/// region::protect(ret5.as_ptr(), ret5.len(), Protection::ReadWriteExecute).unwrap();
-///
-/// let x: extern "C" fn() -> i32 = unsafe { std::mem::transmute(ret5.as_ptr()) };
+/// let x: extern "C" fn() -> i32 = unsafe {
+///   region::protect(ret5.as_ptr(), ret5.len(), Protection::ReadWriteExecute).unwrap();
+///   std::mem::transmute(ret5.as_ptr())
+/// };
 /// assert_eq!(x(), 5);
 /// ```
-pub fn protect(address: *const u8, size: usize, protection: Protection::Flag) -> Result<(), Error> {
+pub unsafe fn protect(address: *const u8, size: usize, protection: Protection::Flag) -> error::Result<()> {
     if address.is_null() {
-        return Err(Error::Null);
+        return Err(error::ErrorKind::Null.into());
     }
 
     // Ignore the preservation of previous protection flags
@@ -190,8 +224,10 @@ mod tests {
         let mut base = map.ptr();
 
         for protection in prots {
-            protect(base, pz, *protection).unwrap();
-            base = unsafe { base.offset(pz as isize) };
+            unsafe {
+                protect(base, pz, *protection).unwrap();
+                base = base.offset(pz as isize);
+            }
         }
 
         map
@@ -267,14 +303,14 @@ mod tests {
 
     #[test]
     fn protect_null() {
-        assert!(protect(::std::ptr::null(), 0, Protection::None).is_err());
+        assert!(unsafe { protect(::std::ptr::null(), 0, Protection::None) }.is_err());
     }
 
     #[test]
     fn protect_code() {
         let address = &mut query_code as *mut _ as *mut u8;
-        protect(address, 0x10, Protection::ReadWriteExecute).unwrap();
         unsafe {
+            protect(address, 0x10, Protection::ReadWriteExecute).unwrap();
             *address = 0x90;
         }
     }
@@ -282,8 +318,8 @@ mod tests {
     #[test]
     fn protect_alloc() {
         let mut map = alloc_pages(&[Protection::Read]);
-        protect(map.ptr(), ::os::page_size(), Protection::ReadWrite).unwrap();
         unsafe {
+            protect(map.ptr(), ::os::page_size(), Protection::ReadWrite).unwrap();
             *map.mut_ptr() = 0x1;
         }
     }
@@ -302,7 +338,7 @@ mod tests {
         let straddle = unsafe { base_exec.offset(pz as isize - 1) };
 
         // Change the protection over two page boundaries
-        protect(straddle, 2, Protection::ReadWriteExecute).unwrap();
+        unsafe { protect(straddle, 2, Protection::ReadWriteExecute).unwrap() };
 
         // Ensure that the pages have merged into one region
         let result = query_range(base_exec, pz * 2).unwrap();

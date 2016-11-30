@@ -1,4 +1,4 @@
-use Error;
+use error::*;
 use os;
 
 /// Locks one or more memory regions to RAM.
@@ -17,7 +17,7 @@ use os;
 /// let data = [0; 100];
 /// let _guard = region::lock(data.as_ptr(), data.len()).unwrap();
 /// ```
-pub fn lock(address: *const u8, size: usize) -> Result<LockGuard, Error> {
+pub fn lock(address: *const u8, size: usize) -> Result<LockGuard> {
     try!(os::lock(os::page_floor(address as usize) as *const u8,
                   os::page_size_from_range(address, size)));
     Ok(LockGuard::new(address, size))
@@ -33,13 +33,14 @@ pub fn lock(address: *const u8, size: usize) -> Result<LockGuard, Error> {
 /// - The address is rounded down to the closest page boundary.
 /// - The size is rounded up to the closest page boundary, relative to the
 ///   address.
-pub unsafe fn unlock(address: *const u8, size: usize) -> Result<(), Error> {
+pub unsafe fn unlock(address: *const u8, size: usize) -> Result<()> {
     os::unlock(os::page_floor(address as usize) as *const u8,
                os::page_size_from_range(address, size))
 }
 
 /// An RAII implementation of a "scoped lock". When this structure is dropped
 /// (falls out of scope), the virtual lock will be unlocked.
+#[must_use]
 pub struct LockGuard {
     address: *const u8,
     size: usize,
@@ -56,8 +57,8 @@ impl LockGuard {
     }
 
     /// Releases the guards ownership of the virtual lock.
-    pub unsafe fn release(mut self) {
-        self.free = false;
+    pub unsafe fn release(self) {
+        ::std::mem::forget(self);
     }
 }
 
