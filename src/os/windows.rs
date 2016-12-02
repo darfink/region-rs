@@ -1,7 +1,7 @@
 extern crate winapi;
 extern crate kernel32;
 
-use Error;
+use error::*;
 use Protection;
 use Region;
 
@@ -45,7 +45,7 @@ pub fn page_size() -> usize {
     return *PAGESIZE;
 }
 
-pub fn get_region(base: *const u8) -> Result<Region, Error> {
+pub fn get_region(base: *const u8) -> Result<Region> {
     use self::kernel32::VirtualQuery;
 
     let mut info: winapi::MEMORY_BASIC_INFORMATION = unsafe { ::std::mem::zeroed() };
@@ -57,7 +57,7 @@ pub fn get_region(base: *const u8) -> Result<Region, Error> {
 
     if bytes > 0 {
         if info.State == winapi::MEM_FREE {
-            return Err(Error::Freed);
+            return Err(ErrorKind::Freed.into());
         }
 
         Ok(Region {
@@ -68,14 +68,14 @@ pub fn get_region(base: *const u8) -> Result<Region, Error> {
             size: info.RegionSize as usize,
         })
     } else {
-        Err(Error::VirtualQuery(::errno::errno()))
+        Err(ErrorKind::SystemCall(::errno::errno()).into())
     }
 }
 
 pub fn set_protection(base: *const u8,
                       size: usize,
                       protection: Protection::Flag)
-                      -> Result<(), Error> {
+                      -> Result<()> {
     use self::kernel32::VirtualProtect;
 
     let mut prev_flags = 0;
@@ -87,18 +87,18 @@ pub fn set_protection(base: *const u8,
     };
 
     if result == winapi::FALSE {
-        Err(Error::VirtualProtect(::errno::errno()))
+        Err(ErrorKind::SystemCall(::errno::errno()).into())
     } else {
         Ok(())
     }
 }
 
-pub fn lock(base: *const u8, size: usize) -> Result<(), Error> {
+pub fn lock(base: *const u8, size: usize) -> Result<()> {
     use self::kernel32::VirtualLock;
     let result = unsafe { VirtualLock(base as winapi::PVOID, size as winapi::SIZE_T) };
 
     if result == winapi::FALSE {
-        Err(Error::VirtualLock(::errno::errno()))
+        Err(ErrorKind::SystemCall(::errno::errno()).into())
     } else {
         Ok(())
     }
@@ -109,7 +109,7 @@ pub fn unlock(base: *const u8, size: usize) -> Result<(), Error> {
     let result = unsafe { VirtualUnlock(base as winapi::PVOID, size as winapi::SIZE_T) };
 
     if result == winapi::FALSE {
-        Err(Error::VirtualUnlock(::errno::errno()))
+        Err(ErrorKind::SystemCall(::errno::errno()).into())
     } else {
         Ok(())
     }
