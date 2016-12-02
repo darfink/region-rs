@@ -104,7 +104,7 @@ pub fn lock(base: *const u8, size: usize) -> Result<()> {
     }
 }
 
-pub fn unlock(base: *const u8, size: usize) -> Result<(), Error> {
+pub fn unlock(base: *const u8, size: usize) -> Result<()> {
     use self::kernel32::VirtualUnlock;
     let result = unsafe { VirtualUnlock(base as winapi::PVOID, size as winapi::SIZE_T) };
 
