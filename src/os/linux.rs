@@ -1,6 +1,6 @@
 extern crate regex;
 
-use Error;
+use error::*;
 use Protection;
 use Region;
 
@@ -25,7 +25,7 @@ fn parse_procfs_flags(protection: &str) -> (Protection::Flag, bool) {
 }
 
 /// Parses a region from /proc/[pid]/maps (i.e a single line)
-fn parse_procfs_region(input: &str) -> Result<Region, Error> {
+fn parse_procfs_region(input: &str) -> Result<Region> {
     use self::regex::Regex;
 
     lazy_static! {
@@ -38,8 +38,8 @@ fn parse_procfs_region(input: &str) -> Result<Region, Error> {
                 .skip(1)
                 .take(2)
                 .map(|subcapture| {
-                    subcapture.ok_or(Error::ProcfsGroup).and_then(|address| {
-                        usize::from_str_radix(address, 16).map_err(Error::ProcfsConvert)
+                    subcapture.ok_or(ErrorKind::ProcfsGroup.into()).and_then(|address| {
+                        usize::from_str_radix(address, 16).map_err(ErrorKind::ProcfsConvert.into())
                     })
                 })
                 .collect());
@@ -55,20 +55,20 @@ fn parse_procfs_region(input: &str) -> Result<Region, Error> {
                 size: upper - lower,
             })
         }
-        _ => Err(Error::ProcfsMatches),
+        _ => Err(ErrorKind::ProcfsMatches.into()),
     }
 }
 
-pub fn get_region(address: *const u8) -> Result<Region, Error> {
+pub fn get_region(address: *const u8) -> Result<Region> {
     use std::fs::File;
     use std::io::{BufReader, BufRead};
 
     let address = address as usize;
-    let file = try!(File::open("/proc/self/maps").map_err(Error::ProcfsIo));
+    let file = try!(File::open("/proc/self/maps").map_err(ErrorKind::ProcfsIo.into()));
     let reader = BufReader::new(&file).lines();
 
     for line in reader {
-        let line = try!(line.map_err(Error::ProcfsIo));
+        let line = try!(line.map_err(ErrorKind::ProcfsIo.into()));
         let region = try!(parse_procfs_region(&line));
         let region_base = region.base as usize;
 
@@ -77,7 +77,7 @@ pub fn get_region(address: *const u8) -> Result<Region, Error> {
         }
     }
 
-    Err(Error::Freed)
+    Err(ErrorKind::Freed.into())
 }
 
 #[cfg(test)]
