@@ -1,8 +1,6 @@
 error_chain! {
     foreign_links {
-        // Specific for Linux
-        ::std::io::Error, ProcfsIo;
-        ::std::num::ParseIntError, ProcfsConvert;
+        ProcfsIo(::std::io::Error);
     }
 
     errors {

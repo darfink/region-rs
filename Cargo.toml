@@ -13,7 +13,7 @@ version = "0.0.3"
 [dependencies]
 bitflags = "0.7"
 errno = "0.1.8"
-error-chain = "0.6.2"
+error-chain = "0.7.1"
 lazy_static = "0.2.1"
 libc = "0.2"
 
