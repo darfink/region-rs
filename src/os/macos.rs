@@ -53,13 +53,20 @@ pub fn get_region(base: *const u8) -> Result<Region> {
 
     match result {
         mach::kern_return::KERN_SUCCESS => {
-            Ok(Region {
-                base: region_base as *mut u8,
-                guarded: false, // (info.user_tag == mach::vm_statistics::VM_MEMORY_GUARD),
-                protection: convert_from_native(info.protection),
-                shared: SHARE_MODES.contains(&info.share_mode),
-                size: region_size as usize,
-            })
+            // `mach_vm_region` begins searching at the specified address, so if
+            // there is not a region allocated, it will return the closest one
+            // instead. In that case, the memory is not committed.
+            if region_base > base as mach::vm_types::mach_vm_address_t {
+                Err(ErrorKind::Freed.into())
+            } else {
+                Ok(Region {
+                    base: region_base as *mut u8,
+                    guarded: false, // (info.user_tag == mach::vm_statistics::VM_MEMORY_GUARD),
+                    protection: convert_from_native(info.protection),
+                    shared: SHARE_MODES.contains(&info.share_mode),
+                    size: region_size as usize,
+                })
+            }
         }
         _ => Err(ErrorKind::MachRegion(result).into()),
     }
