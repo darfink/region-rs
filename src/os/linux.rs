@@ -44,7 +44,7 @@ fn parse_procfs_region(input: &str) -> Result<Region> {
             let (protection, shared) = parse_procfs_flags(captures.name("prot").unwrap());
 
             Ok(Region {
-                base: lower as *mut u8,
+                base: lower as *const _,
                 guarded: false,
                 protection: protection,
                 shared: shared,
@@ -72,7 +72,7 @@ pub fn get_region(address: *const u8) -> Result<Region> {
         }
     }
 
-    Err(ErrorKind::Freed.into())
+    Err(ErrorKind::Free.into())
 }
 
 #[cfg(test)]

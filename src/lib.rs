@@ -57,14 +57,9 @@
 //!   let _guard = view.lock().unwrap();
 //!   ```
 
-#[macro_use]
-extern crate bitflags;
-
-#[macro_use]
-extern crate error_chain;
-
-#[macro_use]
-extern crate lazy_static;
+#[macro_use] extern crate bitflags;
+#[macro_use] extern crate error_chain;
+#[macro_use] extern crate lazy_static;
 extern crate errno;
 extern crate libc;
 
@@ -86,7 +81,7 @@ mod view;
 #[derive(Debug, Clone, Copy)]
 pub struct Region {
     /// Base address of the region
-    pub base: *mut u8,
+    pub base: *const u8,
     /// Whether the region is guarded or not
     pub guarded: bool,
     /// Protection of the region

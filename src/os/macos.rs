@@ -57,10 +57,10 @@ pub fn get_region(base: *const u8) -> Result<Region> {
             // there is not a region allocated, it will return the closest one
             // instead. In that case, the memory is not committed.
             if region_base > base as mach::vm_types::mach_vm_address_t {
-                Err(ErrorKind::Freed.into())
+                Err(ErrorKind::Free.into())
             } else {
                 Ok(Region {
-                    base: region_base as *mut u8,
+                    base: region_base as *const _,
                     guarded: false, // (info.user_tag == mach::vm_statistics::VM_MEMORY_GUARD),
                     protection: convert_from_native(info.protection),
                     shared: SHARE_MODES.contains(&info.share_mode),

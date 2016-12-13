@@ -57,11 +57,11 @@ pub fn get_region(base: *const u8) -> Result<Region> {
 
     if bytes > 0 {
         if info.State == winapi::MEM_FREE {
-            return Err(ErrorKind::Freed.into());
+            return Err(ErrorKind::Free.into());
         }
 
         Ok(Region {
-            base: info.BaseAddress as *mut u8,
+            base: info.BaseAddress as *const _,
             guarded: (info.Protect & winapi::PAGE_GUARD) != 0,
             protection: convert_from_native(info.Protect),
             shared: (info.Type & winapi::MEM_PRIVATE) == 0,

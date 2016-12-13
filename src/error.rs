@@ -7,7 +7,7 @@ error_chain! {
         /// The supplied address is null.
         Null { display("address must not be null") }
         /// The queried memory is free.
-        Freed { display("address does not contain allocated memory") }
+        Free { display("address does not contain allocated memory") }
         /// Invalid regex group match.
         ProcfsGroup { display("capture group is empty") }
         /// Invalid regex group count.

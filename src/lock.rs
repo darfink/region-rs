@@ -44,7 +44,6 @@ pub unsafe fn unlock(address: *const u8, size: usize) -> Result<()> {
 pub struct LockGuard {
     address: *const u8,
     size: usize,
-    free: bool,
 }
 
 impl LockGuard {
@@ -52,7 +51,6 @@ impl LockGuard {
         LockGuard {
             address: address,
             size: size,
-            free: true,
         }
     }
 
@@ -64,9 +62,7 @@ impl LockGuard {
 
 impl Drop for LockGuard {
     fn drop(&mut self) {
-        if self.free {
-            assert!(unsafe { ::unlock(self.address, self.size).is_ok() });
-        }
+        assert!(unsafe { ::unlock(self.address, self.size).is_ok() });
     }
 }
 

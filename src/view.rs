@@ -109,12 +109,10 @@ impl View {
 
         Ok(View {
             regions: regions.iter()
-                .map(|region| {
-                    RegionMeta {
-                        region: *region,
-                        previous: region.protection,
-                        initial: region.protection,
-                    }
+                .map(|region| RegionMeta {
+                    region: *region,
+                    previous: region.protection,
+                    initial: region.protection,
                 })
                 .collect::<Vec<_>>(),
         })
@@ -125,8 +123,8 @@ impl View {
     /// This will only return the protection if all containing pages have the
     /// same protection, otherwise `None` will be returned.
     pub fn get_prot(&self) -> Option<Protection::Flag> {
-        let prot = self.regions.iter().fold(Protection::None,
-                                            |prot, ref meta| prot | meta.region.protection);
+        let prot = self.regions.iter()
+            .fold(Protection::None, |prot, ref meta| prot | meta.region.protection);
 
         if prot == self.regions.first().unwrap().region.protection {
             Some(prot)
@@ -180,9 +178,9 @@ impl View {
     /// calling `set_prot(prot.into())`, executing arbitrary code, followed by
     /// `set_prot(Access::Previous)`.
     pub unsafe fn exec_with_prot<T: FnOnce()>(&mut self,
-                                       prot: Protection::Flag,
-                                       callback: T)
-                                       -> Result<()> {
+                                              prot: Protection::Flag,
+                                              callback: T)
+                                              -> Result<()> {
         try!(self.set_prot(prot.into()));
         callback();
         try!(self.set_prot(Access::Previous));
@@ -204,7 +202,7 @@ impl View {
 
     /// Returns the view's base address as mutable
     pub fn mut_ptr(&mut self) -> *mut u8 {
-        self.regions.first().unwrap().region.base
+        self.regions.first().unwrap().region.base as *mut _
     }
 
     /// Returns the view's lower bound.
