@@ -29,6 +29,23 @@ and this to your crate root:
 extern crate region;
 ```
 
+## Example
+
+```rust
+// Assembly (x86) for returning an integer (5)
+let ret5 = [0xB8, 0x05, 0x00, 0x00, 0x00, 0xC3];
+let mut view = View::new(ret5.as_ptr(), ret5.len()).unwrap();
+
+view.exec_with_prot(Protection::ReadWriteExecute, || {
+    // Within this closure the memory is read, write & executable
+    let x: extern "C" fn() -> i32 = unsafe { std::mem::transmute(ret5.as_ptr()) };
+    assert_eq!(x(), 5);
+}).unwrap();
+
+// The protection flags have been restored
+assert_eq!(view.get_prot(), Some(Protection::Read));
+```
+
 ## Platforms
 
 This library has (so far) support for `Windows`, `Linux` & `macOS`.
