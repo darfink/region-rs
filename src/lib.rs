@@ -305,7 +305,7 @@ mod tests {
 
     #[test]
     fn protect_code() {
-        let address = &mut query_code as *mut _ as *mut u8;
+        let address = &mut protect_code as *mut _ as *mut u8;
         unsafe {
             protect(address, 0x10, Protection::ReadWriteExecute).unwrap();
             *address = 0x90;
