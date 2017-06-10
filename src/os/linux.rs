@@ -52,7 +52,7 @@ fn parse_procfs_region(input: &str) -> Result<Region> {
                 size: upper - lower,
             })
         }
-        _ => Err(ErrorKind::ProcfsMatches.into()),
+        _ => bail!(ErrorKind::ProcfsMatches),
     }
 }
 
