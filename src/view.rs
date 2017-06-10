@@ -89,7 +89,7 @@ impl View {
     /// - The upper bound (`address + size`) is rounded up to the closest page
     ///   boundary.
     pub fn new(address: *const u8, size: usize) -> Result<Self> {
-        let mut regions = try!(::query_range(address, size));
+        let mut regions = ::query_range(address, size)?;
 
         let lower = os::page_floor(address as usize);
         let upper = os::page_ceil(address as usize + size);
@@ -146,7 +146,7 @@ impl View {
         match access {
             Access::Type(protection) => {
                 // Alter the protection of the whole view at once
-                try!(::protect(self.ptr(), self.len(), protection));
+                ::protect(self.ptr(), self.len(), protection)?;
 
                 for meta in &mut self.regions {
                     // Update the current and previous protection flags
@@ -156,13 +156,13 @@ impl View {
             }
             Access::Previous => {
                 for meta in &mut self.regions {
-                    try!(::protect(meta.region.base, meta.region.size, meta.previous));
+                    ::protect(meta.region.base, meta.region.size, meta.previous)?;
                     ::std::mem::swap(&mut meta.region.protection, &mut meta.previous);
                 }
             }
             Access::Initial => {
                 for meta in &mut self.regions {
-                    try!(::protect(meta.region.base, meta.region.size, meta.initial));
+                    ::protect(meta.region.base, meta.region.size, meta.initial)?;
                     meta.previous = meta.region.protection;
                     meta.region.protection = meta.initial;
                 }
@@ -181,10 +181,9 @@ impl View {
                                               prot: Protection::Flag,
                                               callback: T)
                                               -> Result<()> {
-        try!(self.set_prot(prot.into()));
+        self.set_prot(prot.into())?;
         callback();
-        try!(self.set_prot(Access::Previous));
-        Ok(())
+        self.set_prot(Access::Previous)
     }
 
     /// Locks all memory pages within the view.

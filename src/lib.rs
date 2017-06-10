@@ -19,7 +19,7 @@
 //!
 //! ```toml
 //! [dependencies]
-//! region = "0.0.3"
+//! region = "0.0.6"
 //! ```
 //!
 //! and this to your crate root:
@@ -125,7 +125,7 @@ impl Region {
 /// ```
 pub fn query(address: *const u8) -> error::Result<Region> {
     if address.is_null() {
-        return Err(error::ErrorKind::Null.into());
+        bail!(error::ErrorKind::Null);
     }
 
     // The address must be aligned to the closest page boundary
@@ -156,7 +156,7 @@ pub fn query_range(address: *const u8, size: usize) -> error::Result<Vec<Region>
     let limit = address as usize + size;
 
     loop {
-        let region = try!(query(base as *const u8));
+        let region = query(base as *const u8)?;
         result.push(region);
         base = region.upper();
 
@@ -197,7 +197,7 @@ pub fn query_range(address: *const u8, size: usize) -> error::Result<Vec<Region>
 /// ```
 pub unsafe fn protect(address: *const u8, size: usize, protection: Protection::Flag) -> error::Result<()> {
     if address.is_null() {
-        return Err(error::ErrorKind::Null.into());
+        bail!(error::ErrorKind::Null);
     }
 
     // Ignore the preservation of previous protection flags

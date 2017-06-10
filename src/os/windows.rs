@@ -57,7 +57,7 @@ pub fn get_region(base: *const u8) -> Result<Region> {
 
     if bytes > 0 {
         if info.State == winapi::MEM_FREE {
-            return Err(ErrorKind::Free.into());
+            bail!(ErrorKind::Free);
         }
 
         Ok(Region {

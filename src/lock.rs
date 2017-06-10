@@ -18,8 +18,8 @@ use os;
 /// let _guard = region::lock(data.as_ptr(), data.len()).unwrap();
 /// ```
 pub fn lock(address: *const u8, size: usize) -> Result<LockGuard> {
-    try!(os::lock(os::page_floor(address as usize) as *const u8,
-                  os::page_size_from_range(address, size)));
+    os::lock(os::page_floor(address as usize) as *const u8,
+             os::page_size_from_range(address, size))?;
     Ok(LockGuard::new(address, size))
 }
 

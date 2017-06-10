@@ -29,7 +29,8 @@ fn parse_procfs_region(input: &str) -> Result<Region> {
     use self::regex::Regex;
 
     lazy_static! {
-        static ref RE: Regex = Regex::new("^([0-9a-fA-F]+)-([0-9a-fA-F]+) (?P<prot>(?:\\w|-){4})").unwrap();
+        static ref RE: Regex = Regex::new(
+          "^([0-9a-fA-F]+)-([0-9a-fA-F]+) (?P<prot>(?:\\w|-){4})").unwrap();
     }
 
     match RE.captures(input) {
@@ -37,11 +38,11 @@ fn parse_procfs_region(input: &str) -> Result<Region> {
             let region_boundary: Vec<usize> = captures.iter()
                 .skip(1)
                 .take(2)
-                .map(|capture| usize::from_str_radix(capture.unwrap(), 16).unwrap())
+                .map(|capture| usize::from_str_radix(capture.unwrap().as_str(), 16).unwrap())
                 .collect();
 
             let (lower, upper) = (region_boundary[0], region_boundary[1]);
-            let (protection, shared) = parse_procfs_flags(captures.name("prot").unwrap());
+            let (protection, shared) = parse_procfs_flags(captures.name("prot").unwrap().as_str());
 
             Ok(Region {
                 base: lower as *const _,
