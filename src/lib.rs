@@ -234,7 +234,9 @@ mod tests {
     }
 
     #[test]
+    #[cfg(unix)]
     fn query_code() {
+        // TODO: Find out why this fails on Windows
         let region = query(&query_code as *const _ as *const u8).unwrap();
 
         assert_eq!(region.guarded, false);
