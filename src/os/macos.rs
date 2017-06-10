@@ -61,7 +61,7 @@ pub fn get_region(base: *const u8) -> Result<Region> {
             } else {
                 Ok(Region {
                     base: region_base as *const _,
-                    guarded: false, // (info.user_tag == mach::vm_statistics::VM_MEMORY_GUARD),
+                    guarded: (info.user_tag == mach::vm_statistics::VM_MEMORY_GUARD),
                     protection: convert_from_native(info.protection),
                     shared: SHARE_MODES.contains(&info.share_mode),
                     size: region_size as usize,
