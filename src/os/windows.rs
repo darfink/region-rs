@@ -16,8 +16,10 @@ fn convert_to_native(protection: Protection::Flag) -> winapi::DWORD {
 }
 
 fn convert_from_native(protection: winapi::DWORD) -> Protection::Flag {
-    // Ignore miscellaneous flags (such as 'PAGE_NOCACHE')
-    match protection & 0xFF {
+    // Ignore irrelevant flags
+    let ignored = (winapi::PAGE_GUARD | winapi::PAGE_NOCACHE | winapi::PAGE_WRITECOMBINE);
+
+    match protection & ~ignored {
         winapi::PAGE_EXECUTE => Protection::Execute,
         winapi::PAGE_EXECUTE_READ => Protection::ReadExecute,
         winapi::PAGE_EXECUTE_READWRITE => Protection::ReadWriteExecute,
@@ -60,12 +62,22 @@ pub fn get_region(base: *const u8) -> Result<Region> {
             bail!(ErrorKind::Free);
         }
 
+        let reserved = (info.State == winapi::MEM_RESERVE);
+
+        // In case the page is reserved the value of `Protect` is undefined
+        let guarded = !reserved && (info.Protect & winapi::PAGE_GUARD) != 0;
+        let protection = if !reserved {
+            convert_from_native(info.Protect)
+        } else {
+            Protection::None
+        };
+
         Ok(Region {
             base: info.BaseAddress as *const _,
-            guarded: (info.Protect & winapi::PAGE_GUARD) != 0,
-            protection: convert_from_native(info.Protect),
             shared: (info.Type & winapi::MEM_PRIVATE) == 0,
             size: info.RegionSize as usize,
+            protection,
+            guarded,
         })
     } else {
         Err(ErrorKind::SystemCall(::errno::errno()).into())
