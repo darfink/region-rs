@@ -26,7 +26,7 @@ fn convert_from_native(protection: winapi::DWORD) -> Protection::Flag {
         winapi::PAGE_READONLY => Protection::Read,
         winapi::PAGE_READWRITE => Protection::ReadWrite,
         winapi::PAGE_WRITECOPY => Protection::ReadWrite,
-        _ => unreachable!(),
+        _ => unreachable!("Protection: {}", protection),
     }
 }
 
