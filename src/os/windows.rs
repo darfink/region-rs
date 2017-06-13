@@ -19,7 +19,7 @@ fn convert_from_native(protection: winapi::DWORD) -> Protection::Flag {
     // Ignore irrelevant flags
     let ignored = (winapi::PAGE_GUARD | winapi::PAGE_NOCACHE | winapi::PAGE_WRITECOMBINE);
 
-    match protection & ~ignored {
+    match protection & !ignored {
         winapi::PAGE_EXECUTE => Protection::Execute,
         winapi::PAGE_EXECUTE_READ => Protection::ReadExecute,
         winapi::PAGE_EXECUTE_READWRITE => Protection::ReadWriteExecute,
@@ -84,10 +84,7 @@ pub fn get_region(base: *const u8) -> Result<Region> {
     }
 }
 
-pub fn set_protection(base: *const u8,
-                      size: usize,
-                      protection: Protection::Flag)
-                      -> Result<()> {
+pub fn set_protection(base: *const u8, size: usize, protection: Protection::Flag) -> Result<()> {
     use self::kernel32::VirtualProtect;
 
     let mut prev_flags = 0;
