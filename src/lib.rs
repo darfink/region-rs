@@ -34,7 +34,7 @@
 //!
 //!   ```rust
 //!   # use region::{Access, View, Protection};
-//!   let data = vec![0xFF; 500];
+//!   let data = vec![0xFF; 100];
 //!   let mut view = View::new(data.as_ptr(), data.len()).unwrap();
 //!
 //!   // Change memory protection to Read | Write | Execute
@@ -195,7 +195,10 @@ pub fn query_range(address: *const u8, size: usize) -> error::Result<Vec<Region>
 /// };
 /// assert_eq!(x(), 5);
 /// ```
-pub unsafe fn protect(address: *const u8, size: usize, protection: Protection::Flag) -> error::Result<()> {
+pub unsafe fn protect(address: *const u8,
+                      size: usize,
+                      protection: Protection::Flag)
+                      -> error::Result<()> {
     if address.is_null() {
         bail!(error::ErrorKind::Null);
     }
@@ -281,7 +284,9 @@ mod tests {
     #[test]
     fn query_area_alloc() {
         let pz = ::os::page_size();
-        let prots = [Protection::Read, Protection::ReadWrite, Protection::ReadExecute];
+        let prots = [Protection::Read,
+                     Protection::ReadWrite,
+                     Protection::ReadExecute];
         let map = alloc_pages(&prots);
 
         // Confirm only one page is retrieved
@@ -327,8 +332,10 @@ mod tests {
 
         // Create a page boundary with different protection flags in the
         // upper and lower span, so the intermediate page sizes are fixed.
-        let prots =
-            [Protection::Read, Protection::ReadExecute, Protection::ReadWrite, Protection::Read];
+        let prots = [Protection::Read,
+                     Protection::ReadExecute,
+                     Protection::ReadWrite,
+                     Protection::Read];
 
         let map = alloc_pages(&prots);
         let base_exec = unsafe { map.ptr().offset(pz as isize) };

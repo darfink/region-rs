@@ -1,7 +1,7 @@
 use error::*;
 use Protection;
 
-use ::libc::{PROT_NONE, PROT_READ, PROT_WRITE, PROT_EXEC};
+use libc::{PROT_NONE, PROT_READ, PROT_WRITE, PROT_EXEC};
 
 fn convert_to_native(protection: Protection::Flag) -> ::libc::c_int {
     let mut result = PROT_NONE;
@@ -29,10 +29,7 @@ pub fn page_size() -> usize {
     *PAGESIZE
 }
 
-pub fn set_protection(base: *const u8,
-                      size: usize,
-                      protection: Protection::Flag)
-                      -> Result<()> {
+pub fn set_protection(base: *const u8, size: usize, protection: Protection::Flag) -> Result<()> {
     let result = unsafe {
         ::libc::mprotect(base as *mut ::libc::c_void,
                          size,

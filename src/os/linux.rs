@@ -35,7 +35,8 @@ fn parse_procfs_region(input: &str) -> Result<Region> {
 
     match RE.captures(input) {
         Some(ref captures) if captures.len() == 4 => {
-            let region_boundary: Vec<usize> = captures.iter()
+            let region_boundary: Vec<usize> = captures
+                .iter()
                 .skip(1)
                 .take(2)
                 .map(|capture| usize::from_str_radix(capture.unwrap().as_str(), 16).unwrap())
@@ -94,9 +95,8 @@ mod tests {
 
     #[test]
     fn parse_region() {
-        let region = parse_procfs_region("00400000-00409000 r-xs 00000000 08:00 16088 \
-                                          /usr/bin/head")
-            .unwrap();
+        let line = "00400000-00409000 r-xs 00000000 08:00 16088 /usr/bin/head";
+        let region = parse_procfs_region(line).unwrap();
 
         assert_eq!(region.base, 0x400000 as *mut u8);
         assert_eq!(region.guarded, false);
