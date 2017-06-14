@@ -8,8 +8,6 @@ error_chain! {
         Null { display("address must not be null") }
         /// The queried memory is free.
         Free { display("address does not contain allocated memory") }
-        /// Invalid regex group match.
-        ProcfsGroup { display("capture group is empty") }
         /// Invalid regex group count.
         ProcfsMatches { display("invalid captue group count") }
         /// A system call failed.
