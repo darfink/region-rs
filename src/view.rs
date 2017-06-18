@@ -4,6 +4,7 @@ use Region;
 use os;
 
 // This is needed to preserve previous and initial protection values
+#[derive(Debug, Copy, Clone)]
 struct RegionMeta {
     region: Region,
     previous: Protection::Flag,
@@ -11,6 +12,7 @@ struct RegionMeta {
 }
 
 /// View protection access.
+#[derive(Debug, Copy, Clone)]
 pub enum Access {
     /// A new protection state.
     Type(Protection::Flag),
@@ -76,6 +78,7 @@ impl From<Protection::Flag> for Access {
 ///   }).unwrap()
 /// }
 /// ```
+#[derive(Debug, Clone)]
 pub struct View {
     regions: Vec<RegionMeta>,
 }
@@ -177,13 +180,15 @@ impl View {
     /// This is a comfortable shorthand method, functionally equivalent to
     /// calling `set_prot(prot.into())`, executing arbitrary code, followed by
     /// `set_prot(Access::Previous)`.
-    pub unsafe fn exec_with_prot<T: FnOnce()>(&mut self,
-                                              prot: Protection::Flag,
-                                              callback: T)
-                                              -> Result<()> {
+    pub unsafe fn exec_with_prot<Ret, T: FnOnce() -> Ret>(
+            &mut self,
+            prot: Protection::Flag,
+            callback: T)
+            -> Result<Ret> {
         self.set_prot(prot.into())?;
-        callback();
-        self.set_prot(Access::Previous)
+        let result = callback();
+        self.set_prot(Access::Previous)?;
+        Ok(result)
     }
 
     /// Locks all memory pages within the view.
@@ -252,7 +257,11 @@ mod tests {
 
         let mut view = View::new(map.ptr(), pz).unwrap();
         unsafe {
-            view.exec_with_prot(Protection::ReadWrite, || *map.mut_ptr() = 0x10).unwrap();
+            let val = view.exec_with_prot(Protection::ReadWrite, || {
+                *map.mut_ptr() = 0x10;
+                1337
+            }).unwrap();
+            assert_eq!(val, 1337);
         }
 
         // Ensure that the protection returned to its previous state
