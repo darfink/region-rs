@@ -22,11 +22,7 @@ fn convert_to_native(protection: Protection::Flag) -> ::libc::c_int {
 }
 
 pub fn page_size() -> usize {
-    lazy_static! {
-        static ref PAGESIZE: usize = unsafe { ::libc::sysconf(::libc::_SC_PAGESIZE) as usize };
-    }
-
-    *PAGESIZE
+    unsafe { ::libc::sysconf(::libc::_SC_PAGESIZE) as usize }
 }
 
 pub fn set_protection(base: *const u8, size: usize, protection: Protection::Flag) -> Result<()> {

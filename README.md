@@ -31,6 +31,29 @@ extern crate region;
 
 ## Example
 
+- Cross-platform equivalents:
+
+```rust
+let ret5 = [0xB8, 0x05, 0x00, 0x00, 0x00, 0xC3];
+
+// Corresponds to (VirtualQuery, '/proc/self/maps')
+let query = region::query(ret5.as_ptr()).unwrap();
+assert_eq!(query.protection, Protection::Read);
+
+// If a size is relevant, `query_range` should be used
+let query = region::query_range(ret5.as_ptr(), ret5.len()).unwrap();
+
+assert_eq!(query.all(|q| q.protection == Protection::Read));
+assert_eq!(query.len() > 0);
+
+// Corresponds to VirtualProtect/mprotect
+unsafe {
+    region::protect(ret5.as_ptr(), ret5.len(), Protection::ReadWriteExecute).unwrap();
+}
+```
+
+- Using a `View` (keeps track of pages previous protection):
+
 ```rust
 // Assembly (x86) for returning an integer (5)
 let ret5 = [0xB8, 0x05, 0x00, 0x00, 0x00, 0xC3];

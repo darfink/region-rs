@@ -1,5 +1,5 @@
 use error::*;
-use os;
+use {os, page};
 
 /// Locks one or more memory regions to RAM.
 ///
@@ -18,8 +18,8 @@ use os;
 /// let _guard = region::lock(data.as_ptr(), data.len()).unwrap();
 /// ```
 pub fn lock(address: *const u8, size: usize) -> Result<LockGuard> {
-    os::lock(os::page_floor(address as usize) as *const u8,
-             os::page_size_from_range(address, size))?;
+    os::lock(page::page_floor(address as usize) as *const u8,
+             page::page_size_from_range(address, size))?;
     Ok(LockGuard::new(address, size))
 }
 
@@ -34,8 +34,8 @@ pub fn lock(address: *const u8, size: usize) -> Result<LockGuard> {
 /// - The size is rounded up to the closest page boundary, relative to the
 ///   address.
 pub unsafe fn unlock(address: *const u8, size: usize) -> Result<()> {
-    os::unlock(os::page_floor(address as usize) as *const u8,
-               os::page_size_from_range(address, size))
+    os::unlock(page::page_floor(address as usize) as *const u8,
+               page::page_size_from_range(address, size))
 }
 
 /// An RAII implementation of a "scoped lock". When this structure is dropped
@@ -62,7 +62,7 @@ impl LockGuard {
 
 impl Drop for LockGuard {
     fn drop(&mut self) {
-        assert!(unsafe { ::unlock(self.address, self.size).is_ok() });
+        assert!(unsafe { ::unlock(self.address, self.size).is_ok() }, "unlocking region");
     }
 }
 

@@ -20,7 +20,7 @@ pub mod Protection {
         /// ```
         pub struct Flag: usize {
             /// No access allowed at all.
-            const None             = (0 << 0);
+            const None             = 0;
             /// Read access; writing and/or executing data will panic.
             const Read             = (1 << 1);
             /// Write access; this flag alone may not work on all OS.

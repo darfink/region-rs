@@ -13,17 +13,14 @@ version = "0.0.7"
 [dependencies]
 bitflags = "0.9.1"
 errno = "0.2.3"
-error-chain = "0.10.0"
-lazy_static = "0.2.8"
 libc = "0.2"
+
+[dependencies.error-chain]
+version = "0.10.0"
+default-features = false
 
 [dev-dependencies]
 memmap = "0.5.2"
-
-[target]
-
-[target."cfg(target_os = \"linux\")".dependencies]
-regex = "0.2.2"
 
 [target."cfg(target_os = \"macos\")".dependencies]
 mach = "0.1.0"

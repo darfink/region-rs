@@ -1,7 +1,13 @@
+use std::mem;
 use error::*;
-use Protection;
-use Region;
-use os;
+use {
+    page,
+    protect,
+    query_range,
+    lock,
+    Protection,
+    Region
+};
 
 // This is needed to preserve previous and initial protection values
 #[derive(Debug, Copy, Clone)]
@@ -92,10 +98,10 @@ impl View {
     /// - The upper bound (`address + size`) is rounded up to the closest page
     ///   boundary.
     pub fn new(address: *const u8, size: usize) -> Result<Self> {
-        let mut regions = ::query_range(address, size)?;
+        let mut regions = query_range(address, size)?;
 
-        let lower = os::page_floor(address as usize);
-        let upper = os::page_ceil(address as usize + size);
+        let lower = page::page_floor(address as usize);
+        let upper = page::page_ceil(address as usize + size);
 
         if let Some(ref mut region) = regions.first_mut() {
             // Offset the lower region to the smallest page boundary
@@ -127,7 +133,7 @@ impl View {
     /// same protection, otherwise `None` will be returned.
     pub fn get_prot(&self) -> Option<Protection::Flag> {
         let prot = self.regions.iter()
-            .fold(Protection::None, |prot, ref meta| prot | meta.region.protection);
+            .fold(Protection::None, |prot, meta| prot | meta.region.protection);
 
         if prot == self.regions.first().unwrap().region.protection {
             Some(prot)
@@ -149,7 +155,7 @@ impl View {
         match access {
             Access::Type(protection) => {
                 // Alter the protection of the whole view at once
-                ::protect(self.ptr(), self.len(), protection)?;
+                protect(self.ptr(), self.len(), protection)?;
 
                 for meta in &mut self.regions {
                     // Update the current and previous protection flags
@@ -159,13 +165,13 @@ impl View {
             }
             Access::Previous => {
                 for meta in &mut self.regions {
-                    ::protect(meta.region.base, meta.region.size, meta.previous)?;
-                    ::std::mem::swap(&mut meta.region.protection, &mut meta.previous);
+                    protect(meta.region.base, meta.region.size, meta.previous)?;
+                    mem::swap(&mut meta.region.protection, &mut meta.previous);
                 }
             }
             Access::Initial => {
                 for meta in &mut self.regions {
-                    ::protect(meta.region.base, meta.region.size, meta.initial)?;
+                    protect(meta.region.base, meta.region.size, meta.initial)?;
                     meta.previous = meta.region.protection;
                     meta.region.protection = meta.initial;
                 }
@@ -196,7 +202,7 @@ impl View {
     /// The view itself does not do any bookkeeping related to whether the pages
     /// are locked or not (since the state can change from outside the library).
     pub fn lock(&mut self) -> Result<::LockGuard> {
-        ::lock(self.ptr(), self.len())
+        lock(self.ptr(), self.len())
     }
 
     /// Returns the view's base address.
@@ -219,9 +225,14 @@ impl View {
         self.regions.last().unwrap().region.upper()
     }
 
-    /// Returns the length of the view
+    /// Returns the length of the view.
     pub fn len(&self) -> usize {
         self.upper() - self.lower()
+    }
+
+    /// Returns whether this view is empty or not.
+    pub fn is_empty(&self) -> bool {
+        self.len() == 0
     }
 }
 
@@ -229,12 +240,11 @@ impl View {
 mod tests {
     use Protection;
     use tests::alloc_pages;
-    use os::page_size;
     use super::*;
 
     #[test]
     fn view_check_size() {
-        let pz = page_size();
+        let pz = page::page_size();
         let map = alloc_pages(&[Protection::Read, Protection::Read, Protection::Read]);
 
         // Ensure that only one page is in the view
@@ -252,7 +262,7 @@ mod tests {
 
     #[test]
     fn view_exec_prot() {
-        let pz = page_size();
+        let pz = page::page_size();
         let mut map = alloc_pages(&[Protection::Read]);
 
         let mut view = View::new(map.ptr(), pz).unwrap();
@@ -271,7 +281,7 @@ mod tests {
 
     #[test]
     fn view_prot_prev() {
-        let pz = page_size();
+        let pz = page::page_size();
         let map = alloc_pages(&[Protection::Read]);
 
         let mut view = View::new(map.ptr(), pz).unwrap();
@@ -286,7 +296,7 @@ mod tests {
 
     #[test]
     fn view_prot_initial() {
-        let pz = page_size();
+        let pz = page::page_size();
         let map = alloc_pages(&[Protection::Read]);
 
         let mut view = View::new(map.ptr(), pz).unwrap();
@@ -302,7 +312,7 @@ mod tests {
 
     #[test]
     fn view_get_prot() {
-        let pz = page_size();
+        let pz = page::page_size();
         let map = alloc_pages(&[Protection::Read, Protection::ReadWrite]);
 
         let mut view = View::new(map.ptr(), pz * 2).unwrap();

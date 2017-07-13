@@ -36,15 +36,10 @@ pub fn page_size() -> usize {
     use self::kernel32::GetSystemInfo;
     use self::winapi::SYSTEM_INFO;
 
-    lazy_static! {
-        static ref PAGESIZE: usize = unsafe {
-            let mut info: SYSTEM_INFO = ::std::mem::zeroed();
-            GetSystemInfo(&mut info);
-            return info.dwPageSize as usize;
-        };
-    }
+    let mut info: SYSTEM_INFO = ::std::mem::zeroed();
+    GetSystemInfo(&mut info);
 
-    return *PAGESIZE;
+    info.dwPageSize as usize
 }
 
 pub fn get_region(base: *const u8) -> Result<Region> {

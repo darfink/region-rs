@@ -1,60 +1,46 @@
-extern crate regex;
-
+use {Protection, Region};
 use error::*;
-use Protection;
-use Region;
+
+macro_rules! try_opt {
+    ($expr:expr) => (match $expr {
+        ::std::option::Option::Some(val) => val,
+        ::std::option::Option::None => return None
+    })
+}
 
 /// Parses flags from /proc/[pid]/maps (e.g 'r--p')
 fn parse_procfs_flags(protection: &str) -> (Protection::Flag, bool) {
-    let shared = protection.ends_with('s');
-    let mut result = Protection::None;
+    const MAPPING: &[(char, Protection::Flag)] = &[
+        ('r', Protection::Read),
+        ('w', Protection::Write),
+        ('x', Protection::Execute),
+    ];
 
-    if protection.find('r') != None {
-        result |= Protection::Read;
-    }
+    let result = MAPPING.iter().fold(Protection::None, |acc, &(ident, prot)| {
+        acc | protection.find(ident).map(|_| prot).unwrap_or(Protection::None)
+    });
 
-    if protection.find('w') != None {
-        result |= Protection::Write;
-    }
-
-    if protection.find('x') != None {
-        result |= Protection::Execute;
-    }
-
-    (result as Protection::Flag, shared)
+    (result, protection.ends_with('s'))
 }
 
 /// Parses a region from /proc/[pid]/maps (i.e a single line)
-fn parse_procfs_region(input: &str) -> Result<Region> {
-    use self::regex::Regex;
+fn parse_procfs_region(input: &str) -> Option<Region> {
+    let mut parts = input.split_whitespace();
+    let mut memory = try_opt!(parts.next())
+        .split('-')
+        .filter_map(|value| usize::from_str_radix(value, 16).ok());
+    let (lower, upper) = (try_opt!(memory.next()), try_opt!(memory.next()));
 
-    lazy_static! {
-        static ref RE: Regex = Regex::new(
-          "^([0-9a-fA-F]+)-([0-9a-fA-F]+) (?P<prot>(?:\\w|-){4})").unwrap();
-    }
+    let flags = try_opt!(parts.next());
+    let (protection, shared) = parse_procfs_flags(flags);
 
-    match RE.captures(input) {
-        Some(ref captures) if captures.len() == 4 => {
-            let region_boundary: Vec<usize> = captures
-                .iter()
-                .skip(1)
-                .take(2)
-                .map(|capture| usize::from_str_radix(capture.unwrap().as_str(), 16).unwrap())
-                .collect();
-
-            let (lower, upper) = (region_boundary[0], region_boundary[1]);
-            let (protection, shared) = parse_procfs_flags(captures.name("prot").unwrap().as_str());
-
-            Ok(Region {
-                base: lower as *const _,
-                guarded: false,
-                protection: protection,
-                shared: shared,
-                size: upper - lower,
-            })
-        }
-        _ => bail!(ErrorKind::ProcfsMatches),
-    }
+    Some(Region {
+        base: lower as *const _,
+        size: upper - lower,
+        guarded: false,
+        protection,
+        shared,
+    })
 }
 
 pub fn get_region(address: *const u8) -> Result<Region> {
@@ -66,7 +52,7 @@ pub fn get_region(address: *const u8) -> Result<Region> {
     let reader = BufReader::new(&file).lines();
 
     for line in reader {
-        let region = parse_procfs_region(&line?)?;
+        let region = parse_procfs_region(&line?).ok_or(ErrorKind::ProcfsInput)?;
         let region_base = region.base as usize;
 
         if address >= region_base && address < region_base + region.size {

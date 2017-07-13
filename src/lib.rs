@@ -59,16 +59,15 @@
 
 #[macro_use] extern crate bitflags;
 #[macro_use] extern crate error_chain;
-#[macro_use] extern crate lazy_static;
 extern crate errno;
 extern crate libc;
 
 pub use lock::*;
-pub use os::page_size;
 pub use protection::Protection;
 pub use view::*;
 
 pub mod error;
+pub mod page;
 mod lock;
 mod os;
 mod protection;
@@ -129,7 +128,7 @@ pub fn query(address: *const u8) -> error::Result<Region> {
     }
 
     // The address must be aligned to the closest page boundary
-    os::get_region(os::page_floor(address as usize) as *const u8)
+    os::get_region(page::page_floor(address as usize) as *const u8)
 }
 
 /// Queries the OS with a range, returning the regions it contains.
@@ -152,7 +151,7 @@ pub fn query(address: *const u8) -> error::Result<Region> {
 /// ```
 pub fn query_range(address: *const u8, size: usize) -> error::Result<Vec<Region>> {
     let mut result = Vec::new();
-    let mut base = os::page_floor(address as usize);
+    let mut base = page::page_floor(address as usize);
     let limit = address as usize + size;
 
     loop {
@@ -204,8 +203,8 @@ pub unsafe fn protect(address: *const u8,
     }
 
     // Ignore the preservation of previous protection flags
-    os::set_protection(os::page_floor(address as usize) as *const u8,
-                       os::page_size_from_range(address, size),
+    os::set_protection(page::page_floor(address as usize) as *const u8,
+                       page::page_size_from_range(address, size),
                        protection)
 }
 
@@ -217,7 +216,7 @@ mod tests {
     use super::*;
 
     pub fn alloc_pages(prots: &[Protection::Flag]) -> Mmap {
-        let pz = ::os::page_size();
+        let pz = page::page_size();
         let map = Mmap::anonymous(pz * prots.len(), memmap::Protection::Read).unwrap();
         let mut base = map.ptr();
 
@@ -249,7 +248,7 @@ mod tests {
 
     #[test]
     fn query_alloc() {
-        let size = ::os::page_size() * 2;
+        let size = page::page_size() * 2;
         let mut map = alloc_pages(&[Protection::ReadExecute, Protection::ReadExecute]);
         let region = query(map.ptr()).unwrap();
 
@@ -267,7 +266,7 @@ mod tests {
 
     #[test]
     fn query_area_overlap() {
-        let pz = ::os::page_size();
+        let pz = page::page_size();
         let prots = [Protection::ReadExecute, Protection::ReadWrite];
         let map = alloc_pages(&prots);
 
@@ -283,7 +282,7 @@ mod tests {
 
     #[test]
     fn query_area_alloc() {
-        let pz = ::os::page_size();
+        let pz = page::page_size();
         let prots = [Protection::Read,
                      Protection::ReadWrite,
                      Protection::ReadExecute];
@@ -321,14 +320,14 @@ mod tests {
     fn protect_alloc() {
         let mut map = alloc_pages(&[Protection::Read]);
         unsafe {
-            protect(map.ptr(), ::os::page_size(), Protection::ReadWrite).unwrap();
+            protect(map.ptr(), page::page_size(), Protection::ReadWrite).unwrap();
             *map.mut_ptr() = 0x1;
         }
     }
 
     #[test]
     fn protect_overlap() {
-        let pz = ::os::page_size();
+        let pz = page::page_size();
 
         // Create a page boundary with different protection flags in the
         // upper and lower span, so the intermediate page sizes are fixed.
