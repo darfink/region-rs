@@ -20,7 +20,7 @@ Add this to your `Cargo.toml`:
 
 ```toml
 [dependencies]
-region = "0.0.7"
+region = "0.0.8"
 ```
 
 and this to your crate root:
@@ -36,20 +36,18 @@ extern crate region;
 ```rust
 let ret5 = [0xB8, 0x05, 0x00, 0x00, 0x00, 0xC3];
 
-// Corresponds to (VirtualQuery, '/proc/self/maps')
-let query = region::query(ret5.as_ptr()).unwrap();
-assert_eq!(query.protection, Protection::Read);
+// Page size
+let pz = region::page::page_size();
 
-// If a size is relevant, `query_range` should be used
-let query = region::query_range(ret5.as_ptr(), ret5.len()).unwrap();
+// VirtualQuery | '/proc/self/maps'
+let q  = region::query(ret5.as_ptr())?;
+let qr = region::query_range(ret5.as_ptr(), ret5.len())?;
 
-assert_eq!(query.all(|q| q.protection == Protection::Read));
-assert_eq!(query.len() > 0);
+// VirtualProtect | mprotect
+region::protect(ret5.as_ptr(), ret5.len(), Protection::ReadWriteExecute)?;
 
-// Corresponds to VirtualProtect/mprotect
-unsafe {
-    region::protect(ret5.as_ptr(), ret5.len(), Protection::ReadWriteExecute).unwrap();
-}
+// VirtualLock | mlock
+let guard = region::lock(ret5.as_ptr(), ret5.len())?;
 ```
 
 - Using a `View` (keeps track of pages previous protection):
