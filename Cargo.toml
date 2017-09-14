@@ -16,7 +16,7 @@ errno = "0.2.3"
 libc = "0.2"
 
 [dependencies.error-chain]
-version = "0.10.0"
+version = "0.11.0"
 default-features = false
 
 [dev-dependencies]

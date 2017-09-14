@@ -1,3 +1,4 @@
+//! Error types and utilities.
 error_chain! {
     foreign_links {
         ProcfsIo(::std::io::Error);

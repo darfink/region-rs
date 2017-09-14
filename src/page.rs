@@ -1,3 +1,5 @@
+//! Page related functions.
+
 use std::sync::{Once, ONCE_INIT};
 use os;
 

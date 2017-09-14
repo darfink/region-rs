@@ -23,7 +23,7 @@ pub mod Protection {
             const None             = 0;
             /// Read access; writing and/or executing data will panic.
             const Read             = (1 << 1);
-            /// Write access; this flag alone may not work on all OS.
+            /// Write access; this flag alone may not be supported on all OSs.
             const Write            = (1 << 2);
             /// Execute access; this may not be allowed depending on DEP.
             const Execute          = (1 << 3);
