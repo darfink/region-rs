@@ -9,8 +9,8 @@ macro_rules! try_opt {
 }
 
 /// Parses flags from /proc/[pid]/maps (e.g 'r--p')
-fn parse_procfs_flags(protection: &str) -> (Protection::Flag, bool) {
-    const MAPPING: &[(char, Protection::Flag)] = &[
+fn parse_procfs_flags(protection: &str) -> (Protection, bool) {
+    const MAPPING: &[(char, Protection)] = &[
         ('r', Protection::Read),
         ('w', Protection::Write),
         ('x', Protection::Execute),

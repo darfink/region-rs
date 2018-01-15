@@ -13,23 +13,23 @@ use {
 #[derive(Debug, Copy, Clone)]
 struct RegionMeta {
     region: Region,
-    previous: Protection::Flag,
-    initial: Protection::Flag,
+    previous: Protection,
+    initial: Protection,
 }
 
 /// View protection access.
 #[derive(Debug, Copy, Clone)]
 pub enum Access {
     /// A new protection state.
-    Type(Protection::Flag),
+    Type(Protection),
     /// The previous protection state.
     Previous,
     /// The initial protection state.
     Initial,
 }
 
-impl From<Protection::Flag> for Access {
-    fn from(protection: Protection::Flag) -> Access {
+impl From<Protection> for Access {
+    fn from(protection: Protection) -> Access {
         Access::Type(protection)
     }
 }
@@ -131,7 +131,7 @@ impl View {
     ///
     /// This will only return the protection if all containing pages have the
     /// same protection, otherwise `None` will be returned.
-    pub fn get_prot(&self) -> Option<Protection::Flag> {
+    pub fn get_prot(&self) -> Option<Protection> {
         let prot = self.regions.iter()
             .fold(Protection::None, |prot, meta| prot | meta.region.protection);
 
@@ -188,7 +188,7 @@ impl View {
     /// `set_prot(Access::Previous)`.
     pub unsafe fn exec_with_prot<Ret, T: FnOnce() -> Ret>(
             &mut self,
-            prot: Protection::Flag,
+            prot: Protection,
             callback: T)
             -> Result<Ret> {
         self.set_prot(prot.into())?;

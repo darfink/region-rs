@@ -85,7 +85,7 @@ pub struct Region {
     /// Whether the region is guarded or not
     pub guarded: bool,
     /// Protection of the region
-    pub protection: Protection::Flag,
+    pub protection: Protection,
     /// Whether the region is shared or not
     pub shared: bool,
     /// Size of the region (multiple of page size)
@@ -197,7 +197,7 @@ pub fn query_range(address: *const u8, size: usize) -> error::Result<Vec<Region>
 /// ```
 pub unsafe fn protect(address: *const u8,
                       size: usize,
-                      protection: Protection::Flag)
+                      protection: Protection)
                       -> error::Result<()> {
     if address.is_null() {
         bail!(error::Error::Null);
@@ -216,7 +216,7 @@ mod tests {
     use self::memmap::Mmap;
     use super::*;
 
-    pub fn alloc_pages(prots: &[Protection::Flag]) -> Mmap {
+    pub fn alloc_pages(prots: &[Protection]) -> Mmap {
         let pz = page::page_size();
         let map = Mmap::anonymous(pz * prots.len(), memmap::Protection::Read).unwrap();
         let mut base = map.ptr();

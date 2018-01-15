@@ -21,7 +21,7 @@ branch = "master"
 repository = "darfink/region-rs"
 
 [dependencies]
-bitflags = "0.9.1"
+bitflags = "1.0"
 errno = "0.2.3"
 failure = "0.1.1"
 libc = "0.2"

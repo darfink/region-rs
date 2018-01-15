@@ -3,7 +3,7 @@ use Protection;
 
 use libc::{PROT_NONE, PROT_READ, PROT_WRITE, PROT_EXEC};
 
-fn convert_to_native(protection: Protection::Flag) -> ::libc::c_int {
+fn convert_to_native(protection: Protection) -> ::libc::c_int {
     let mut result = PROT_NONE;
 
     if protection.contains(Protection::Read) {
@@ -25,7 +25,7 @@ pub fn page_size() -> usize {
     unsafe { ::libc::sysconf(::libc::_SC_PAGESIZE) as usize }
 }
 
-pub fn set_protection(base: *const u8, size: usize, protection: Protection::Flag) -> Result<()> {
+pub fn set_protection(base: *const u8, size: usize, protection: Protection) -> Result<()> {
     let result = unsafe {
         ::libc::mprotect(base as *mut ::libc::c_void,
                          size,

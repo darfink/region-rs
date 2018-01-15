@@ -6,7 +6,7 @@ use error::*;
 use Protection;
 use Region;
 
-fn convert_from_native(protection: vm_prot_t) -> Protection::Flag {
+fn convert_from_native(protection: vm_prot_t) -> Protection {
     let mut result = Protection::None;
 
     if (protection & VM_PROT_READ) == VM_PROT_READ {
