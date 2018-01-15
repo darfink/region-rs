@@ -52,7 +52,7 @@ pub fn get_region(address: *const u8) -> Result<Region> {
     let reader = BufReader::new(&file).lines();
 
     for line in reader {
-        let region = parse_procfs_region(&line?).ok_or(ErrorKind::ProcfsInput)?;
+        let region = parse_procfs_region(&line?).ok_or(Error::ProcfsInput)?;
         let region_base = region.base as usize;
 
         if address >= region_base && address < region_base + region.size {
@@ -60,7 +60,7 @@ pub fn get_region(address: *const u8) -> Result<Region> {
         }
     }
 
-    Err(ErrorKind::Free.into())
+    Err(Error::Free.into())
 }
 
 #[cfg(test)]

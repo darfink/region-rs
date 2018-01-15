@@ -34,7 +34,7 @@ pub fn set_protection(base: *const u8, size: usize, protection: Protection::Flag
 
     match result {
         0 => Ok(()),
-        _ => Err(ErrorKind::SystemCall(::errno::errno()).into()),
+        _ => Err(Error::SystemCall(::errno::errno()).into()),
     }
 }
 
@@ -42,7 +42,7 @@ pub fn lock(base: *const u8, size: usize) -> Result<()> {
     let result = unsafe { ::libc::mlock(base as *const ::libc::c_void, size) };
     match result {
         0 => Ok(()),
-        _ => Err(ErrorKind::SystemCall(::errno::errno()).into()),
+        _ => Err(Error::SystemCall(::errno::errno()).into()),
     }
 }
 
@@ -50,6 +50,6 @@ pub fn unlock(base: *const u8, size: usize) -> Result<()> {
     let result = unsafe { ::libc::munlock(base as *const ::libc::c_void, size) };
     match result {
         0 => Ok(()),
-        _ => Err(ErrorKind::SystemCall(::errno::errno()).into()),
+        _ => Err(Error::SystemCall(::errno::errno()).into()),
     }
 }

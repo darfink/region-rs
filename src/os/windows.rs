@@ -56,7 +56,7 @@ pub fn get_region(base: *const u8) -> Result<Region> {
 
     if bytes > 0 {
         let (protection, guarded) = match info.State {
-            winapi::MEM_FREE => bail!(ErrorKind::Free),
+            winapi::MEM_FREE => bail!(Error::Free),
             winapi::MEM_RESERVE => (Protection::None, false),
             winapi::MEM_COMMIT => {
                 (convert_from_native(info.Protect), (info.Protect & winapi::PAGE_GUARD) != 0)
@@ -72,7 +72,7 @@ pub fn get_region(base: *const u8) -> Result<Region> {
             guarded,
         })
     } else {
-        Err(ErrorKind::SystemCall(::errno::errno()).into())
+        Err(Error::SystemCall(::errno::errno()).into())
     }
 }
 
@@ -88,7 +88,7 @@ pub fn set_protection(base: *const u8, size: usize, protection: Protection::Flag
     };
 
     if result == winapi::FALSE {
-        Err(ErrorKind::SystemCall(::errno::errno()).into())
+        Err(Error::SystemCall(::errno::errno()).into())
     } else {
         Ok(())
     }
@@ -99,7 +99,7 @@ pub fn lock(base: *const u8, size: usize) -> Result<()> {
     let result = unsafe { VirtualLock(base as winapi::PVOID, size as winapi::SIZE_T) };
 
     if result == winapi::FALSE {
-        Err(ErrorKind::SystemCall(::errno::errno()).into())
+        Err(Error::SystemCall(::errno::errno()).into())
     } else {
         Ok(())
     }
@@ -110,7 +110,7 @@ pub fn unlock(base: *const u8, size: usize) -> Result<()> {
     let result = unsafe { VirtualUnlock(base as winapi::PVOID, size as winapi::SIZE_T) };
 
     if result == winapi::FALSE {
-        Err(ErrorKind::SystemCall(::errno::errno()).into())
+        Err(Error::SystemCall(::errno::errno()).into())
     } else {
         Ok(())
     }

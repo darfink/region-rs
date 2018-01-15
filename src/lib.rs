@@ -58,16 +58,17 @@
 //!   ```
 
 #[macro_use] extern crate bitflags;
-#[macro_use] extern crate error_chain;
+#[macro_use] extern crate failure;
 extern crate errno;
 extern crate libc;
 
+pub use error::{Error, Result};
 pub use lock::*;
 pub use protection::Protection;
 pub use view::*;
 
-pub mod error;
 pub mod page;
+mod error;
 mod lock;
 mod os;
 mod protection;
@@ -124,7 +125,7 @@ impl Region {
 /// ```
 pub fn query(address: *const u8) -> error::Result<Region> {
     if address.is_null() {
-        bail!(error::ErrorKind::Null);
+        bail!(error::Error::Null);
     }
 
     // The address must be aligned to the closest page boundary
@@ -199,7 +200,7 @@ pub unsafe fn protect(address: *const u8,
                       protection: Protection::Flag)
                       -> error::Result<()> {
     if address.is_null() {
-        bail!(error::ErrorKind::Null);
+        bail!(error::Error::Null);
     }
 
     // Ignore the preservation of previous protection flags

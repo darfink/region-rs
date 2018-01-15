@@ -10,25 +10,34 @@ readme = "README.md"
 repository = "https://github.com/darfink/region-rs"
 version = "0.0.9"
 
+[badges]
+
+[badges.appveyor]
+branch = "master"
+repository = "darfink/region-rs"
+
+[badges.travis-ci]
+branch = "master"
+repository = "darfink/region-rs"
+
 [dependencies]
 bitflags = "0.9.1"
 errno = "0.2.3"
+failure = "0.1.1"
 libc = "0.2"
-
-[dependencies.error-chain]
-version = "0.11.0"
-default-features = false
 
 [dev-dependencies]
 memmap = "0.5.2"
 
+[target]
+
+[target."cfg(target_os = \"macos\")"]
+
 [target."cfg(target_os = \"macos\")".dependencies]
 mach = "0.1.0"
+
+[target."cfg(windows)"]
 
 [target."cfg(windows)".dependencies]
 kernel32-sys = "0.2.2"
 winapi = "0.2"
-
-[badges]
-travis-ci = { repository = "darfink/region-rs", branch = "master" }
-appveyor = { repository = "darfink/region-rs", branch = "master" }
