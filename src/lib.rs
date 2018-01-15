@@ -125,7 +125,7 @@ impl Region {
 /// ```
 pub fn query(address: *const u8) -> error::Result<Region> {
     if address.is_null() {
-        bail!(error::Error::Null);
+        Err(error::Error::Null)?;
     }
 
     // The address must be aligned to the closest page boundary
@@ -200,7 +200,7 @@ pub unsafe fn protect(address: *const u8,
                       protection: Protection)
                       -> error::Result<()> {
     if address.is_null() {
-        bail!(error::Error::Null);
+        Err(error::Error::Null)?;
     }
 
     // Ignore the preservation of previous protection flags
