@@ -20,7 +20,7 @@ Add this to your `Cargo.toml`:
 
 ```toml
 [dependencies]
-region = "0.0.9"
+region = "0.1.0"
 ```
 
 and this to your crate root:

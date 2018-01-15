@@ -8,7 +8,7 @@ license = "MIT"
 name = "region"
 readme = "README.md"
 repository = "https://github.com/darfink/region-rs"
-version = "0.0.9"
+version = "0.1.0"
 
 [badges]
 
