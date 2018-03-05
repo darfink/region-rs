@@ -39,4 +39,4 @@ mach = "0.1.0"
 [target."cfg(windows)"]
 
 [target."cfg(windows)".dependencies]
-winapi = { version = "0.3", features = ["sysinfoapi", "memoryapi"] }
+winapi = { version = "0.3", features = ["basetsd", "minwindef", "sysinfoapi", "memoryapi", "winnt"] }
