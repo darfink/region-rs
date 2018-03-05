@@ -1,5 +1,4 @@
 extern crate winapi;
-extern crate kernel32;
 
 use error::*;
 use Protection;
@@ -33,7 +32,7 @@ fn convert_from_native(protection: winapi::DWORD) -> Protection {
 }
 
 pub fn page_size() -> usize {
-    use self::kernel32::GetSystemInfo;
+    use self::winapi::sysinfoapi::GetSystemInfo;
     use self::winapi::SYSTEM_INFO;
 
     unsafe {
@@ -45,7 +44,7 @@ pub fn page_size() -> usize {
 }
 
 pub fn get_region(base: *const u8) -> Result<Region> {
-    use self::kernel32::VirtualQuery;
+    use self::winapi::memoryapi::VirtualQuery;
 
     let mut info: winapi::MEMORY_BASIC_INFORMATION = unsafe { ::std::mem::zeroed() };
     let bytes = unsafe {
@@ -77,7 +76,7 @@ pub fn get_region(base: *const u8) -> Result<Region> {
 }
 
 pub fn set_protection(base: *const u8, size: usize, protection: Protection) -> Result<()> {
-    use self::kernel32::VirtualProtect;
+    use self::winapi::memoryapi::VirtualProtect;
 
     let mut prev_flags = 0;
     let result = unsafe {
@@ -95,7 +94,7 @@ pub fn set_protection(base: *const u8, size: usize, protection: Protection) -> R
 }
 
 pub fn lock(base: *const u8, size: usize) -> Result<()> {
-    use self::kernel32::VirtualLock;
+    use self::winapi::memoryapi::VirtualLock;
     let result = unsafe { VirtualLock(base as winapi::PVOID, size as winapi::SIZE_T) };
 
     if result == winapi::FALSE {
@@ -106,7 +105,7 @@ pub fn lock(base: *const u8, size: usize) -> Result<()> {
 }
 
 pub fn unlock(base: *const u8, size: usize) -> Result<()> {
-    use self::kernel32::VirtualUnlock;
+    use self::winapi::memoryapi::VirtualUnlock;
     let result = unsafe { VirtualUnlock(base as winapi::PVOID, size as winapi::SIZE_T) };
 
     if result == winapi::FALSE {

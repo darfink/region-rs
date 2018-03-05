@@ -151,11 +151,11 @@ impl View {
     ///
     /// If an access value besides `Access::Type` is used, it may result in
     /// multiple OS calls depending on the number of pages.
-    pub unsafe fn set_prot(&mut self, access: Access) -> Result<()> {
-        match access {
+    pub unsafe fn set_prot<A: Into<Access>>(&mut self, access: A) -> Result<()> {
+        match access.into() {
             Access::Type(protection) => {
                 // Alter the protection of the whole view at once
-                protect(self.ptr(), self.len(), protection)?;
+                protect(self.as_ptr(), self.len(), protection)?;
 
                 for meta in &mut self.regions {
                     // Update the current and previous protection flags
@@ -191,7 +191,7 @@ impl View {
             prot: Protection,
             callback: T)
             -> Result<Ret> {
-        self.set_prot(prot.into())?;
+        self.set_prot(prot)?;
         let result = callback();
         self.set_prot(Access::Previous)?;
         Ok(result)
@@ -202,16 +202,16 @@ impl View {
     /// The view itself does not do any bookkeeping related to whether the pages
     /// are locked or not (since the state can change from outside the library).
     pub fn lock(&mut self) -> Result<::LockGuard> {
-        lock(self.ptr(), self.len())
+        lock(self.as_ptr(), self.len())
     }
 
     /// Returns the view's base address.
-    pub fn ptr(&self) -> *const u8 {
+    pub fn as_ptr(&self) -> *const u8 {
         self.regions.first().unwrap().region.base
     }
 
     /// Returns the view's base address as mutable
-    pub fn mut_ptr(&mut self) -> *mut u8 {
+    pub fn as_mut_ptr(&mut self) -> *mut u8 {
         self.regions.first().unwrap().region.base as *mut _
     }
 
@@ -248,15 +248,15 @@ mod tests {
         let map = alloc_pages(&[Protection::Read, Protection::Read, Protection::Read]);
 
         // Ensure that only one page is in the view
-        let base = unsafe { map.ptr().offset(pz as isize) };
+        let base = unsafe { map.as_ptr().offset(pz as isize) };
         let view = View::new(base, pz).unwrap();
-        assert_eq!(view.ptr(), base);
+        assert_eq!(view.as_ptr(), base);
         assert_eq!(view.len(), pz);
 
         // Ensure that two pages are in the view (when straddling on page boundary)
-        let base = unsafe { map.ptr().offset(pz as isize - 1) };
+        let base = unsafe { map.as_ptr().offset(pz as isize - 1) };
         let view = View::new(base, 2).unwrap();
-        assert_eq!(view.ptr(), map.ptr());
+        assert_eq!(view.as_ptr(), map.as_ptr());
         assert_eq!(view.len(), pz * 2);
     }
 
@@ -265,17 +265,17 @@ mod tests {
         let pz = page::page_size();
         let mut map = alloc_pages(&[Protection::Read]);
 
-        let mut view = View::new(map.ptr(), pz).unwrap();
+        let mut view = View::new(map.as_ptr(), pz).unwrap();
         unsafe {
             let val = view.exec_with_prot(Protection::ReadWrite, || {
-                *map.mut_ptr() = 0x10;
+                *map.as_mut_ptr() = 0x10;
                 1337
             }).unwrap();
             assert_eq!(val, 1337);
         }
 
         // Ensure that the protection returned to its previous state
-        let region = ::query(view.ptr()).unwrap();
+        let region = ::query(view.as_ptr()).unwrap();
         assert_eq!(region.protection, Protection::Read);
     }
 
@@ -284,13 +284,13 @@ mod tests {
         let pz = page::page_size();
         let map = alloc_pages(&[Protection::Read]);
 
-        let mut view = View::new(map.ptr(), pz).unwrap();
+        let mut view = View::new(map.as_ptr(), pz).unwrap();
         unsafe {
-            view.set_prot(Protection::ReadWrite.into()).unwrap();
+            view.set_prot(Protection::ReadWrite).unwrap();
             view.set_prot(Access::Previous).unwrap();
         }
 
-        let region = ::query(view.ptr()).unwrap();
+        let region = ::query(view.as_ptr()).unwrap();
         assert_eq!(region.protection, Protection::Read);
     }
 
@@ -299,14 +299,14 @@ mod tests {
         let pz = page::page_size();
         let map = alloc_pages(&[Protection::Read]);
 
-        let mut view = View::new(map.ptr(), pz).unwrap();
+        let mut view = View::new(map.as_ptr(), pz).unwrap();
         unsafe {
-            view.set_prot(Protection::ReadWrite.into()).unwrap();
-            view.set_prot(Protection::ReadWriteExecute.into()).unwrap();
+            view.set_prot(Protection::ReadWrite).unwrap();
+            view.set_prot(Protection::ReadWriteExecute).unwrap();
             view.set_prot(Access::Initial).unwrap();
         }
 
-        let region = ::query(view.ptr()).unwrap();
+        let region = ::query(view.as_ptr()).unwrap();
         assert_eq!(region.protection, Protection::Read);
     }
 
@@ -315,11 +315,11 @@ mod tests {
         let pz = page::page_size();
         let map = alloc_pages(&[Protection::Read, Protection::ReadWrite]);
 
-        let mut view = View::new(map.ptr(), pz * 2).unwrap();
+        let mut view = View::new(map.as_ptr(), pz * 2).unwrap();
         assert_eq!(view.len(), pz * 2);
         assert_eq!(view.get_prot(), None);
 
-        unsafe { view.set_prot(Protection::Read.into()).unwrap() };
+        unsafe { view.set_prot(Protection::Read).unwrap() };
         assert_eq!(view.get_prot(), Some(Protection::Read));
     }
 }

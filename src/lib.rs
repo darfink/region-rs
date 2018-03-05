@@ -38,7 +38,7 @@
 //!   let mut view = View::new(data.as_ptr(), data.len()).unwrap();
 //!
 //!   // Change memory protection to Read | Write | Execute
-//!   unsafe { view.set_prot(Protection::ReadWriteExecute.into()).unwrap() };
+//!   unsafe { view.set_prot(Protection::ReadWriteExecute).unwrap() };
 //!   assert_eq!(view.get_prot(), Some(Protection::ReadWriteExecute));
 //!
 //!   // Restore to the previous memory protection
@@ -213,13 +213,13 @@ pub unsafe fn protect(address: *const u8,
 mod tests {
     extern crate memmap;
 
-    use self::memmap::Mmap;
+    use self::memmap::MmapMut;
     use super::*;
 
-    pub fn alloc_pages(prots: &[Protection]) -> Mmap {
+    pub fn alloc_pages(prots: &[Protection]) -> MmapMut {
         let pz = page::page_size();
-        let map = Mmap::anonymous(pz * prots.len(), memmap::Protection::Read).unwrap();
-        let mut base = map.ptr();
+        let map = MmapMut::map_anon(pz * prots.len()).unwrap();
+        let mut base = map.as_ptr();
 
         for protection in prots {
             unsafe {
@@ -251,11 +251,11 @@ mod tests {
     fn query_alloc() {
         let size = page::page_size() * 2;
         let mut map = alloc_pages(&[Protection::ReadExecute, Protection::ReadExecute]);
-        let region = query(map.ptr()).unwrap();
+        let region = query(map.as_ptr()).unwrap();
 
         assert_eq!(region.guarded, false);
         assert_eq!(region.protection, Protection::ReadExecute);
-        assert!(!region.base.is_null() && region.base <= map.mut_ptr());
+        assert!(!region.base.is_null() && region.base <= map.as_mut_ptr());
         assert!(region.size >= size);
     }
 
@@ -272,7 +272,7 @@ mod tests {
         let map = alloc_pages(&prots);
 
         // Query an area that overlaps both pages
-        let address = unsafe { map.ptr().offset(pz as isize - 1) };
+        let address = unsafe { map.as_ptr().offset(pz as isize - 1) };
         let result = query_range(address, 2).unwrap();
 
         assert_eq!(result.len(), prots.len());
@@ -290,12 +290,12 @@ mod tests {
         let map = alloc_pages(&prots);
 
         // Confirm only one page is retrieved
-        let result = query_range(map.ptr(), pz).unwrap();
+        let result = query_range(map.as_ptr(), pz).unwrap();
         assert_eq!(result.len(), 1);
         assert_eq!(result[0].protection, prots[0]);
 
         // Retrieve all allocated pages
-        let result = query_range(map.ptr(), pz * prots.len()).unwrap();
+        let result = query_range(map.as_ptr(), pz * prots.len()).unwrap();
         assert_eq!(result.len(), prots.len());
         assert_eq!(result[1].size, pz);
         for i in 0..prots.len() {
@@ -321,8 +321,8 @@ mod tests {
     fn protect_alloc() {
         let mut map = alloc_pages(&[Protection::Read]);
         unsafe {
-            protect(map.ptr(), page::page_size(), Protection::ReadWrite).unwrap();
-            *map.mut_ptr() = 0x1;
+            protect(map.as_ptr(), page::page_size(), Protection::ReadWrite).unwrap();
+            *map.as_mut_ptr() = 0x1;
         }
     }
 
@@ -338,7 +338,7 @@ mod tests {
                      Protection::Read];
 
         let map = alloc_pages(&prots);
-        let base_exec = unsafe { map.ptr().offset(pz as isize) };
+        let base_exec = unsafe { map.as_ptr().offset(pz as isize) };
         let straddle = unsafe { base_exec.offset(pz as isize - 1) };
 
         // Change the protection over two page boundaries

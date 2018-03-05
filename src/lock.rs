@@ -76,7 +76,7 @@ mod tests {
     #[test]
     fn lock_page() {
         let map = alloc_pages(&[Protection::ReadWrite]);
-        let _guard = lock(map.ptr(), page_size()).unwrap();
+        let _guard = lock(map.as_ptr(), page_size()).unwrap();
     }
 
     #[test]
@@ -84,8 +84,8 @@ mod tests {
         let map = alloc_pages(&[Protection::ReadWrite]);
 
         unsafe {
-            lock(map.ptr(), page_size()).unwrap().release();
-            unlock(map.ptr(), page_size()).unwrap();
+            lock(map.as_ptr(), page_size()).unwrap().release();
+            unlock(map.as_ptr(), page_size()).unwrap();
         }
     }
 
