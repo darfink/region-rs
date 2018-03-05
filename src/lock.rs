@@ -18,8 +18,8 @@ use {os, page};
 /// let _guard = region::lock(data.as_ptr(), data.len()).unwrap();
 /// ```
 pub fn lock(address: *const u8, size: usize) -> Result<LockGuard> {
-    os::lock(page::page_floor(address as usize) as *const u8,
-             page::page_size_from_range(address, size))?;
+    os::lock(page::floor(address as usize) as *const u8,
+             page::size_from_range(address, size))?;
     Ok(LockGuard::new(address, size))
 }
 
@@ -34,8 +34,8 @@ pub fn lock(address: *const u8, size: usize) -> Result<LockGuard> {
 /// - The size is rounded up to the closest page boundary, relative to the
 ///   address.
 pub unsafe fn unlock(address: *const u8, size: usize) -> Result<()> {
-    os::unlock(page::page_floor(address as usize) as *const u8,
-               page::page_size_from_range(address, size))
+    os::unlock(page::floor(address as usize) as *const u8,
+               page::size_from_range(address, size))
 }
 
 /// An RAII implementation of a "scoped lock". When this structure is dropped

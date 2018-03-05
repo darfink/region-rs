@@ -37,7 +37,7 @@ extern crate region;
 let ret5 = [0xB8, 0x05, 0x00, 0x00, 0x00, 0xC3];
 
 // Page size
-let pz = region::page::page_size();
+let pz = region::page::size();
 
 // VirtualQuery | '/proc/self/maps'
 let q  = region::query(ret5.as_ptr())?;

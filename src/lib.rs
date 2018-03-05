@@ -129,7 +129,7 @@ pub fn query(address: *const u8) -> error::Result<Region> {
     }
 
     // The address must be aligned to the closest page boundary
-    os::get_region(page::page_floor(address as usize) as *const u8)
+    os::get_region(page::floor(address as usize) as *const u8)
 }
 
 /// Queries the OS with a range, returning the regions it contains.
@@ -152,7 +152,7 @@ pub fn query(address: *const u8) -> error::Result<Region> {
 /// ```
 pub fn query_range(address: *const u8, size: usize) -> error::Result<Vec<Region>> {
     let mut result = Vec::new();
-    let mut base = page::page_floor(address as usize);
+    let mut base = page::floor(address as usize);
     let limit = address as usize + size;
 
     loop {
@@ -204,8 +204,8 @@ pub unsafe fn protect(address: *const u8,
     }
 
     // Ignore the preservation of previous protection flags
-    os::set_protection(page::page_floor(address as usize) as *const u8,
-                       page::page_size_from_range(address, size),
+    os::set_protection(page::floor(address as usize) as *const u8,
+                       page::size_from_range(address, size),
                        protection)
 }
 
@@ -217,7 +217,7 @@ mod tests {
     use super::*;
 
     pub fn alloc_pages(prots: &[Protection]) -> MmapMut {
-        let pz = page::page_size();
+        let pz = page::size();
         let map = MmapMut::map_anon(pz * prots.len()).unwrap();
         let mut base = map.as_ptr();
 
@@ -249,7 +249,7 @@ mod tests {
 
     #[test]
     fn query_alloc() {
-        let size = page::page_size() * 2;
+        let size = page::size() * 2;
         let mut map = alloc_pages(&[Protection::ReadExecute, Protection::ReadExecute]);
         let region = query(map.as_ptr()).unwrap();
 
@@ -267,7 +267,7 @@ mod tests {
 
     #[test]
     fn query_area_overlap() {
-        let pz = page::page_size();
+        let pz = page::size();
         let prots = [Protection::ReadExecute, Protection::ReadWrite];
         let map = alloc_pages(&prots);
 
@@ -283,7 +283,7 @@ mod tests {
 
     #[test]
     fn query_area_alloc() {
-        let pz = page::page_size();
+        let pz = page::size();
         let prots = [Protection::Read,
                      Protection::ReadWrite,
                      Protection::ReadExecute];
@@ -321,14 +321,14 @@ mod tests {
     fn protect_alloc() {
         let mut map = alloc_pages(&[Protection::Read]);
         unsafe {
-            protect(map.as_ptr(), page::page_size(), Protection::ReadWrite).unwrap();
+            protect(map.as_ptr(), page::size(), Protection::ReadWrite).unwrap();
             *map.as_mut_ptr() = 0x1;
         }
     }
 
     #[test]
     fn protect_overlap() {
-        let pz = page::page_size();
+        let pz = page::size();
 
         // Create a page boundary with different protection flags in the
         // upper and lower span, so the intermediate page sizes are fixed.

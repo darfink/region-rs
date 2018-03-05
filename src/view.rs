@@ -100,8 +100,8 @@ impl View {
     pub fn new(address: *const u8, size: usize) -> Result<Self> {
         let mut regions = query_range(address, size)?;
 
-        let lower = page::page_floor(address as usize);
-        let upper = page::page_ceil(address as usize + size);
+        let lower = page::floor(address as usize);
+        let upper = page::ceil(address as usize + size);
 
         if let Some(ref mut region) = regions.first_mut() {
             // Offset the lower region to the smallest page boundary
@@ -244,7 +244,7 @@ mod tests {
 
     #[test]
     fn view_check_size() {
-        let pz = page::page_size();
+        let pz = page::size();
         let map = alloc_pages(&[Protection::Read, Protection::Read, Protection::Read]);
 
         // Ensure that only one page is in the view
@@ -262,7 +262,7 @@ mod tests {
 
     #[test]
     fn view_exec_prot() {
-        let pz = page::page_size();
+        let pz = page::size();
         let mut map = alloc_pages(&[Protection::Read]);
 
         let mut view = View::new(map.as_ptr(), pz).unwrap();
@@ -281,7 +281,7 @@ mod tests {
 
     #[test]
     fn view_prot_prev() {
-        let pz = page::page_size();
+        let pz = page::size();
         let map = alloc_pages(&[Protection::Read]);
 
         let mut view = View::new(map.as_ptr(), pz).unwrap();
@@ -296,7 +296,7 @@ mod tests {
 
     #[test]
     fn view_prot_initial() {
-        let pz = page::page_size();
+        let pz = page::size();
         let map = alloc_pages(&[Protection::Read]);
 
         let mut view = View::new(map.as_ptr(), pz).unwrap();
@@ -312,7 +312,7 @@ mod tests {
 
     #[test]
     fn view_get_prot() {
-        let pz = page::page_size();
+        let pz = page::size();
         let map = alloc_pages(&[Protection::Read, Protection::ReadWrite]);
 
         let mut view = View::new(map.as_ptr(), pz * 2).unwrap();
