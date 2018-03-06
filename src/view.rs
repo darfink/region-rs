@@ -135,7 +135,7 @@ impl View {
         let prot = self.regions.iter()
             .fold(Protection::None, |prot, meta| prot | meta.region.protection);
 
-        if prot == self.regions.first().unwrap().region.protection {
+        if self.regions.iter().all(|meta| meta.region.protection == prot) {
             Some(prot)
         } else {
             None
@@ -184,7 +184,7 @@ impl View {
     /// Executes a closure while temporarily changing protection state.
     ///
     /// This is a comfortable shorthand method, functionally equivalent to
-    /// calling `set_prot(prot.into())`, executing arbitrary code, followed by
+    /// calling `set_prot(protection)`, executing arbitrary code, followed by
     /// `set_prot(Access::Previous)`.
     pub unsafe fn exec_with_prot<Ret, T: FnOnce() -> Ret>(
             &mut self,
