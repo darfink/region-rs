@@ -36,13 +36,14 @@ impl From<Protection> for Access {
 
 /// A view aligned to page boundaries.
 ///
-/// This view is not aligned to regions, but uses the same granularity as the
-/// OSs page size. Therefore it is useful when changing protection, only
-/// affecting the pages within the view (instead of entire regions).
+/// This view is not aligned to regions, but uses the same granularity as the OSs
+/// page size. It bookmarks the initial and previous (when altered) memory access
+/// to all pages within the view. This allows easily restoring memory access for
+/// temporary modifications.
 ///
-/// Beyond this, it also preserves the previous and initial protection state of
-/// all pages within the view. This allows for easily changing states while,
-/// still being able to restore them at a later stage.
+/// In case the only need is to query or change memory, and the operations are
+/// independent of each other, prefer the `protect` and/or `query(_range)`
+/// functions.
 ///
 /// # Implementation
 ///

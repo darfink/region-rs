@@ -30,6 +30,25 @@
 //!
 //! # Examples
 //!
+//! - Cross-platform equivalents.
+//!
+//!   ```rust
+//!   let ret5 = [0xB8, 0x05, 0x00, 0x00, 0x00, 0xC3];
+//!
+//!   // Page size
+//!   let pz = region::page::size();
+//!
+//!   // VirtualQuery | '/proc/self/maps'
+//!   let q  = region::query(ret5.as_ptr())?;
+//!   let qr = region::query_range(ret5.as_ptr(), ret5.len())?;
+//!
+//!   // VirtualProtect | mprotect
+//!   region::protect(ret5.as_ptr(), ret5.len(), Protection::ReadWriteExecute)?;
+//!
+//!   // VirtualLock | mlock
+//!   let guard = region::lock(ret5.as_ptr(), ret5.len())?;
+//!   ```
+//!
 //! - Using `View` to retrieve and change the state of memory pages.
 //!
 //!   ```rust
@@ -168,18 +187,18 @@ pub fn query_range(address: *const u8, size: usize) -> error::Result<Vec<Region>
     Ok(result)
 }
 
-/// Changes the memory protection of one or more regions.
+/// Changes the memory protection of one or more pages.
 ///
-/// The address range may overlap one or more regions, and if so, all regions
+/// The address range may overlap one or more pages, and if so, all pages
 /// within the range will be modified. The previous protection flags are not
 /// preserved (to reset protection flags to their inital values, `query_range`
-/// can be used prior to this call).
+/// can be used prior to this call, or by using a `View`).
 ///
 /// If the size is zero this will affect the whole page located at the address
 ///
 /// - The range is `[address, address + size)`
-/// - The address is rounded down to the closest page boundary.
 /// - The address may not be null.
+/// - The address is rounded down to the closest page boundary.
 /// - The size is rounded up to the closest page boundary, relative to the
 ///   address.
 ///
