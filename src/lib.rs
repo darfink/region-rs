@@ -33,6 +33,8 @@
 //! - Cross-platform equivalents.
 //!
 //!   ```rust
+//!   # unsafe fn example() -> region::Result<()> {
+//!   # use region::Protection;
 //!   let ret5 = [0xB8, 0x05, 0x00, 0x00, 0x00, 0xC3];
 //!
 //!   // Page size
@@ -47,6 +49,8 @@
 //!
 //!   // VirtualLock | mlock
 //!   let guard = region::lock(ret5.as_ptr(), ret5.len())?;
+//!   # Ok(())
+//!   # }
 //!   ```
 //!
 //! - Using `View` to retrieve and change the state of memory pages.
