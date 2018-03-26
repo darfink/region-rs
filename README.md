@@ -72,9 +72,9 @@ assert_eq!(view.get_prot(), Some(Protection::Read));
 This library has (so far) support for `Windows`, `Linux` & `macOS`.
 
 <!-- Links -->
-[travis-shield]: https://img.shields.io/travis/darfink/region-rs.svg?style=flat-square
+[travis-shield]: https://img.shields.io/travis/darfink/region-rs.svg?style=flat-square&label=travis
 [travis]: https://travis-ci.org/darfink/region-rs
-[appveyor-shield]: https://img.shields.io/appveyor/ci/darfink/region-rs/master.svg?style=flat-square
+[appveyor-shield]: https://img.shields.io/appveyor/ci/darfink/region-rs/master.svg?style=flat-square&label=appveyor
 [appveyor]: https://ci.appveyor.com/project/darfink/region-rs
 [crate-shield]: https://img.shields.io/crates/v/region.svg?style=flat-square
 [crate]: https://crates.io/crates/region
