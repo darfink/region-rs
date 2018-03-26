@@ -3,19 +3,18 @@ use Protection;
 
 use libc::{PROT_NONE, PROT_READ, PROT_WRITE, PROT_EXEC};
 
-fn convert_to_native(protection: Protection) -> ::libc::c_int {
+fn prot_to_native(protection: Protection) -> ::libc::c_int {
     let mut result = PROT_NONE;
+    let prots = [
+        (Protection::Read, PROT_READ),
+        (Protection::Write, PROT_WRITE),
+        (Protection::Execute, PROT_EXEC)
+    ];
 
-    if protection.contains(Protection::Read) {
-        result |= PROT_READ;
-    }
-
-    if protection.contains(Protection::Write) {
-        result |= PROT_WRITE;
-    }
-
-    if protection.contains(Protection::Execute) {
-        result |= PROT_EXEC;
+    for &(prot, unix_flag) in &prots {
+        if protection.contains(prot) {
+            result |= unix_flag;
+        }
     }
 
     result
@@ -29,7 +28,7 @@ pub fn set_protection(base: *const u8, size: usize, protection: Protection) -> R
     let result = unsafe {
         ::libc::mprotect(base as *mut ::libc::c_void,
                          size,
-                         convert_to_native(protection))
+                         prot_to_native(protection))
     };
 
     match result {

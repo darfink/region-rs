@@ -4,7 +4,7 @@ use error::*;
 use Protection;
 use Region;
 
-fn convert_to_native(protection: Protection) -> winapi::shared::minwindef::DWORD {
+fn prot_to_native(protection: Protection) -> winapi::shared::minwindef::DWORD {
     match protection {
         Protection::Read => winapi::um::winnt::PAGE_READONLY,
         Protection::ReadWrite => winapi::um::winnt::PAGE_READWRITE,
@@ -14,7 +14,7 @@ fn convert_to_native(protection: Protection) -> winapi::shared::minwindef::DWORD
     }
 }
 
-fn convert_from_native(protection: winapi::shared::minwindef::DWORD) -> Protection {
+fn prot_from_native(protection: winapi::shared::minwindef::DWORD) -> Protection {
     // Ignore irrelevant flags
     let ignored =
         winapi::um::winnt::PAGE_GUARD |
@@ -61,7 +61,7 @@ pub fn get_region(base: *const u8) -> Result<Region> {
             winapi::um::winnt::MEM_FREE => Err(Error::Free)?,
             winapi::um::winnt::MEM_RESERVE => (Protection::None, false),
             winapi::um::winnt::MEM_COMMIT => {
-                (convert_from_native(info.Protect), (info.Protect & winapi::um::winnt::PAGE_GUARD) != 0)
+                (prot_from_native(info.Protect), (info.Protect & winapi::um::winnt::PAGE_GUARD) != 0)
             }
             _ => unreachable!("State: {}", info.State),
         };
@@ -85,7 +85,7 @@ pub fn set_protection(base: *const u8, size: usize, protection: Protection) -> R
     let result = unsafe {
         VirtualProtect(base as winapi::um::winnt::PVOID,
                        size as winapi::shared::basetsd::SIZE_T,
-                       convert_to_native(protection),
+                       prot_to_native(protection),
                        &mut prev_flags)
     };
 

@@ -6,7 +6,7 @@ use error::*;
 use Protection;
 use Region;
 
-fn convert_from_native(protection: vm_prot_t) -> Protection {
+fn prot_from_native(protection: vm_prot_t) -> Protection {
     let mut result = Protection::None;
 
     if (protection & VM_PROT_READ) == VM_PROT_READ {
@@ -62,7 +62,7 @@ pub fn get_region(base: *const u8) -> Result<Region> {
                 Ok(Region {
                     base: region_base as *const _,
                     guarded: (info.user_tag == mach::vm_statistics::VM_MEMORY_GUARD),
-                    protection: convert_from_native(info.protection),
+                    protection: prot_from_native(info.protection),
                     shared: SHARE_MODES.contains(&info.share_mode),
                     size: region_size as usize,
                 })
