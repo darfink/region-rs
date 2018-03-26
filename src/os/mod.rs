@@ -2,24 +2,13 @@
 mod windows;
 
 #[cfg(windows)]
-pub use self::windows::{
-    page_size,
-    get_region,
-    set_protection,
-    unlock,
-    lock,
-};
+pub use self::windows::{get_region, lock, page_size, set_protection, unlock};
 
 #[cfg(unix)]
 mod unix;
 
 #[cfg(unix)]
-pub use self::unix::{
-    page_size,
-    set_protection,
-    unlock,
-    lock,
-};
+pub use self::unix::{lock, page_size, set_protection, unlock};
 
 #[cfg(target_os = "macos")]
 mod macos;

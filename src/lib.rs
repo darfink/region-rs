@@ -76,8 +76,10 @@
 //!   let _guard = view.lock().unwrap();
 //!   ```
 
-#[macro_use] extern crate bitflags;
-#[macro_use] extern crate failure;
+#[macro_use]
+extern crate bitflags;
+#[macro_use]
+extern crate failure;
 extern crate errno;
 extern crate libc;
 
@@ -86,10 +88,10 @@ pub use lock::*;
 pub use protection::Protection;
 pub use view::*;
 
-pub mod page;
 mod error;
 mod lock;
 mod os;
+pub mod page;
 mod protection;
 mod view;
 
@@ -99,28 +101,28 @@ mod view;
 /// stores region information.
 #[derive(Debug, Clone, Copy)]
 pub struct Region {
-    /// Base address of the region
-    pub base: *const u8,
-    /// Whether the region is guarded or not
-    pub guarded: bool,
-    /// Protection of the region
-    pub protection: Protection,
-    /// Whether the region is shared or not
-    pub shared: bool,
-    /// Size of the region (multiple of page size)
-    pub size: usize,
+  /// Base address of the region
+  pub base: *const u8,
+  /// Whether the region is guarded or not
+  pub guarded: bool,
+  /// Protection of the region
+  pub protection: Protection,
+  /// Whether the region is shared or not
+  pub shared: bool,
+  /// Size of the region (multiple of page size)
+  pub size: usize,
 }
 
 impl Region {
-    /// Returns the region's lower bound.
-    pub fn lower(&self) -> usize {
-        self.base as usize
-    }
+  /// Returns the region's lower bound.
+  pub fn lower(&self) -> usize {
+    self.base as usize
+  }
 
-    /// Returns the region's upper bound.
-    pub fn upper(&self) -> usize {
-        self.lower() + self.size
-    }
+  /// Returns the region's upper bound.
+  pub fn upper(&self) -> usize {
+    self.lower() + self.size
+  }
 }
 
 /// Queries the OS with an address, returning the region it resides within.
@@ -143,12 +145,12 @@ impl Region {
 /// assert_eq!(region.protection, Protection::ReadWrite);
 /// ```
 pub fn query(address: *const u8) -> error::Result<Region> {
-    if address.is_null() {
-        Err(error::Error::Null)?;
-    }
+  if address.is_null() {
+    Err(error::Error::Null)?;
+  }
 
-    // The address must be aligned to the closest page boundary
-    os::get_region(page::floor(address as usize) as *const u8)
+  // The address must be aligned to the closest page boundary
+  os::get_region(page::floor(address as usize) as *const u8)
 }
 
 /// Queries the OS with a range, returning the regions it contains.
@@ -170,21 +172,21 @@ pub fn query(address: *const u8) -> error::Result<Region> {
 /// assert!(region.len() > 0);
 /// ```
 pub fn query_range(address: *const u8, size: usize) -> error::Result<Vec<Region>> {
-    let mut result = Vec::new();
-    let mut base = page::floor(address as usize);
-    let limit = address as usize + size;
+  let mut result = Vec::new();
+  let mut base = page::floor(address as usize);
+  let limit = address as usize + size;
 
-    loop {
-        let region = query(base as *const u8)?;
-        result.push(region);
-        base = region.upper();
+  loop {
+    let region = query(base as *const u8)?;
+    result.push(region);
+    base = region.upper();
 
-        if limit <= region.upper() {
-            break;
-        }
+    if limit <= region.upper() {
+      break;
     }
+  }
 
-    Ok(result)
+  Ok(result)
 }
 
 /// Changes the memory protection of one or more pages.
@@ -209,164 +211,171 @@ pub fn query_range(address: *const u8, size: usize) -> error::Result<Vec<Region>
 ///
 /// let ret5 = [0xB8, 0x05, 0x00, 0x00, 0x00, 0xC3];
 /// let x: extern "C" fn() -> i32 = unsafe {
-///   region::protect(ret5.as_ptr(), ret5.len(), Protection::ReadWriteExecute).unwrap();
-///   std::mem::transmute(ret5.as_ptr())
+/// region::protect(ret5.as_ptr(), ret5.len(),
+/// Protection::ReadWriteExecute).unwrap();   std::mem::transmute(ret5.as_ptr())
 /// };
 /// assert_eq!(x(), 5);
 /// ```
-pub unsafe fn protect(address: *const u8,
-                      size: usize,
-                      protection: Protection)
-                      -> error::Result<()> {
-    if address.is_null() {
-        Err(error::Error::Null)?;
-    }
+pub unsafe fn protect(
+  address: *const u8,
+  size: usize,
+  protection: Protection,
+) -> error::Result<()> {
+  if address.is_null() {
+    Err(error::Error::Null)?;
+  }
 
-    // Ignore the preservation of previous protection flags
-    os::set_protection(page::floor(address as usize) as *const u8,
-                       page::size_from_range(address, size),
-                       protection)
+  // Ignore the preservation of previous protection flags
+  os::set_protection(
+    page::floor(address as usize) as *const u8,
+    page::size_from_range(address, size),
+    protection,
+  )
 }
 
 #[cfg(test)]
 mod tests {
-    extern crate memmap;
+  extern crate memmap;
 
-    use self::memmap::MmapMut;
-    use super::*;
+  use self::memmap::MmapMut;
+  use super::*;
 
-    pub fn alloc_pages(prots: &[Protection]) -> MmapMut {
-        let pz = page::size();
-        let map = MmapMut::map_anon(pz * prots.len()).unwrap();
-        let mut base = map.as_ptr();
+  pub fn alloc_pages(prots: &[Protection]) -> MmapMut {
+    let pz = page::size();
+    let map = MmapMut::map_anon(pz * prots.len()).unwrap();
+    let mut base = map.as_ptr();
 
-        for protection in prots {
-            unsafe {
-                protect(base, pz, *protection).unwrap();
-                base = base.offset(pz as isize);
-            }
-        }
-
-        map
+    for protection in prots {
+      unsafe {
+        protect(base, pz, *protection).unwrap();
+        base = base.offset(pz as isize);
+      }
     }
 
-    #[test]
-    fn query_null() {
-        assert!(query(::std::ptr::null()).is_err());
+    map
+  }
+
+  #[test]
+  fn query_null() {
+    assert!(query(::std::ptr::null()).is_err());
+  }
+
+  #[test]
+  #[cfg(unix)]
+  fn query_code() {
+    // TODO: Find out why this fails on Windows
+    let region = query(&query_code as *const _ as *const u8).unwrap();
+
+    assert_eq!(region.guarded, false);
+    assert_eq!(region.protection, Protection::ReadExecute);
+    assert_eq!(region.shared, false);
+  }
+
+  #[test]
+  fn query_alloc() {
+    let size = page::size() * 2;
+    let mut map = alloc_pages(&[Protection::ReadExecute, Protection::ReadExecute]);
+    let region = query(map.as_ptr()).unwrap();
+
+    assert_eq!(region.guarded, false);
+    assert_eq!(region.protection, Protection::ReadExecute);
+    assert!(!region.base.is_null() && region.base <= map.as_mut_ptr());
+    assert!(region.size >= size);
+  }
+
+  #[test]
+  fn query_area_zero() {
+    let region = query_range(&query_area_zero as *const _ as *const u8, 0).unwrap();
+    assert_eq!(region.len(), 1);
+  }
+
+  #[test]
+  fn query_area_overlap() {
+    let pz = page::size();
+    let prots = [Protection::ReadExecute, Protection::ReadWrite];
+    let map = alloc_pages(&prots);
+
+    // Query an area that overlaps both pages
+    let address = unsafe { map.as_ptr().offset(pz as isize - 1) };
+    let result = query_range(address, 2).unwrap();
+
+    assert_eq!(result.len(), prots.len());
+    for i in 0..prots.len() {
+      assert_eq!(result[i].protection, prots[i]);
     }
+  }
 
-    #[test]
-    #[cfg(unix)]
-    fn query_code() {
-        // TODO: Find out why this fails on Windows
-        let region = query(&query_code as *const _ as *const u8).unwrap();
+  #[test]
+  fn query_area_alloc() {
+    let pz = page::size();
+    let prots = [
+      Protection::Read,
+      Protection::ReadWrite,
+      Protection::ReadExecute,
+    ];
+    let map = alloc_pages(&prots);
 
-        assert_eq!(region.guarded, false);
-        assert_eq!(region.protection, Protection::ReadExecute);
-        assert_eq!(region.shared, false);
+    // Confirm only one page is retrieved
+    let result = query_range(map.as_ptr(), pz).unwrap();
+    assert_eq!(result.len(), 1);
+    assert_eq!(result[0].protection, prots[0]);
+
+    // Retrieve all allocated pages
+    let result = query_range(map.as_ptr(), pz * prots.len()).unwrap();
+    assert_eq!(result.len(), prots.len());
+    assert_eq!(result[1].size, pz);
+    for i in 0..prots.len() {
+      assert_eq!(result[i].protection, prots[i]);
     }
+  }
 
-    #[test]
-    fn query_alloc() {
-        let size = page::size() * 2;
-        let mut map = alloc_pages(&[Protection::ReadExecute, Protection::ReadExecute]);
-        let region = query(map.as_ptr()).unwrap();
+  #[test]
+  fn protect_null() {
+    assert!(unsafe { protect(::std::ptr::null(), 0, Protection::None) }.is_err());
+  }
 
-        assert_eq!(region.guarded, false);
-        assert_eq!(region.protection, Protection::ReadExecute);
-        assert!(!region.base.is_null() && region.base <= map.as_mut_ptr());
-        assert!(region.size >= size);
+  #[test]
+  fn protect_code() {
+    let address = &mut protect_code as *mut _ as *mut u8;
+    unsafe {
+      protect(address, 0x10, Protection::ReadWriteExecute).unwrap();
+      *address = 0x90;
     }
+  }
 
-    #[test]
-    fn query_area_zero() {
-        let region = query_range(&query_area_zero as *const _ as *const u8, 0).unwrap();
-        assert_eq!(region.len(), 1);
+  #[test]
+  fn protect_alloc() {
+    let mut map = alloc_pages(&[Protection::Read]);
+    unsafe {
+      protect(map.as_ptr(), page::size(), Protection::ReadWrite).unwrap();
+      *map.as_mut_ptr() = 0x1;
     }
+  }
 
-    #[test]
-    fn query_area_overlap() {
-        let pz = page::size();
-        let prots = [Protection::ReadExecute, Protection::ReadWrite];
-        let map = alloc_pages(&prots);
+  #[test]
+  fn protect_overlap() {
+    let pz = page::size();
 
-        // Query an area that overlaps both pages
-        let address = unsafe { map.as_ptr().offset(pz as isize - 1) };
-        let result = query_range(address, 2).unwrap();
+    // Create a page boundary with different protection flags in the
+    // upper and lower span, so the intermediate page sizes are fixed.
+    let prots = [
+      Protection::Read,
+      Protection::ReadExecute,
+      Protection::ReadWrite,
+      Protection::Read,
+    ];
 
-        assert_eq!(result.len(), prots.len());
-        for i in 0..prots.len() {
-            assert_eq!(result[i].protection, prots[i]);
-        }
-    }
+    let map = alloc_pages(&prots);
+    let base_exec = unsafe { map.as_ptr().offset(pz as isize) };
+    let straddle = unsafe { base_exec.offset(pz as isize - 1) };
 
-    #[test]
-    fn query_area_alloc() {
-        let pz = page::size();
-        let prots = [Protection::Read,
-                     Protection::ReadWrite,
-                     Protection::ReadExecute];
-        let map = alloc_pages(&prots);
+    // Change the protection over two page boundaries
+    unsafe { protect(straddle, 2, Protection::ReadWriteExecute).unwrap() };
 
-        // Confirm only one page is retrieved
-        let result = query_range(map.as_ptr(), pz).unwrap();
-        assert_eq!(result.len(), 1);
-        assert_eq!(result[0].protection, prots[0]);
-
-        // Retrieve all allocated pages
-        let result = query_range(map.as_ptr(), pz * prots.len()).unwrap();
-        assert_eq!(result.len(), prots.len());
-        assert_eq!(result[1].size, pz);
-        for i in 0..prots.len() {
-            assert_eq!(result[i].protection, prots[i]);
-        }
-    }
-
-    #[test]
-    fn protect_null() {
-        assert!(unsafe { protect(::std::ptr::null(), 0, Protection::None) }.is_err());
-    }
-
-    #[test]
-    fn protect_code() {
-        let address = &mut protect_code as *mut _ as *mut u8;
-        unsafe {
-            protect(address, 0x10, Protection::ReadWriteExecute).unwrap();
-            *address = 0x90;
-        }
-    }
-
-    #[test]
-    fn protect_alloc() {
-        let mut map = alloc_pages(&[Protection::Read]);
-        unsafe {
-            protect(map.as_ptr(), page::size(), Protection::ReadWrite).unwrap();
-            *map.as_mut_ptr() = 0x1;
-        }
-    }
-
-    #[test]
-    fn protect_overlap() {
-        let pz = page::size();
-
-        // Create a page boundary with different protection flags in the
-        // upper and lower span, so the intermediate page sizes are fixed.
-        let prots = [Protection::Read,
-                     Protection::ReadExecute,
-                     Protection::ReadWrite,
-                     Protection::Read];
-
-        let map = alloc_pages(&prots);
-        let base_exec = unsafe { map.as_ptr().offset(pz as isize) };
-        let straddle = unsafe { base_exec.offset(pz as isize - 1) };
-
-        // Change the protection over two page boundaries
-        unsafe { protect(straddle, 2, Protection::ReadWriteExecute).unwrap() };
-
-        // Ensure that the pages have merged into one region
-        let result = query_range(base_exec, pz * 2).unwrap();
-        assert_eq!(result.len(), 1);
-        assert_eq!(result[0].protection, Protection::ReadWriteExecute);
-        assert_eq!(result[0].size, pz * 2);
-    }
+    // Ensure that the pages have merged into one region
+    let result = query_range(base_exec, pz * 2).unwrap();
+    assert_eq!(result.len(), 1);
+    assert_eq!(result[0].protection, Protection::ReadWriteExecute);
+    assert_eq!(result[0].size, pz * 2);
+  }
 }
