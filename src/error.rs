@@ -1,9 +1,7 @@
 //! Error types and utilities.
 
-use failure;
-
 /// The result type used by this library.
-pub type Result<T> = ::std::result::Result<T, failure::Error>;
+pub type Result<T> = ::std::result::Result<T, Error>;
 
 /// A collection of possible errors.
 #[derive(Debug, Fail)]
