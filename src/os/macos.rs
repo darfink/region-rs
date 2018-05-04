@@ -61,7 +61,7 @@ pub fn get_region(base: *const u8) -> Result<Region> {
       // there is not a region allocated, it will return the closest one
       // instead. In that case, the memory is not committed.
       if region_base > base as mach::vm_types::mach_vm_address_t {
-        Err(Error::Free.into())
+        Err(Error::Free)
       } else {
         Ok(Region {
           base: region_base as *const _,
@@ -72,6 +72,6 @@ pub fn get_region(base: *const u8) -> Result<Region> {
         })
       }
     },
-    _ => Err(Error::MachRegion(result).into()),
+    _ => Err(Error::MachRegion(result)),
   }
 }

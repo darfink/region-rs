@@ -75,7 +75,7 @@ pub fn get_region(base: *const u8) -> Result<Region> {
       guarded,
     })
   } else {
-    Err(Error::SystemCall(::errno::errno()).into())
+    Err(Error::SystemCall(::errno::errno()))
   }
 }
 
@@ -93,7 +93,7 @@ pub fn set_protection(base: *const u8, size: usize, protection: Protection) -> R
   };
 
   if result == winapi::shared::minwindef::FALSE {
-    Err(Error::SystemCall(::errno::errno()).into())
+    Err(Error::SystemCall(::errno::errno()))
   } else {
     Ok(())
   }
@@ -109,7 +109,7 @@ pub fn lock(base: *const u8, size: usize) -> Result<()> {
   };
 
   if result == winapi::shared::minwindef::FALSE {
-    Err(Error::SystemCall(::errno::errno()).into())
+    Err(Error::SystemCall(::errno::errno()))
   } else {
     Ok(())
   }
@@ -125,7 +125,7 @@ pub fn unlock(base: *const u8, size: usize) -> Result<()> {
   };
 
   if result == winapi::shared::minwindef::FALSE {
-    Err(Error::SystemCall(::errno::errno()).into())
+    Err(Error::SystemCall(::errno::errno()))
   } else {
     Ok(())
   }

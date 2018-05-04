@@ -2,7 +2,7 @@ use error::*;
 use {Protection, Region};
 
 macro_rules! try_opt {
-  ($expr: expr) => {
+  ($expr:expr) => {
     match $expr {
       ::std::option::Option::Some(val) => val,
       ::std::option::Option::None => return None,
@@ -68,7 +68,7 @@ pub fn get_region(address: *const u8) -> Result<Region> {
     }
   }
 
-  Err(Error::Free.into())
+  Err(Error::Free)
 }
 
 #[cfg(test)]
