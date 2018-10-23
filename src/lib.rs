@@ -55,33 +55,6 @@
 //!   # Ok(())
 //!   # }
 //!   ```
-//!
-//! - Using `View` to retrieve and change the state of memory pages.
-//!
-//!   ```rust
-//!   # use region::{Access, View, Protection};
-//!   let data = vec![0xFF; 100];
-//!   let mut view = View::new(data.as_ptr(), data.len()).unwrap();
-//!
-//!   // Change memory protection to Read | Write | Execute
-//!   unsafe { view.set_prot(Protection::ReadWriteExecute).unwrap() };
-//!   assert_eq!(view.get_prot(), Some(Protection::ReadWriteExecute));
-//!
-//!   // Restore to the previous memory protection
-//!   unsafe { view.set_prot(Access::Previous).unwrap() };
-//!   assert_eq!(view.get_prot(), Some(Protection::ReadWrite));
-//!
-//!   // Temporarily change memory protection
-//!   unsafe {
-//!       view.exec_with_prot(Protection::Read, || {
-//!           // This would result in a memory violation
-//!           // data[0] = 0xCC;
-//!       }).unwrap();
-//!   }
-//!
-//!   // Lock the memory page(s) to RAM
-//!   let _guard = view.lock().unwrap();
-//!   ```
 
 #[macro_use]
 extern crate bitflags;
@@ -90,14 +63,12 @@ extern crate libc;
 pub use error::{Error, Result};
 pub use lock::{lock, unlock, LockGuard};
 pub use protection::Protection;
-pub use view::{Access, View};
 
 mod error;
 mod lock;
 mod os;
 pub mod page;
 mod protection;
-mod view;
 
 /// A descriptor for a memory region
 ///
@@ -201,7 +172,7 @@ pub fn query_range(address: *const u8, size: usize) -> Result<Vec<Region>> {
 /// The address range may overlap one or more pages, and if so, all pages
 /// within the range will be modified. The previous protection flags are not
 /// preserved (to reset protection flags to their inital values, `query_range`
-/// can be used prior to this call, or by using a `View`).
+/// can be used prior to this call).
 ///
 /// If the size is zero this will affect the whole page located at the address
 ///
