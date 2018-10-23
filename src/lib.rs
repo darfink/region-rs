@@ -39,6 +39,8 @@
 //!
 //!   // Page size
 //!   let pz = region::page::size();
+//!   let pc = region::page::ceil(1234);
+//!   let pf = region::page::floor(1234);
 //!
 //!   // VirtualQuery | '/proc/self/maps'
 //!   let q  = region::query(ret5.as_ptr())?;
