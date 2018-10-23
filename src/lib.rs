@@ -1,4 +1,5 @@
 #![recursion_limit = "1024"]
+#![deny(missing_docs)]
 //! A library for manipulating memory regions
 //!
 //! This crate provides several functions for handling memory pages and regions.
@@ -84,15 +85,12 @@
 
 #[macro_use]
 extern crate bitflags;
-#[macro_use]
-extern crate failure;
-extern crate errno;
 extern crate libc;
 
 pub use error::{Error, Result};
-pub use lock::*;
+pub use lock::{lock, unlock, LockGuard};
 pub use protection::Protection;
-pub use view::*;
+pub use view::{Access, View};
 
 mod error;
 mod lock;
@@ -153,9 +151,9 @@ unsafe impl Sync for Region { }
 ///
 /// assert_eq!(region.protection, Protection::ReadWrite);
 /// ```
-pub fn query(address: *const u8) -> error::Result<Region> {
+pub fn query(address: *const u8) -> Result<Region> {
   if address.is_null() {
-    Err(error::Error::Null)?;
+    Err(Error::Null)?;
   }
 
   // The address must be aligned to the closest page boundary
@@ -180,7 +178,7 @@ pub fn query(address: *const u8) -> error::Result<Region> {
 ///
 /// assert!(region.len() > 0);
 /// ```
-pub fn query_range(address: *const u8, size: usize) -> error::Result<Vec<Region>> {
+pub fn query_range(address: *const u8, size: usize) -> Result<Vec<Region>> {
   let mut result = Vec::new();
   let mut base = page::floor(address as usize);
   let limit = address as usize + size;
@@ -225,13 +223,9 @@ pub fn query_range(address: *const u8, size: usize) -> error::Result<Vec<Region>
 /// };
 /// assert_eq!(x(), 5);
 /// ```
-pub unsafe fn protect(
-  address: *const u8,
-  size: usize,
-  protection: Protection,
-) -> error::Result<()> {
+pub unsafe fn protect(address: *const u8, size: usize, protection: Protection) -> Result<()> {
   if address.is_null() {
-    Err(error::Error::Null)?;
+    Err(Error::Null)?;
   }
 
   // Ignore the preservation of previous protection flags
@@ -272,7 +266,6 @@ mod tests {
   #[test]
   #[cfg(unix)]
   fn query_code() {
-    // TODO: Find out why this fails on Windows
     let region = query(&query_code as *const _ as *const u8).unwrap();
 
     assert_eq!(region.guarded, false);

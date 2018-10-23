@@ -1,35 +1,36 @@
 //! Error types and utilities.
 
-use std::io;
+use std::error::Error as StdError;
+use std::{fmt, io};
 
 /// The result type used by this library.
 pub type Result<T> = ::std::result::Result<T, Error>;
 
 /// A collection of possible errors.
-#[derive(Debug, Fail)]
+#[derive(Debug)]
 pub enum Error {
   /// The supplied address is null.
-  #[fail(display = "address must not be null")]
   Null,
   /// The queried memory is free.
-  #[fail(display = "address does not contain allocated memory")]
   Free,
   /// Invalid procfs input.
-  #[fail(display = "invalid procfs source input")]
   ProcfsInput,
-  /// A proc fs IO operation failed.
-  #[fail(display = "{}", _0)]
-  ProcfsIo(#[cause] io::Error),
   /// A system call failed.
-  #[fail(display = "system call failed with: {}", _0)]
-  SystemCall(::errno::Errno),
+  SystemCall(io::Error),
   /// A macOS kernel call failed
-  #[fail(display = "macOS kernel call failed with: {}", _0)]
   MachRegion(::libc::c_int),
 }
 
-impl From<io::Error> for Error {
-  fn from(error: io::Error) -> Self {
-    Error::ProcfsIo(error)
+impl fmt::Display for Error {
+  fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+    match self {
+      Error::Null => write!(f, "Address must not be null"),
+      Error::Free => write!(f, "Address does not contain allocated memory"),
+      Error::ProcfsInput => write!(f, "Invalid procfs input"),
+      Error::SystemCall(ref error) => write!(f, "System call failed: {}", error),
+      Error::MachRegion(code) => write!(f, "macOS kernel call failed: {}", code),
+    }
   }
 }
+
+impl StdError for Error {}

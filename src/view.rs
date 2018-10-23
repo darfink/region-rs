@@ -1,6 +1,5 @@
-use error::*;
 use std::mem;
-use {lock, page, protect, query_range, Protection, Region};
+use {lock, page, protect, query_range, Protection, Region, Result};
 
 // This is needed to preserve previous and initial protection values
 #[derive(Debug, Copy, Clone)]
@@ -117,8 +116,7 @@ impl View {
           region: *region,
           previous: region.protection,
           initial: region.protection,
-        })
-        .collect::<Vec<_>>(),
+        }).collect::<Vec<_>>(),
     })
   }
 
@@ -163,20 +161,20 @@ impl View {
           meta.previous = meta.region.protection;
           meta.region.protection = protection;
         }
-      },
+      }
       Access::Previous => {
         for meta in &mut self.regions {
           protect(meta.region.base, meta.region.size, meta.previous)?;
           mem::swap(&mut meta.region.protection, &mut meta.previous);
         }
-      },
+      }
       Access::Initial => {
         for meta in &mut self.regions {
           protect(meta.region.base, meta.region.size, meta.initial)?;
           meta.previous = meta.region.protection;
           meta.region.protection = meta.initial;
         }
-      },
+      }
     }
 
     Ok(())
@@ -240,8 +238,8 @@ impl View {
 #[cfg(test)]
 mod tests {
   use super::*;
-  use Protection;
   use tests::alloc_pages;
+  use Protection;
 
   #[test]
   fn view_check_size() {
@@ -272,8 +270,7 @@ mod tests {
         .exec_with_prot(Protection::ReadWrite, || {
           *map.as_mut_ptr() = 0x10;
           1337
-        })
-        .unwrap();
+        }).unwrap();
       assert_eq!(val, 1337);
     }
 
