@@ -1,10 +1,7 @@
 extern crate mach;
 
 use self::mach::vm_prot::*;
-
-use Protection;
-use Region;
-use error::*;
+use crate::{Error, Protection, Region, Result};
 
 fn prot_from_native(protection: vm_prot_t) -> Protection {
   let mut result = Protection::None;
@@ -71,7 +68,7 @@ pub fn get_region(base: *const u8) -> Result<Region> {
           size: region_size as usize,
         })
       }
-    },
+    }
     _ => Err(Error::MachRegion(result)),
   }
 }

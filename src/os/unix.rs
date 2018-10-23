@@ -1,7 +1,6 @@
-use Protection;
-use error::*;
-
+use crate::{Error, Protection, Result};
 use libc::{PROT_EXEC, PROT_NONE, PROT_READ, PROT_WRITE};
+use std::io;
 
 fn prot_to_native(protection: Protection) -> ::libc::c_int {
   let mut result = PROT_NONE;
@@ -35,7 +34,7 @@ pub fn set_protection(base: *const u8, size: usize, protection: Protection) -> R
 
   match result {
     0 => Ok(()),
-    _ => Err(Error::SystemCall(::errno::errno())),
+    _ => Err(Error::SystemCall(io::Error::last_os_error())),
   }
 }
 
@@ -43,7 +42,7 @@ pub fn lock(base: *const u8, size: usize) -> Result<()> {
   let result = unsafe { ::libc::mlock(base as *const ::libc::c_void, size) };
   match result {
     0 => Ok(()),
-    _ => Err(Error::SystemCall(::errno::errno())),
+    _ => Err(Error::SystemCall(io::Error::last_os_error())),
   }
 }
 
@@ -51,6 +50,6 @@ pub fn unlock(base: *const u8, size: usize) -> Result<()> {
   let result = unsafe { ::libc::munlock(base as *const ::libc::c_void, size) };
   match result {
     0 => Ok(()),
-    _ => Err(Error::SystemCall(::errno::errno())),
+    _ => Err(Error::SystemCall(io::Error::last_os_error())),
   }
 }

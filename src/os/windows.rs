@@ -1,8 +1,6 @@
 extern crate winapi;
 
-use Protection;
-use Region;
-use error::*;
+use crate::{Protection, Region, Result};
 
 fn prot_to_native(protection: Protection) -> winapi::shared::minwindef::DWORD {
   match protection {
@@ -16,7 +14,8 @@ fn prot_to_native(protection: Protection) -> winapi::shared::minwindef::DWORD {
 
 fn prot_from_native(protection: winapi::shared::minwindef::DWORD) -> Protection {
   // Ignore irrelevant flags
-  let ignored = winapi::um::winnt::PAGE_GUARD | winapi::um::winnt::PAGE_NOCACHE
+  let ignored = winapi::um::winnt::PAGE_GUARD
+    | winapi::um::winnt::PAGE_NOCACHE
     | winapi::um::winnt::PAGE_WRITECOMBINE;
 
   match protection & !ignored {
@@ -75,7 +74,7 @@ pub fn get_region(base: *const u8) -> Result<Region> {
       guarded,
     })
   } else {
-    Err(Error::SystemCall(::errno::errno()))
+    Err(Error::SystemCall(io::Error::last_os_error()))
   }
 }
 
@@ -93,7 +92,7 @@ pub fn set_protection(base: *const u8, size: usize, protection: Protection) -> R
   };
 
   if result == winapi::shared::minwindef::FALSE {
-    Err(Error::SystemCall(::errno::errno()))
+    Err(Error::SystemCall(io::Error::last_os_error()))
   } else {
     Ok(())
   }
@@ -109,7 +108,7 @@ pub fn lock(base: *const u8, size: usize) -> Result<()> {
   };
 
   if result == winapi::shared::minwindef::FALSE {
-    Err(Error::SystemCall(::errno::errno()))
+    Err(Error::SystemCall(io::Error::last_os_error()))
   } else {
     Ok(())
   }
@@ -125,7 +124,7 @@ pub fn unlock(base: *const u8, size: usize) -> Result<()> {
   };
 
   if result == winapi::shared::minwindef::FALSE {
-    Err(Error::SystemCall(::errno::errno()))
+    Err(Error::SystemCall(io::Error::last_os_error()))
   } else {
     Ok(())
   }
