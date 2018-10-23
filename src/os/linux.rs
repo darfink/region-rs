@@ -1,14 +1,4 @@
-use error::*;
-use {Protection, Region};
-
-macro_rules! try_opt {
-  ($expr:expr) => {
-    match $expr {
-      ::std::option::Option::Some(val) => val,
-      ::std::option::Option::None => return None,
-    }
-  };
-}
+use {Error, Protection, Region, Result};
 
 /// Parses flags from /proc/[pid]/maps (e.g 'r--p')
 fn parse_procfs_flags(protection: &str) -> (Protection, bool) {
@@ -21,11 +11,10 @@ fn parse_procfs_flags(protection: &str) -> (Protection, bool) {
   let result = MAPPING
     .iter()
     .fold(Protection::None, |acc, &(ident, prot)| {
-      acc
-        | protection
-          .find(ident)
-          .map(|_| prot)
-          .unwrap_or(Protection::None)
+      acc | protection
+        .find(ident)
+        .map(|_| prot)
+        .unwrap_or(Protection::None)
     });
 
   (result, protection.ends_with('s'))
@@ -34,12 +23,13 @@ fn parse_procfs_flags(protection: &str) -> (Protection, bool) {
 /// Parses a region from /proc/[pid]/maps (i.e a single line)
 fn parse_procfs_region(input: &str) -> Option<Region> {
   let mut parts = input.split_whitespace();
-  let mut memory = try_opt!(parts.next())
+  let mut memory = parts
+    .next()?
     .split('-')
     .filter_map(|value| usize::from_str_radix(value, 16).ok());
-  let (lower, upper) = (try_opt!(memory.next()), try_opt!(memory.next()));
+  let (lower, upper) = (memory.next()?, memory.next()?);
 
-  let flags = try_opt!(parts.next());
+  let flags = parts.next()?;
   let (protection, shared) = parse_procfs_flags(flags);
 
   Some(Region {
@@ -56,11 +46,12 @@ pub fn get_region(address: *const u8) -> Result<Region> {
   use std::io::{BufRead, BufReader};
 
   let address = address as usize;
-  let file = File::open("/proc/self/maps")?;
+  let file = File::open("/proc/self/maps").map_err(Error::SystemCall)?;
   let reader = BufReader::new(&file).lines();
 
   for line in reader {
-    let region = parse_procfs_region(&line?).ok_or(Error::ProcfsInput)?;
+    let line = line.map_err(Error::SystemCall)?;
+    let region = parse_procfs_region(&line).ok_or(Error::ProcfsInput)?;
     let region_base = region.base as usize;
 
     if address >= region_base && address < region_base + region.size {

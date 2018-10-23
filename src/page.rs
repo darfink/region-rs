@@ -4,6 +4,9 @@ use os;
 use std::sync::{Once, ONCE_INIT};
 
 /// Returns the operating system's page size.
+///
+/// This call internally caches the page size and can therefore be called
+/// frequently without any performance penalty.
 pub fn size() -> usize {
   static INIT: Once = ONCE_INIT;
   static mut PAGE_SIZE: usize = 0;

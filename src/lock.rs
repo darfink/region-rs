@@ -1,5 +1,4 @@
-use error::*;
-use {os, page};
+use {os, page, Result};
 
 /// Locks one or more memory regions to RAM.
 ///
@@ -63,7 +62,7 @@ impl LockGuard {
 
 impl Drop for LockGuard {
   fn drop(&mut self) {
-    assert!(
+    debug_assert!(
       unsafe { ::unlock(self.address, self.size).is_ok() },
       "unlocking region"
     );
@@ -76,9 +75,9 @@ unsafe impl Sync for LockGuard {}
 #[cfg(test)]
 mod tests {
   use super::*;
-  use Protection;
   use os::page_size;
   use tests::alloc_pages;
+  use Protection;
 
   #[test]
   fn lock_page() {
