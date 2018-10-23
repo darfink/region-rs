@@ -20,7 +20,7 @@
 //!
 //! ```toml
 //! [dependencies]
-//! region = "0.3"
+//! region = "1.0"
 //! ```
 //!
 //! and this to your crate root:
