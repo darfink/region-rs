@@ -70,6 +70,9 @@ impl Drop for LockGuard {
   }
 }
 
+unsafe impl Send for LockGuard {}
+unsafe impl Sync for LockGuard {}
+
 #[cfg(test)]
 mod tests {
   use super::*;

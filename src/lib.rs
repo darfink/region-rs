@@ -131,6 +131,9 @@ impl Region {
   }
 }
 
+unsafe impl Send for Region { }
+unsafe impl Sync for Region { }
+
 /// Queries the OS with an address, returning the region it resides within.
 ///
 /// The implementation uses `VirtualQuery` on Windows, `mach_vm_region` on macOS
