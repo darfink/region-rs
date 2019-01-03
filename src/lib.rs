@@ -1,4 +1,3 @@
-#![recursion_limit = "1024"]
 #![deny(missing_docs)]
 //! A library for manipulating memory regions
 //!
@@ -20,7 +19,7 @@
 //!
 //! ```toml
 //! [dependencies]
-//! region = "1.0"
+//! region = "2.0.0"
 //! ```
 //!
 //! and this to your crate root:
