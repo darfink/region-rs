@@ -6,7 +6,9 @@ use {os, page, Error, Result};
 /// except for specials cases such as hibernation and memory starvation.
 ///
 /// - The range is `[address, address + size)`
+/// - The address may not be null.
 /// - The address is rounded down to the closest page boundary.
+/// - The size may not be zero.
 /// - The size is rounded up to the closest page boundary, relative to the
 ///   address.
 ///
@@ -18,7 +20,7 @@ use {os, page, Error, Result};
 /// ```
 pub fn lock(address: *const u8, size: usize) -> Result<LockGuard> {
   if address.is_null() {
-    Err(Error::Null)?;
+    Err(Error::NullAddress)?;
   }
 
   if size == 0 {
@@ -39,12 +41,14 @@ pub fn lock(address: *const u8, size: usize) -> Result<LockGuard> {
 /// for safe code.
 ///
 /// - The range is `[address, address + size)`
+/// - The address may not be null.
 /// - The address is rounded down to the closest page boundary.
+/// - The size may not be zero.
 /// - The size is rounded up to the closest page boundary, relative to the
 ///   address.
 pub unsafe fn unlock(address: *const u8, size: usize) -> Result<()> {
   if address.is_null() {
-    Err(Error::Null)?;
+    Err(Error::NullAddress)?;
   }
 
   if size == 0 {
@@ -78,10 +82,8 @@ impl LockGuard {
 
 impl Drop for LockGuard {
   fn drop(&mut self) {
-    debug_assert!(
-      unsafe { ::unlock(self.address, self.size).is_ok() },
-      "unlocking region"
-    );
+    let result = unsafe { ::unlock(self.address, self.size) };
+    debug_assert!(result.is_ok(), "unlocking region");
   }
 }
 
