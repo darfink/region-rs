@@ -58,7 +58,7 @@ pub fn get_region(base: *const u8) -> Result<Region> {
 
   if bytes > 0 {
     let (protection, guarded) = match info.State {
-      winapi::um::winnt::MEM_FREE => Err(Error::Free)?,
+      winapi::um::winnt::MEM_FREE => Err(Error::FreeMemory)?,
       winapi::um::winnt::MEM_RESERVE => (Protection::None, false),
       winapi::um::winnt::MEM_COMMIT => (
         prot_from_native(info.Protect),
