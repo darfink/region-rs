@@ -11,10 +11,11 @@ fn parse_procfs_flags(protection: &str) -> (Protection, bool) {
   let result = MAPPING
     .iter()
     .fold(Protection::None, |acc, &(ident, prot)| {
-      acc | protection
-        .find(ident)
-        .map(|_| prot)
-        .unwrap_or(Protection::None)
+      acc
+        | protection
+          .find(ident)
+          .map(|_| prot)
+          .unwrap_or(Protection::None)
     });
 
   (result, protection.ends_with('s'))

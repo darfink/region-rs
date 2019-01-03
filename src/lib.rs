@@ -100,8 +100,8 @@ impl Region {
   }
 }
 
-unsafe impl Send for Region { }
-unsafe impl Sync for Region { }
+unsafe impl Send for Region {}
+unsafe impl Sync for Region {}
 
 /// Queries the OS with an address, returning the region it resides within.
 ///
@@ -150,6 +150,10 @@ pub fn query(address: *const u8) -> Result<Region> {
 /// assert!(region.len() > 0);
 /// ```
 pub fn query_range(address: *const u8, size: usize) -> Result<Vec<Region>> {
+  if size == 0 {
+    Err(Error::EmptyRange)?;
+  }
+
   let mut result = Vec::new();
   let mut base = page::floor(address as usize);
   let limit = address as usize + size;
@@ -197,6 +201,10 @@ pub fn query_range(address: *const u8, size: usize) -> Result<Vec<Region>> {
 pub unsafe fn protect(address: *const u8, size: usize, protection: Protection) -> Result<()> {
   if address.is_null() {
     Err(Error::Null)?;
+  }
+
+  if size == 0 {
+    Err(Error::EmptyRange)?;
   }
 
   // Ignore the preservation of previous protection flags
@@ -258,8 +266,7 @@ mod tests {
 
   #[test]
   fn query_area_zero() {
-    let region = query_range(&query_area_zero as *const _ as *const u8, 0).unwrap();
-    assert_eq!(region.len(), 1);
+    assert!(query_range(&query_area_zero as *const _ as *const u8, 0).is_err());
   }
 
   #[test]

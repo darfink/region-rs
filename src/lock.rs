@@ -1,4 +1,4 @@
-use {os, page, Result};
+use {os, page, Error, Result};
 
 /// Locks one or more memory regions to RAM.
 ///
@@ -17,6 +17,14 @@ use {os, page, Result};
 /// let _guard = region::lock(data.as_ptr(), data.len()).unwrap();
 /// ```
 pub fn lock(address: *const u8, size: usize) -> Result<LockGuard> {
+  if address.is_null() {
+    Err(Error::Null)?;
+  }
+
+  if size == 0 {
+    Err(Error::EmptyRange)?;
+  }
+
   os::lock(
     page::floor(address as usize) as *const u8,
     page::size_from_range(address, size),
@@ -35,6 +43,14 @@ pub fn lock(address: *const u8, size: usize) -> Result<LockGuard> {
 /// - The size is rounded up to the closest page boundary, relative to the
 ///   address.
 pub unsafe fn unlock(address: *const u8, size: usize) -> Result<()> {
+  if address.is_null() {
+    Err(Error::Null)?;
+  }
+
+  if size == 0 {
+    Err(Error::EmptyRange)?;
+  }
+
   os::unlock(
     page::floor(address as usize) as *const u8,
     page::size_from_range(address, size),
