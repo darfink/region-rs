@@ -7,6 +7,7 @@ use std::sync::{Once, ONCE_INIT};
 ///
 /// This call internally caches the page size and can therefore be called
 /// frequently without any performance penalty.
+#[inline]
 pub fn size() -> usize {
   static INIT: Once = ONCE_INIT;
   static mut PAGE_SIZE: usize = 0;
@@ -18,17 +19,20 @@ pub fn size() -> usize {
 }
 
 /// Rounds an address down to the closest page boundary.
+#[inline]
 pub fn floor(address: usize) -> usize {
   address & !(size() - 1)
 }
 
 /// Rounds an address up to the closest page boundary.
+#[inline]
 pub fn ceil(address: usize) -> usize {
   let page_size = size();
   (address + page_size - 1) & !(page_size - 1)
 }
 
 /// Rounds a size up to the closest page boundary, relative to an address.
+#[inline]
 pub fn size_from_range(address: *const u8, sz: usize) -> usize {
   let sz = if sz == 0 { size() } else { sz };
 
