@@ -10,10 +10,10 @@ mod unix;
 #[cfg(unix)]
 pub use self::unix::{lock, page_size, set_protection, unlock};
 
-#[cfg(target_os = "macos")]
+#[cfg(any(target_os = "macos", target_os = "ios"))]
 mod macos;
 
-#[cfg(target_os = "macos")]
+#[cfg(any(target_os = "macos", target_os = "ios"))]
 pub use self::macos::get_region;
 
 #[cfg(target_os = "linux")]
