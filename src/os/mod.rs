@@ -16,8 +16,8 @@ mod macos;
 #[cfg(any(target_os = "macos", target_os = "ios"))]
 pub use self::macos::get_region;
 
-#[cfg(target_os = "linux")]
+#[cfg(any(target_os = "linux", target_os = "android"))]
 mod linux;
 
-#[cfg(target_os = "linux")]
+#[cfg(any(target_os = "linux", target_os = "android"))]
 pub use self::linux::get_region;

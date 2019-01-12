@@ -56,9 +56,8 @@ let guard = region::lock(ret5.as_ptr(), ret5.len())?;
 
 This library has (so far) support for:
 - Windows
-- Linux
-- macOS
-- iOS
+- Linux & Android
+- macOS & iOS
 
 <!-- Links -->
 [travis-shield]: https://img.shields.io/travis/darfink/region-rs.svg?style=flat-square&label=travis
