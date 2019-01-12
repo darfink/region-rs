@@ -2,21 +2,23 @@ use libc::{PROT_EXEC, PROT_NONE, PROT_READ, PROT_WRITE};
 use std::io;
 use {Error, Protection, Result};
 
-fn prot_to_native(protection: Protection) -> ::libc::c_int {
-  let mut result = PROT_NONE;
-  let prots = [
-    (Protection::Read, PROT_READ),
-    (Protection::Write, PROT_WRITE),
-    (Protection::Execute, PROT_EXEC),
-  ];
+impl Protection {
+  fn to_native(self) -> ::libc::c_int {
+    let mut result = PROT_NONE;
+    let prots = [
+      (Protection::Read, PROT_READ),
+      (Protection::Write, PROT_WRITE),
+      (Protection::Execute, PROT_EXEC),
+    ];
 
-  for &(prot, unix_flag) in &prots {
-    if protection.contains(prot) {
-      result |= unix_flag;
+    for &(prot, unix_flag) in &prots {
+      if self.contains(prot) {
+        result |= unix_flag;
+      }
     }
-  }
 
-  result
+    result
+  }
 }
 
 pub fn page_size() -> usize {
@@ -24,13 +26,8 @@ pub fn page_size() -> usize {
 }
 
 pub fn set_protection(base: *const u8, size: usize, protection: Protection) -> Result<()> {
-  let result = unsafe {
-    ::libc::mprotect(
-      base as *mut ::libc::c_void,
-      size,
-      prot_to_native(protection),
-    )
-  };
+  let result =
+    unsafe { ::libc::mprotect(base as *mut ::libc::c_void, size, protection.to_native()) };
 
   match result {
     0 => Ok(()),

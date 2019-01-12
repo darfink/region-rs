@@ -3,32 +3,34 @@ extern crate winapi;
 use std::io;
 use {Error, Protection, Region, Result};
 
-fn prot_to_native(protection: Protection) -> winapi::shared::minwindef::DWORD {
-  match protection {
-    Protection::Read => winapi::um::winnt::PAGE_READONLY,
-    Protection::ReadWrite => winapi::um::winnt::PAGE_READWRITE,
-    Protection::ReadExecute => winapi::um::winnt::PAGE_EXECUTE_READ,
-    Protection::None => winapi::um::winnt::PAGE_NOACCESS,
-    _ => winapi::um::winnt::PAGE_EXECUTE_READWRITE,
+impl Protection {
+  fn from_native(protection: winapi::shared::minwindef::DWORD) -> Self {
+    // Ignore unsupported flags (TODO: Preserve this information?)
+    let ignored = winapi::um::winnt::PAGE_GUARD
+      | winapi::um::winnt::PAGE_NOCACHE
+      | winapi::um::winnt::PAGE_WRITECOMBINE;
+
+    match protection & !ignored {
+      winapi::um::winnt::PAGE_EXECUTE => Protection::Execute,
+      winapi::um::winnt::PAGE_EXECUTE_READ => Protection::ReadExecute,
+      winapi::um::winnt::PAGE_EXECUTE_READWRITE => Protection::ReadWriteExecute,
+      winapi::um::winnt::PAGE_EXECUTE_WRITECOPY => Protection::ReadWriteExecute,
+      winapi::um::winnt::PAGE_NOACCESS => Protection::None,
+      winapi::um::winnt::PAGE_READONLY => Protection::Read,
+      winapi::um::winnt::PAGE_READWRITE => Protection::ReadWrite,
+      winapi::um::winnt::PAGE_WRITECOPY => Protection::ReadWrite,
+      _ => unreachable!("Protection: {}", protection),
+    }
   }
-}
 
-fn prot_from_native(protection: winapi::shared::minwindef::DWORD) -> Protection {
-  // Ignore irrelevant flags
-  let ignored = winapi::um::winnt::PAGE_GUARD
-    | winapi::um::winnt::PAGE_NOCACHE
-    | winapi::um::winnt::PAGE_WRITECOMBINE;
-
-  match protection & !ignored {
-    winapi::um::winnt::PAGE_EXECUTE => Protection::Execute,
-    winapi::um::winnt::PAGE_EXECUTE_READ => Protection::ReadExecute,
-    winapi::um::winnt::PAGE_EXECUTE_READWRITE => Protection::ReadWriteExecute,
-    winapi::um::winnt::PAGE_EXECUTE_WRITECOPY => Protection::ReadWriteExecute,
-    winapi::um::winnt::PAGE_NOACCESS => Protection::None,
-    winapi::um::winnt::PAGE_READONLY => Protection::Read,
-    winapi::um::winnt::PAGE_READWRITE => Protection::ReadWrite,
-    winapi::um::winnt::PAGE_WRITECOPY => Protection::ReadWrite,
-    _ => unreachable!("Protection: {}", protection),
+  fn to_native(self) -> winapi::shared::minwindef::DWORD {
+    match self {
+      Protection::Read => winapi::um::winnt::PAGE_READONLY,
+      Protection::ReadWrite => winapi::um::winnt::PAGE_READWRITE,
+      Protection::ReadExecute => winapi::um::winnt::PAGE_EXECUTE_READ,
+      Protection::None => winapi::um::winnt::PAGE_NOACCESS,
+      _ => winapi::um::winnt::PAGE_EXECUTE_READWRITE,
+    }
   }
 }
 
@@ -61,7 +63,7 @@ pub fn get_region(base: *const u8) -> Result<Region> {
       winapi::um::winnt::MEM_FREE => Err(Error::FreeMemory)?,
       winapi::um::winnt::MEM_RESERVE => (Protection::None, false),
       winapi::um::winnt::MEM_COMMIT => (
-        prot_from_native(info.Protect),
+        Protection::from_native(info.Protect),
         (info.Protect & winapi::um::winnt::PAGE_GUARD) != 0,
       ),
       _ => unreachable!("State: {}", info.State),
@@ -87,7 +89,7 @@ pub fn set_protection(base: *const u8, size: usize, protection: Protection) -> R
     VirtualProtect(
       base as winapi::um::winnt::PVOID,
       size as winapi::shared::basetsd::SIZE_T,
-      prot_to_native(protection),
+      protection.to_native(),
       &mut prev_flags,
     )
   };

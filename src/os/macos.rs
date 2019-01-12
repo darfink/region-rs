@@ -3,22 +3,24 @@ extern crate mach;
 use self::mach::vm_prot::*;
 use {Error, Protection, Region, Result};
 
-fn prot_from_native(protection: vm_prot_t) -> Protection {
-  let mut result = Protection::None;
+impl Protection {
+  fn from_native(protection: vm_prot_t) -> Self {
+    let mut result = Protection::None;
 
-  if (protection & VM_PROT_READ) == VM_PROT_READ {
-    result |= Protection::Read;
+    if (protection & VM_PROT_READ) == VM_PROT_READ {
+      result |= Protection::Read;
+    }
+
+    if (protection & VM_PROT_WRITE) == VM_PROT_WRITE {
+      result |= Protection::Write;
+    }
+
+    if (protection & VM_PROT_EXECUTE) == VM_PROT_EXECUTE {
+      result |= Protection::Execute;
+    }
+
+    result
   }
-
-  if (protection & VM_PROT_WRITE) == VM_PROT_WRITE {
-    result |= Protection::Write;
-  }
-
-  if (protection & VM_PROT_EXECUTE) == VM_PROT_EXECUTE {
-    result |= Protection::Execute;
-  }
-
-  result
 }
 
 pub fn get_region(base: *const u8) -> Result<Region> {
@@ -63,7 +65,7 @@ pub fn get_region(base: *const u8) -> Result<Region> {
         Ok(Region {
           base: region_base as *const _,
           guarded: (info.user_tag == mach::vm_statistics::VM_MEMORY_GUARD),
-          protection: prot_from_native(info.protection),
+          protection: Protection::from_native(info.protection),
           shared: SHARE_MODES.contains(&info.share_mode),
           size: region_size as usize,
         })

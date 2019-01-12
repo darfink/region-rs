@@ -30,8 +30,8 @@ pub fn lock(address: *const u8, size: usize) -> Result<LockGuard> {
   os::lock(
     page::floor(address as usize) as *const u8,
     page::size_from_range(address, size),
-  )?;
-  Ok(LockGuard::new(address, size))
+  )
+  .map(|_| LockGuard::new(address, size))
 }
 
 /// Unlocks one or more memory regions from RAM.
