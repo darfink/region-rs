@@ -58,6 +58,7 @@ This library has (so far) support for:
 - Windows
 - Linux & Android
 - macOS & iOS
+- FreeBSD
 
 <!-- Links -->
 [travis-shield]: https://img.shields.io/travis/darfink/region-rs.svg?style=flat-square&label=travis

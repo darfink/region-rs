@@ -104,8 +104,8 @@ unsafe impl Sync for Region {}
 
 /// Queries the OS with an address, returning the region it resides within.
 ///
-/// The implementation uses `VirtualQuery` on Windows, `mach_vm_region` on macOS
-/// and by parsing `proc/[pid]/maps` on Linux.
+/// The implementation uses `VirtualQuery` on Windows, `mach_vm_region` on macOS,
+/// `kinfo_getvmmap` on FreeBSD, and parses `proc/[pid]/maps` on Linux.
 ///
 /// - The enclosing region can be of multiple page sizes.
 /// - The address is rounded down to the closest page boundary.
@@ -204,7 +204,9 @@ mod tests {
     let region = query(&query_code as *const _ as *const u8).unwrap();
 
     assert_eq!(region.guarded, false);
-    assert_eq!(region.protection, Protection::ReadExecute);
+    if cfg!(not(target_os = "freebsd")) { // returns Read only
+      assert_eq!(region.protection, Protection::ReadExecute);
+    }
     assert_eq!(region.shared, false);
   }
 
