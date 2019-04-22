@@ -21,3 +21,9 @@ mod linux;
 
 #[cfg(any(target_os = "linux", target_os = "android"))]
 pub use self::linux::get_region;
+
+#[cfg(target_os = "freebsd")]
+mod freebsd;
+
+#[cfg(target_os = "freebsd")]
+pub use self::freebsd::get_region;
