@@ -1,32 +1,36 @@
-use libc::{c_int, c_void, getpid, pid_t};
+use std::io;
+use libc::{c_int, c_void, getpid, pid_t, free};
 use {Error, Protection, Region, Result};
 
 pub fn get_region(address: *const u8) -> Result<Region> {
-  unsafe {
-    let mut vm_cnt = 0;
-    let vm = kinfo_getvmmap(getpid(), &mut vm_cnt);
-    if vm.is_null() {
-      return Err(Error::NullAddress);
-    }
+  let mut vm_cnt = 0;
+  let vm = unsafe { kinfo_getvmmap(getpid(), &mut vm_cnt) };
 
-    for i in 0..vm_cnt {
-      // Since the struct size is given in the struct, we can use it to be future-proof
-      // (we won't need to update the definition here when new fields are added)
-      let entry = &*((vm as *const c_void).offset(i as isize * (*vm).kve_structsize as isize)
-        as *const kinfo_vmentry);
-      if address >= entry.kve_start as *const _ && address < entry.kve_end as *const _ {
-        return Ok(Region {
-          base: entry.kve_start as *const _,
-          size: (entry.kve_end - entry.kve_start) as _,
-          guarded: false,
-          protection: Protection::from_native(entry.kve_protection),
-          shared: entry.kve_type == KVME_TYPE_DEFAULT,
-        });
-      }
-    }
-
-    Err(Error::FreeMemory)
+  if vm.is_null() {
+    return Err(Error::SystemCall(io::Error::last_os_error()));
   }
+
+  // The caller is expected to free the VM entry
+  let _guard = ScopeGuard::new(|| unsafe { free(vm as *mut c_void) });
+
+  for index in 0..vm_cnt {
+    // Since the struct size is given in the struct, it can be used future-proof
+    // (the definition is not required to be updated when new fields are added).
+    let offset = unsafe { index as isize * (*vm).kve_structsize as isize };
+    let entry = unsafe { &*((vm as *const c_void).offset(offset) as *const kinfo_vmentry) };
+
+    if address >= entry.kve_start as *const _ && address < entry.kve_end as *const _ {
+      return Ok(Region {
+        base: entry.kve_start as *const _,
+        size: (entry.kve_end - entry.kve_start) as _,
+        guarded: false,
+        protection: Protection::from_native(entry.kve_protection),
+        shared: entry.kve_type == KVME_TYPE_DEFAULT,
+      });
+    }
+  }
+
+  Err(Error::FreeMemory)
 }
 
 impl Protection {
@@ -46,6 +50,20 @@ impl Protection {
     }
 
     result
+  }
+}
+
+struct ScopeGuard<F: FnOnce()>(Option<F>);
+
+impl<F: FnOnce()> ScopeGuard<F> {
+  pub fn new(closure: F) -> Self {
+    ScopeGuard(Some(closure))
+  }
+}
+
+impl<F: FnOnce()> Drop for ScopeGuard<F> {
+  fn drop(&mut self) {
+    self.0.take().unwrap()()
   }
 }
 
