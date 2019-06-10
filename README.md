@@ -2,6 +2,7 @@ region
 ======
 [![Travis build status][travis-shield]][travis]
 [![Appveyor build status][appveyor-shield]][appveyor]
+[![Cirrus build status][cirrus-shield]][cirrus]
 [![crates.io version][crate-shield]][crate]
 [![Language (Rust)][rust-shield]][rust]
 
@@ -61,6 +62,8 @@ This library has (so far) support for:
 - FreeBSD
 
 <!-- Links -->
+[cirrus-shield]: https://api.cirrus-ci.com/github/darfink/region-rs.svg
+[cirrus]: https://cirrus-ci.com/github/darfink/region-rs
 [travis-shield]: https://img.shields.io/travis/darfink/region-rs.svg?style=flat-square&label=travis
 [travis]: https://travis-ci.org/darfink/region-rs
 [appveyor-shield]: https://img.shields.io/appveyor/ci/darfink/region-rs/master.svg?style=flat-square&label=appveyor
