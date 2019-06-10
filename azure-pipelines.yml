@@ -1,0 +1,16 @@
+trigger:
+- master
+
+jobs:
+- template: ci/jobs-cargo-test.yml
+  parameters:
+    builds:
+    - build: Windows
+      vmImage: 'vs2017-win2016'
+      toolchains: [stable-msvc, nightly-msvc, stable-gnu, nightly-gnu]
+    - build: macOS
+      vmImage: 'macos-10.13'
+      toolchains: [stable, nightly]
+    - build: Linux
+      vmImage: 'ubuntu-16.04'
+      toolchains: [stable, nightly]
