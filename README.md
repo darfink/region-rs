@@ -21,7 +21,7 @@ Add this to your `Cargo.toml`:
 
 ```toml
 [dependencies]
-region = "2.0.0"
+region = "2.1.0"
 ```
 
 and this to your crate root:
