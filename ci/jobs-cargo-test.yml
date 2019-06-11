@@ -2,35 +2,30 @@ parameters:
   builds: []
 
 jobs:
-  - job: cargo_test
-    strategy:
-      matrix:
-        ${{ each build in parameters.builds }}:
-          ${{ each toolchain in build.toolchains }}:
-            ${{ build.build }} (${{ toolchain }}):
-              vmImage: ${{ build.vmImage }}
-              toolchain: ${{ toolchain }}
-    displayName: Test
-    pool:
-      vmImage: $(vmImage)
-    steps:
-    - script: |
-        curl https://sh.rustup.rs -sSf | sh -s -- -y --default-toolchain $(toolchain)
-        echo "##vso[task.setvariable variable=PATH;]$PATH:$HOME/.cargo/bin"
-      displayName: Install rust (Unix)
-      condition: ne(variables['Agent.OS'], 'Windows_NT')
-    - script: |
-        curl -sSf -o rustup-init.exe https://win.rustup.rs
-        rustup-init.exe -y --default-toolchain $(toolchain)
-        echo "##vso[task.setvariable variable=PATH;]%PATH%;%USERPROFILE%\.cargo\bin"
-      displayName: Install rust (Windows)
-      condition: eq(variables['Agent.OS'], 'Windows_NT')
-    - script: |
-        rustup -V
-        rustc -Vv
-        cargo -V
-      displayName: Cargo environment
-    - script: cargo build --all
-      displayName: Cargo build
-    - script: cargo test --all
-      displayName: Cargo test
+- ${{ each build in parameters.builds }}:
+  - ${{ each toolchain in build.toolchains }}:
+    - job: ${{ format('cargo_test_{0}_{1}', build.build, join('_', toolchain)) }}
+      displayName: ${{ build.build }} (${{ join('-', toolchain) }})
+      pool:
+        vmImage: ${{ build.vmImage }}
+      steps:
+      - script: |
+          curl https://sh.rustup.rs -sSf | sh -s -- -y --default-toolchain ${{ join('-', toolchain) }}
+          echo "##vso[task.setvariable variable=PATH;]$PATH:$HOME/.cargo/bin"
+        displayName: Install rust (Unix)
+        condition: ne(variables['Agent.OS'], 'Windows_NT')
+      - script: |
+          curl -sSf -o rustup-init.exe https://win.rustup.rs
+          rustup-init.exe -y --default-toolchain ${{ join('-', toolchain) }}
+          echo "##vso[task.setvariable variable=PATH;]%PATH%;%USERPROFILE%\.cargo\bin"
+        displayName: Install rust (Windows)
+        condition: eq(variables['Agent.OS'], 'Windows_NT')
+      - script: |
+          rustup -V
+          rustc -Vv
+          cargo -V
+        displayName: Cargo environment
+      - script: cargo build --all
+        displayName: Cargo build
+      - script: cargo test --all
+        displayName: Cargo test

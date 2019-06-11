@@ -3,18 +3,14 @@ parameters:
   targets: []
 
 jobs:
-  - job: cross_test
-    strategy:
-      matrix:
-        ${{ each toolchain in parameters.toolchains }}:
-          Cross (${{ toolchain }}):
-            toolchain: ${{ toolchain }}
-    displayName: Test
+- ${{ each toolchain in parameters.toolchains }}:
+  - job: cross_test_${{ join('_', toolchain) }}
+    displayName: Cross (${{ join('-', toolchain) }})
     pool:
       vmImage: 'ubuntu-16.04'
     steps:
     - script: |
-        curl https://sh.rustup.rs -sSf | sh -s -- -y --default-toolchain stable
+        curl https://sh.rustup.rs -sSf | sh -s -- -y --default-toolchain ${{ join('-', toolchain) }}
         echo "##vso[task.setvariable variable=PATH;]$PATH:$HOME/.cargo/bin"
       displayName: Install rust
     - script: |

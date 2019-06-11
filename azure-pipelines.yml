@@ -1,25 +1,30 @@
+# Toolchains are specified as arrays (due to missing split function in azure)
+# so 'join' can be used for defining alpha numeric job names, whilst also using
+# 'join' for specifying the rustup target format.
 trigger:
 - master
 
-jobs:
-- template: ci/jobs-cargo-test.yml
-  parameters:
-    builds:
-    - build: Windows
-      vmImage: 'vs2017-win2016'
-      toolchains: [stable-msvc, nightly-msvc, stable-gnu, nightly-gnu]
-    - build: macOS
-      vmImage: 'macos-10.13'
-      toolchains: [stable, nightly]
-    - build: Linux
-      vmImage: 'ubuntu-16.04'
-      toolchains: [stable, nightly]
-
-- template: ci/jobs-cross-test.yml
-  parameters:
-    toolchains:
-      - stable
-    targets:
-      - armv7-unknown-linux-gnueabihf
-      - aarch64-unknown-linux-gnu
-      - aarch64-linux-android
+stages:
+  - stage: test
+    displayName: Test
+    jobs:
+    - template: ci/jobs-cargo-test.yml
+      parameters:
+        builds:
+        - build: windows
+          vmImage: 'vs2017-win2016'
+          toolchains: [[stable, msvc], [nightly, msvc], [stable, gnu], [nightly, gnu]]
+        - build: macos
+          vmImage: 'macos-10.13'
+          toolchains: [stable, nightly]
+        - build: linux
+          vmImage: 'ubuntu-16.04'
+          toolchains: [stable, nightly]
+    - template: ci/jobs-cross-test.yml
+      parameters:
+        toolchains:
+          - stable
+        targets:
+          - armv7-unknown-linux-gnueabihf
+          - aarch64-unknown-linux-gnu
+          - aarch64-linux-android
