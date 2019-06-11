@@ -2,7 +2,7 @@ parameters:
   builds: []
 
 jobs:
-  - job: Test
+  - job: cargo_test
     strategy:
       matrix:
         ${{ each build in parameters.builds }}:
@@ -10,6 +10,7 @@ jobs:
             ${{ build.build }} (${{ toolchain }}):
               vmImage: ${{ build.vmImage }}
               toolchain: ${{ toolchain }}
+    displayName: Test
     pool:
       vmImage: $(vmImage)
     steps:

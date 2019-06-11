@@ -3,7 +3,7 @@ parameters:
   targets: []
 
 jobs:
-  - job: Test_Cross
+  - job: cross_test
     strategy:
       matrix:
         ${{ each toolchain in parameters.toolchains }}:

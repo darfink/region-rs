@@ -1,6 +1,6 @@
 region
 ======
-[![Azure build Status][azure-shield]](azure)
+[![Azure build Status][azure-shield]][azure]
 [![Cirrus build status][cirrus-shield]][cirrus]
 [![crates.io version][crate-shield]][crate]
 [![Documentation][docs-shield]][docs]
