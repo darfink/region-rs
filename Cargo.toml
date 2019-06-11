@@ -11,14 +11,7 @@ repository = "https://github.com/darfink/region-rs"
 version = "2.1.0"
 
 [badges]
-
-[badges.appveyor]
-branch = "master"
-repository = "darfink/region-rs"
-
-[badges.travis-ci]
-branch = "master"
-repository = "darfink/region-rs"
+azure-devops = { project = "darfink/region-rs", pipeline = "darfink.region-rs" }
 
 [dependencies]
 bitflags = "1.0"

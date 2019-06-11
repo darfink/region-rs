@@ -34,6 +34,7 @@ jobs:
         cargo -V
       displayName: Cargo environment
     - ${{ each target in parameters.targets }}:
-      - script: cross test --target ${{ target }} --all
+      - script: |
+          cross test --target ${{ target }} --all
+          cargo clean
         displayName: Cargo test (${{ target }})
-      - script: cargo clean

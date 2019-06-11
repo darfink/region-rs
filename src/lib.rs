@@ -49,6 +49,9 @@
 //!   // VirtualProtect | mprotect
 //!   region::protect(ret5.as_ptr(), ret5.len(), Protection::ReadWriteExecute)?;
 //!
+//!   // ... you can also temporarily change a region's protection
+//!   let handle = region::protect_with_handle(ret5.as_ptr(), ret5.len(), Protection::ReadWriteExecute)?;
+//!
 //!   // VirtualLock | mlock
 //!   let guard = region::lock(ret5.as_ptr(), ret5.len())?;
 //!   # Ok(())
