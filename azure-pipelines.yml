@@ -14,3 +14,11 @@ jobs:
     - build: Linux
       vmImage: 'ubuntu-16.04'
       toolchains: [stable, nightly]
+
+- template: ci/jobs-cross-test.yml
+  parameters:
+    toolchains:
+      - stable
+    targets:
+      - armv7-unknown-linux-gnueabihf
+      - aarch64-unknown-linux-gnu

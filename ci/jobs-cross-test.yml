@@ -1,0 +1,39 @@
+parameters:
+  toolchains: [stable]
+  targets: []
+
+jobs:
+  - job: Test_Cross
+    strategy:
+      matrix:
+        ${{ each toolchain in parameters.toolchains }}:
+          Cross (${{ toolchain }}):
+            toolchain: ${{ toolchain }}
+    displayName: Test
+    pool:
+      vmImage: 'ubuntu-16.04'
+    steps:
+    - script: |
+        curl https://sh.rustup.rs -sSf | sh -s -- -y --default-toolchain stable
+        echo "##vso[task.setvariable variable=PATH;]$PATH:$HOME/.cargo/bin"
+      displayName: Install rust
+    - script: |
+        git config --global user.email "foo@bar"
+        git config --global user.name "Placeholder"
+        git clone https://github.com/rust-embedded/cross
+        cd cross
+        git remote add pitkley https://github.com/pitkley/cross
+        git fetch pitkley
+        git checkout 718a19c
+        git merge -m "No pseudo tty" pitkley/docker-no-pseudo-tty
+        cargo install --force --path .
+      displayName: Install cross
+    - script: |
+        rustup -V
+        rustc -Vv
+        cargo -V
+      displayName: Cargo environment
+    - ${{ each target in parameters.targets }}:
+      - script: cross test --target ${{ target }} --all
+        displayName: Cargo test (${{ target }})
+      - script: cargo clean
