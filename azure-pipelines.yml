@@ -1,6 +1,3 @@
-# Toolchains are specified as arrays (due to missing split function in azure)
-# so 'join' can be used for defining alpha numeric job names, whilst also using
-# 'join' for specifying the rustup target format.
 trigger:
 - master
 
@@ -8,23 +5,25 @@ stages:
   - stage: test
     displayName: Test
     jobs:
-    - template: ci/jobs-cargo-test.yml
+    - template: ci/jobs-all-rust.yml
       parameters:
-        builds:
-        - build: windows
-          vmImage: 'vs2017-win2016'
-          toolchains: [[stable, msvc], [nightly, msvc], [stable, gnu], [nightly, gnu]]
-        - build: macos
-          vmImage: 'macos-10.13'
-          toolchains: [stable, nightly]
-        - build: linux
-          vmImage: 'ubuntu-16.04'
-          toolchains: [stable, nightly]
-    - template: ci/jobs-cross-test.yml
-      parameters:
-        toolchains:
-          - stable
         targets:
-          - armv7-unknown-linux-gnueabihf
-          - aarch64-unknown-linux-gnu
-          - aarch64-linux-android
+          # Targets are specified as arrays (due to missing 'split' function in
+          # azure) so 'join' can be used for defining alpha numeric job names,
+          # whilst also being used for specifying the rust target triple.
+          - target: [i686, pc, windows, gnu]
+          - target: [x86_64, pc, windows, msvc]
+          - target: [x86_64, pc, windows, gnu]
+          - target: [i686, apple, darwin]
+          - target: [x86_64, apple, darwin]
+          - target: [i686, unknown, linux, gnu]
+            preSteps:
+            - script: sudo apt-get update && sudo apt-get install gcc-multilib
+              displayName: Install GCC 32-bit libs
+          - target: [x86_64, unknown, linux, gnu]
+          - target: [armv7, unknown, linux, gnueabihf]
+            cross: true
+          - target: [aarch64, unknown, linux, gnu]
+            cross: true
+          - target: [aarch64, linux, android]
+            cross: true
