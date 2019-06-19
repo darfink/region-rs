@@ -16,6 +16,7 @@ use {os, page, query_range, Error, Region, Result};
 /// # Examples
 ///
 /// ```
+/// #![cfg(any(target_arch = "x86", target_arch = "x86_64"))]
 /// use region::{Protection};
 ///
 /// let ret5 = [0xB8, 0x05, 0x00, 0x00, 0x00, 0xC3];
