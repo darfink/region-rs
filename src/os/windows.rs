@@ -19,17 +19,20 @@ impl Protection {
       winapi::um::winnt::PAGE_READONLY => Protection::Read,
       winapi::um::winnt::PAGE_READWRITE => Protection::ReadWrite,
       winapi::um::winnt::PAGE_WRITECOPY => Protection::ReadWrite,
-      _ => unreachable!("Protection: {}", protection),
+      _ => unreachable!("Protection: 0x{:X}", protection),
     }
   }
 
   fn to_native(self) -> winapi::shared::minwindef::DWORD {
     match self {
-      Protection::Read => winapi::um::winnt::PAGE_READONLY,
-      Protection::ReadWrite => winapi::um::winnt::PAGE_READWRITE,
-      Protection::ReadExecute => winapi::um::winnt::PAGE_EXECUTE_READ,
       Protection::None => winapi::um::winnt::PAGE_NOACCESS,
-      _ => winapi::um::winnt::PAGE_EXECUTE_READWRITE,
+      Protection::Read => winapi::um::winnt::PAGE_READONLY,
+      Protection::Execute => winapi::um::winnt::PAGE_EXECUTE,
+      Protection::ReadExecute => winapi::um::winnt::PAGE_EXECUTE_READ,
+      Protection::ReadWrite => winapi::um::winnt::PAGE_READWRITE,
+      Protection::ReadWriteExecute => winapi::um::winnt::PAGE_EXECUTE_READWRITE,
+      Protection::WriteExecute => winapi::um::winnt::PAGE_EXECUTE_READWRITE,
+      _ => unreachable!("Protection: {:?}", self),
     }
   }
 }
