@@ -202,15 +202,11 @@ mod tests {
   }
 
   #[test]
-  #[cfg(unix)]
   fn query_code() {
     let region = query(query_code as *const () as *const u8).unwrap();
 
     assert_eq!(region.guarded, false);
-    if cfg!(not(target_os = "freebsd")) { // returns Read only
-      assert_eq!(region.protection, Protection::ReadExecute);
-    }
-    assert_eq!(region.shared, false);
+    assert_eq!(region.shared, cfg!(windows));
   }
 
   #[test]
