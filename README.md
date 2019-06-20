@@ -25,7 +25,7 @@ Add this to your `Cargo.toml`:
 
 ```toml
 [dependencies]
-region = "2.1.1"
+region = "2.1.2"
 ```
 
 and this to your crate root:
@@ -38,7 +38,7 @@ extern crate region;
 
 - Cross-platform equivalents:
 ```rust
-let ret5 = [0xB8, 0x05, 0x00, 0x00, 0x00, 0xC3];
+let data = [0xDE, 0xAD, 0xBE, 0xEF];
 
 // Page size
 let pz = region::page::size();
@@ -46,17 +46,17 @@ let pc = region::page::ceil(1234);
 let pf = region::page::floor(1234);
 
 // VirtualQuery | '/proc/self/maps'
-let q  = region::query(ret5.as_ptr())?;
-let qr = region::query_range(ret5.as_ptr(), ret5.len())?;
+let q  = region::query(data.as_ptr())?;
+let qr = region::query_range(data.as_ptr(), data.len())?;
 
 // VirtualProtect | mprotect
-region::protect(ret5.as_ptr(), ret5.len(), Protection::ReadWriteExecute)?;
+region::protect(data.as_ptr(), data.len(), Protection::ReadWriteExecute)?;
 
 // ... you can also temporarily change a region's protection
-let handle = region::protect_with_handle(ret5.as_ptr(), ret5.len(), Protection::ReadWriteExecute)?;
+let handle = region::protect_with_handle(data.as_ptr(), data.len(), Protection::ReadWriteExecute)?;
 
 // VirtualLock | mlock
-let guard = region::lock(ret5.as_ptr(), ret5.len())?;
+let guard = region::lock(data.as_ptr(), data.len())?;
 ```
 
 <!-- Links -->

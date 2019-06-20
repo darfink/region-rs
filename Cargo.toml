@@ -8,7 +8,7 @@ license = "MIT"
 name = "region"
 readme = "README.md"
 repository = "https://github.com/darfink/region-rs"
-version = "2.1.1"
+version = "2.1.2"
 
 [badges]
 azure-devops = { project = "darfink/region-rs", pipeline = "darfink.region-rs" }
