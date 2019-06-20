@@ -16,7 +16,7 @@ use {os, page, query_range, Error, Region, Result};
 /// # Examples
 ///
 /// ```
-/// #![cfg(any(target_arch = "x86", target_arch = "x86_64"))]
+/// # if cfg!(any(target_arch = "x86", target_arch = "x86_64")) {
 /// use region::{Protection};
 ///
 /// let ret5 = [0xB8, 0x05, 0x00, 0x00, 0x00, 0xC3];
@@ -25,6 +25,7 @@ use {os, page, query_range, Error, Region, Result};
 ///   std::mem::transmute(ret5.as_ptr())
 /// };
 /// assert_eq!(x(), 5);
+/// # }
 /// ```
 pub unsafe fn protect(address: *const u8, size: usize, protection: Protection) -> Result<()> {
   if address.is_null() {
