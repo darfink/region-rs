@@ -103,6 +103,7 @@ impl ProtectGuard {
   }
 
   /// Releases the guards ownership of the memory protection.
+  #[deprecated(since = "2.1.3", note = "Use std::mem::forget instead")]
   pub unsafe fn release(self) {
     ::std::mem::forget(self);
   }
