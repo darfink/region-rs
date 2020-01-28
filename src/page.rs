@@ -1,7 +1,7 @@
 //! Page related functions.
 
 use os;
-use std::sync::{Once, ONCE_INIT};
+use std::sync::Once;
 
 /// Returns the operating system's page size.
 ///
@@ -9,7 +9,7 @@ use std::sync::{Once, ONCE_INIT};
 /// frequently without any performance penalty.
 #[inline]
 pub fn size() -> usize {
-  static INIT: Once = ONCE_INIT;
+  static INIT: Once = Once::new();
   static mut PAGE_SIZE: usize = 0;
 
   unsafe {
