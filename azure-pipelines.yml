@@ -20,7 +20,7 @@ stages:
               displayName: Install GCC 32-bit libs
           - target: [x86_64, unknown, linux, gnu]
             channels: [stable, nightly]
-          #- target: [armv7, unknown, linux, gnueabihf]
-          #  cross: true
-          #- target: [aarch64, linux, android]
-          #  cross: true
+          - target: [armv7, unknown, linux, gnueabihf]
+            cross: true
+          - target: [aarch64, linux, android]
+            cross: true
