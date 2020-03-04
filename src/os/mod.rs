@@ -2,7 +2,7 @@
 mod windows;
 
 #[cfg(windows)]
-pub use self::windows::{get_region, lock, page_size, set_protection, unlock};
+pub use self::windows::{get_region, lock, page_size, set_protection, unlock, enumerate_regions};
 
 #[cfg(unix)]
 mod unix;
