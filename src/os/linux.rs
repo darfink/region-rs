@@ -93,7 +93,7 @@ pub fn get_region(address: *const u8) -> Result<Region> {
 
 #[cfg(test)]
 mod tests {
-  use super::{parse_procfs_flags, parse_procfs_region};
+  use super::{parse_procfs_flags, parse_procfs_region, get_region, Error};
   use Protection;
 
   #[test]
@@ -119,5 +119,14 @@ mod tests {
     assert_eq!(region.protection, Protection::ReadExecute);
     assert_eq!(region.shared, true);
     assert_eq!(region.size, 0x9000);
+  }
+
+  #[test]
+  fn get_region_works() {
+    // Is linux supports any platform where 0 is valid address?
+    if get_region(std::ptr::null()).is_ok() {
+      panic!("get region returned region for bad address!")
+    }
+    get_region(get_region_works as usize as *const u8).expect("get region failed on a valid memory location");
   }
 }

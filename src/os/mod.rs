@@ -20,7 +20,7 @@ pub use self::macos::get_region;
 mod linux;
 
 #[cfg(any(target_os = "linux", target_os = "android"))]
-pub use self::linux::get_region;
+pub use self::linux::{get_region, enumerate_regions};
 
 #[cfg(target_os = "freebsd")]
 mod freebsd;
