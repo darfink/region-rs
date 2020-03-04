@@ -94,8 +94,13 @@ pub fn enumerate_regions(
           ::std::mem::size_of::<MEMORY_BASIC_INFORMATION>() as winapi::shared::basetsd::SIZE_T
         )
       };
-      if bytes >= 0 {
-        yield Ok(mbi_to_region(mbi));
+      if bytes > 0 {
+        let result = mbi_to_region(mbi);
+        if let Err(Error::FreeMemory) = result {
+          // Not a error for enumeration
+        }else {
+          yield mbi_to_region(mbi);
+        }
       } else {
         yield Err(Error::SystemCall(io::Error::last_os_error()));
         // Cant continue after this
@@ -179,10 +184,11 @@ pub fn unlock(base: *const u8, size: usize) -> Result<()> {
 
 #[cfg(test)]
 mod tests {
-  use super::{enumerate_regions};
+  use super::enumerate_regions;
 
   #[test]
   fn enumerate_regions_works() {
-    enumerate_regions(-1isize as *mut libc::c_void);
+    use gen_iter::GenIter;
+    assert_ne!(GenIter(enumerate_regions(-1isize as *mut libc::c_void).expect("failed to init enumeration")).collect::<Vec<_>>().len(), 0);
   }
 }
