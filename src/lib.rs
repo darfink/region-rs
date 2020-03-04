@@ -1,3 +1,6 @@
+#![feature(generators)]
+#![feature(generator_trait)]
+
 #![deny(missing_docs)]
 //! A library for manipulating memory regions
 //!
@@ -61,6 +64,7 @@
 #[macro_use]
 extern crate bitflags;
 extern crate libc;
+extern crate gen_iter;
 
 pub use error::{Error, Result};
 pub use lock::{lock, unlock, LockGuard};

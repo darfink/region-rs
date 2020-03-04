@@ -16,6 +16,7 @@ azure-devops = { project = "darfink/region-rs", pipeline = "darfink.region-rs" }
 [dependencies]
 bitflags = "1.0"
 libc = "0.2"
+gen-iter = { git = "https://github.com/CertainLach/gen-iter", rev = "8bd216495acf9e1a869aa61aa96c987407dc72e9" }
 
 [dev-dependencies]
 memmap = "0.7"

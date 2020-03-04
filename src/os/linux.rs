@@ -1,4 +1,6 @@
+use gen_iter::GenIter;
 use {Error, Protection, Region, Result};
+use std::ops::Generator;
 
 /// Parses flags from /proc/[pid]/maps (e.g 'r--p')
 fn parse_procfs_flags(protection: &str) -> (Protection, bool) {
@@ -42,17 +44,43 @@ fn parse_procfs_region(input: &str) -> Option<Region> {
   })
 }
 
-pub fn get_region(address: *const u8) -> Result<Region> {
+pub fn enumerate_regions(
+  other_process_pid: Option<usize>,
+) -> Result<impl Generator<Yield = Result<Region>, Return = ()>> {
   use std::fs::File;
   use std::io::{BufRead, BufReader};
 
-  let address = address as usize;
-  let file = File::open("/proc/self/maps").map_err(Error::SystemCall)?;
-  let reader = BufReader::new(&file).lines();
+  let file = File::open(if let Some(pid) = other_process_pid {
+    format!("/proc/{}/maps", pid)
+  } else {
+    "/proc/self/maps".to_owned()
+  }).map_err(Error::SystemCall)?;
 
-  for line in reader {
-    let line = line.map_err(Error::SystemCall)?;
-    let region = parse_procfs_region(&line).ok_or(Error::ProcfsInput)?;
+  let reader = BufReader::new(file).lines();
+
+  Ok(move || {
+    for line in reader {
+      if let Err(e) = line {
+        yield Err(Error::SystemCall(e));
+        continue;
+      }
+      let line = line.unwrap();
+      let region = parse_procfs_region(&line);
+      if let None = region {
+        yield Err(Error::ProcfsInput);
+        continue;
+      }
+      let region = parse_procfs_region(&line).expect("bad line in proc maps");
+      yield Ok(region);
+    }
+  })
+}
+
+pub fn get_region(address: *const u8) -> Result<Region> {
+  let address = address as usize;
+
+  for region in GenIter(enumerate_regions(None)?) {
+    let region = region?;
     let region_base = region.base as usize;
 
     if address >= region_base && address < region_base + region.size {
