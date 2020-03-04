@@ -45,7 +45,7 @@ fn parse_procfs_region(input: &str) -> Option<Region> {
 }
 
 pub fn enumerate_regions(
-  other_process_pid: Option<usize>,
+  other_process_pid: Option<i32>,
 ) -> Result<impl Generator<Yield = Result<Region>, Return = ()>> {
   use std::fs::File;
   use std::io::{BufRead, BufReader};
@@ -66,7 +66,7 @@ pub fn enumerate_regions(
       }
       let line = line.unwrap();
       let region = parse_procfs_region(&line);
-      if let None = region {
+      if region.is_none() {
         yield Err(Error::ProcfsInput);
         continue;
       }
@@ -93,7 +93,7 @@ pub fn get_region(address: *const u8) -> Result<Region> {
 
 #[cfg(test)]
 mod tests {
-  use super::{parse_procfs_flags, parse_procfs_region, get_region, Error};
+  use super::{parse_procfs_flags, parse_procfs_region, get_region};
   use Protection;
 
   #[test]
