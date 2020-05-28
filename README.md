@@ -60,9 +60,9 @@ let guard = region::lock(data.as_ptr(), data.len())?;
 ```
 
 <!-- Links -->
-[azure-shield]: https://dev.azure.com/darfink/region-rs/_apis/build/status/darfink.region-rs?branchName=master
+[azure-shield]: https://img.shields.io/azure-devops/build/darfink/region-rs/1/master?label=Azure%20Pipelines&logo=azure-pipelines&style=flat-square
 [azure]: https://dev.azure.com/darfink/region-rs/_build/latest?definitionId=1&branchName=master
-[cirrus-shield]: https://api.cirrus-ci.com/github/darfink/region-rs.svg
+[cirrus-shield]: https://img.shields.io/cirrus/github/darfink/region-rs/master?label=FreeBSD&logo=cirrus-ci&style=flat-square
 [cirrus]: https://cirrus-ci.com/github/darfink/region-rs
 [crate-shield]: https://img.shields.io/crates/v/region.svg?style=flat-square
 [crate]: https://crates.io/crates/region
