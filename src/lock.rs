@@ -77,7 +77,7 @@ impl LockGuard {
   }
 
   /// Releases the guards ownership of the virtual lock.
-  #[deprecated(since = "2.1.3", note = "Use std::mem::forget instead")]
+  #[deprecated(since = "2.2.0", note = "Use std::mem::forget instead")]
   pub fn release(self) {
     ::std::mem::forget(self);
   }

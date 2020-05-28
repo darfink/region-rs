@@ -116,7 +116,7 @@ impl ProtectGuard {
   }
 
   /// Releases the guards ownership of the memory protection.
-  #[deprecated(since = "2.1.3", note = "Use std::mem::forget instead")]
+  #[deprecated(since = "2.2.0", note = "Use std::mem::forget instead")]
   pub fn release(self) {
     ::std::mem::forget(self);
   }
@@ -171,28 +171,28 @@ bitflags! {
     const WRITE_EXECUTE = (Self::WRITE.bits | Self::EXECUTE.bits);
 
     /// No access allowed at all.
-    #[deprecated(since = "2.1.3", note = "Use Protection::NONE instead")]
+    #[deprecated(since = "2.2.0", note = "Use Protection::NONE instead")]
     const None = Self::NONE.bits;
     /// Read access; writing and/or executing data will panic.
-    #[deprecated(since = "2.1.3", note = "Use Protection::READ instead")]
+    #[deprecated(since = "2.2.0", note = "Use Protection::READ instead")]
     const Read = Self::READ.bits;
     /// Write access; this flag alone may not be supported on all OSs.
-    #[deprecated(since = "2.1.3", note = "Use Protection::WRITE instead")]
+    #[deprecated(since = "2.2.0", note = "Use Protection::WRITE instead")]
     const Write = Self::WRITE.bits;
     /// Execute access; this may not be allowed depending on DEP.
-    #[deprecated(since = "2.1.3", note = "Use Protection::EXECUTE instead")]
+    #[deprecated(since = "2.2.0", note = "Use Protection::EXECUTE instead")]
     const Execute = Self::EXECUTE.bits;
     /// Read and execute shorthand.
-    #[deprecated(since = "2.1.3", note = "Use Protection::READ_EXECUTE instead")]
+    #[deprecated(since = "2.2.0", note = "Use Protection::READ_EXECUTE instead")]
     const ReadExecute = Self::READ_EXECUTE.bits;
     /// Read and write shorthand.
-    #[deprecated(since = "2.1.3", note = "Use Protection::READ_WRITE instead")]
+    #[deprecated(since = "2.2.0", note = "Use Protection::READ_WRITE instead")]
     const ReadWrite = Self::READ_WRITE.bits;
     /// Read, write and execute shorthand.
-    #[deprecated(since = "2.1.3", note = "Use Protection::READ_WRITE_EXECUTE instead")]
+    #[deprecated(since = "2.2.0", note = "Use Protection::READ_WRITE_EXECUTE instead")]
     const ReadWriteExecute = Self::READ_WRITE_EXECUTE.bits;
     /// Write and execute shorthand.
-    #[deprecated(since = "2.1.3", note = "Use Protection::WRITE_EXECUTE instead")]
+    #[deprecated(since = "2.2.0", note = "Use Protection::WRITE_EXECUTE instead")]
     const WriteExecute = Self::WRITE_EXECUTE.bits;
   }
 }
