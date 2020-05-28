@@ -59,10 +59,10 @@ let q  = region::query(data.as_ptr())?;
 let qr = region::query_range(data.as_ptr(), data.len())?;
 
 // VirtualProtect | mprotect
-region::protect(data.as_ptr(), data.len(), Protection::ReadWriteExecute)?;
+region::protect(data.as_ptr(), data.len(), Protection::READ_WRITE_EXECUTE)?;
 
 // ... you can also temporarily change a region's protection
-let handle = region::protect_with_handle(data.as_ptr(), data.len(), Protection::ReadWriteExecute)?;
+let handle = region::protect_with_handle(data.as_ptr(), data.len(), Protection::READ_WRITE_EXECUTE)?;
 
 // VirtualLock | mlock
 let guard = region::lock(data.as_ptr(), data.len())?;

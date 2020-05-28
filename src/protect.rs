@@ -1,3 +1,6 @@
+// TODO: Remove this for the next major release
+#![allow(non_upper_case_globals)]
+
 use {os, page, query_range, Error, Region, Result};
 
 /// Changes the memory protection of one or more pages.
@@ -21,7 +24,7 @@ use {os, page, query_range, Error, Region, Result};
 ///
 /// let ret5 = [0xB8, 0x05, 0x00, 0x00, 0x00, 0xC3];
 /// let x: extern "C" fn() -> i32 = unsafe {
-///   region::protect(ret5.as_ptr(), ret5.len(), Protection::ReadWriteExecute).unwrap();
+///   region::protect(ret5.as_ptr(), ret5.len(), Protection::READ_WRITE_EXECUTE).unwrap();
 ///   std::mem::transmute(ret5.as_ptr())
 /// };
 /// assert_eq!(x(), 5);
@@ -136,26 +139,51 @@ bitflags! {
   /// ```
   /// use region::Protection;
   ///
-  /// let combine = Protection::Read | Protection::Write;
-  /// let shorthand = Protection::ReadWrite;
+  /// let combine = Protection::READ | Protection::WRITE;
+  /// let shorthand = Protection::READ_WRITE;
   /// ```
   pub struct Protection: usize {
     /// No access allowed at all.
-    const None             = 0;
+    const NONE = 0;
     /// Read access; writing and/or executing data will panic.
-    const Read             = (1 << 1);
+    const READ = (1 << 1);
     /// Write access; this flag alone may not be supported on all OSs.
-    const Write            = (1 << 2);
+    const WRITE = (1 << 2);
     /// Execute access; this may not be allowed depending on DEP.
-    const Execute          = (1 << 3);
+    const EXECUTE = (1 << 3);
     /// Read and execute shorthand.
-    const ReadExecute      = (Self::Read.bits | Self::Execute.bits);
+    const READ_EXECUTE = (Self::READ.bits | Self::EXECUTE.bits);
     /// Read and write shorthand.
-    const ReadWrite        = (Self::Read.bits | Self::Write.bits);
+    const READ_WRITE = (Self::READ.bits | Self::WRITE.bits);
     /// Read, write and execute shorthand.
-    const ReadWriteExecute = (Self::Read.bits | Self::Write.bits | Self::Execute.bits);
+    const READ_WRITE_EXECUTE = (Self::READ.bits | Self::WRITE.bits | Self::EXECUTE.bits);
     /// Write and execute shorthand.
-    const WriteExecute     = (Self::Write.bits | Self::Execute.bits);
+    const WRITE_EXECUTE = (Self::WRITE.bits | Self::EXECUTE.bits);
+
+    /// No access allowed at all.
+    #[deprecated(since = "2.1.3", note = "Use Protection::NONE instead")]
+    const None = Self::NONE.bits;
+    /// Read access; writing and/or executing data will panic.
+    #[deprecated(since = "2.1.3", note = "Use Protection::READ instead")]
+    const Read = Self::READ.bits;
+    /// Write access; this flag alone may not be supported on all OSs.
+    #[deprecated(since = "2.1.3", note = "Use Protection::WRITE instead")]
+    const Write = Self::WRITE.bits;
+    /// Execute access; this may not be allowed depending on DEP.
+    #[deprecated(since = "2.1.3", note = "Use Protection::EXECUTE instead")]
+    const Execute = Self::EXECUTE.bits;
+    /// Read and execute shorthand.
+    #[deprecated(since = "2.1.3", note = "Use Protection::READ_EXECUTE instead")]
+    const ReadExecute = Self::READ_EXECUTE.bits;
+    /// Read and write shorthand.
+    #[deprecated(since = "2.1.3", note = "Use Protection::READ_WRITE instead")]
+    const ReadWrite = Self::READ_WRITE.bits;
+    /// Read, write and execute shorthand.
+    #[deprecated(since = "2.1.3", note = "Use Protection::READ_WRITE_EXECUTE instead")]
+    const ReadWriteExecute = Self::READ_WRITE_EXECUTE.bits;
+    /// Write and execute shorthand.
+    #[deprecated(since = "2.1.3", note = "Use Protection::WRITE_EXECUTE instead")]
+    const WriteExecute = Self::WRITE_EXECUTE.bits;
   }
 }
 
@@ -166,23 +194,23 @@ mod tests {
 
   #[test]
   fn protect_null() {
-    assert!(unsafe { protect(::std::ptr::null(), 0, Protection::None) }.is_err());
+    assert!(unsafe { protect(::std::ptr::null(), 0, Protection::NONE) }.is_err());
   }
 
   #[test]
   fn protect_code() {
     let address = &mut protect_code as *mut _ as *mut u8;
     unsafe {
-      protect(address, 0x10, Protection::ReadWriteExecute).unwrap();
+      protect(address, 0x10, Protection::READ_WRITE_EXECUTE).unwrap();
       *address = 0x90;
     }
   }
 
   #[test]
   fn protect_alloc() {
-    let mut map = alloc_pages(&[Protection::Read]);
+    let mut map = alloc_pages(&[Protection::READ]);
     unsafe {
-      protect(map.as_ptr(), page::size(), Protection::ReadWrite).unwrap();
+      protect(map.as_ptr(), page::size(), Protection::READ_WRITE).unwrap();
       *map.as_mut_ptr() = 0x1;
     }
   }
@@ -194,10 +222,10 @@ mod tests {
     // Create a page boundary with different protection flags in the
     // upper and lower span, so the intermediate page sizes are fixed.
     let prots = [
-      Protection::Read,
-      Protection::ReadExecute,
-      Protection::ReadWrite,
-      Protection::Read,
+      Protection::READ,
+      Protection::READ_EXECUTE,
+      Protection::READ_WRITE,
+      Protection::READ,
     ];
 
     let map = alloc_pages(&prots);
@@ -205,25 +233,26 @@ mod tests {
     let straddle = unsafe { base_exec.offset(pz as isize - 1) };
 
     // Change the protection over two page boundaries
-    unsafe { protect(straddle, 2, Protection::ReadWriteExecute).unwrap() };
+    unsafe { protect(straddle, 2, Protection::READ_WRITE_EXECUTE).unwrap() };
 
     // Ensure that the pages have merged into one region
     let result = query_range(base_exec, pz * 2).unwrap();
     assert_eq!(result.len(), 1);
-    assert_eq!(result[0].protection, Protection::ReadWriteExecute);
+    assert_eq!(result[0].protection, Protection::READ_WRITE_EXECUTE);
     assert_eq!(result[0].size, pz * 2);
   }
 
   #[test]
   fn protect_handle() {
-    let map = alloc_pages(&[Protection::Read]);
+    let map = alloc_pages(&[Protection::READ]);
     unsafe {
-      let _handle = protect_with_handle(map.as_ptr(), page::size(), Protection::ReadWrite).unwrap();
+      let _handle =
+        protect_with_handle(map.as_ptr(), page::size(), Protection::READ_WRITE).unwrap();
       assert_eq!(
         ::query(map.as_ptr()).unwrap().protection,
-        Protection::ReadWrite
+        Protection::READ_WRITE
       );
     };
-    assert_eq!(::query(map.as_ptr()).unwrap().protection, Protection::Read);
+    assert_eq!(::query(map.as_ptr()).unwrap().protection, Protection::READ);
   }
 }

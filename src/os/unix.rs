@@ -6,9 +6,9 @@ impl Protection {
   fn to_native(self) -> ::libc::c_int {
     let mut result = PROT_NONE;
     let prots = [
-      (Protection::Read, PROT_READ),
-      (Protection::Write, PROT_WRITE),
-      (Protection::Execute, PROT_EXEC),
+      (Protection::READ, PROT_READ),
+      (Protection::WRITE, PROT_WRITE),
+      (Protection::EXECUTE, PROT_EXEC),
     ];
 
     for &(prot, unix_flag) in &prots {

@@ -1,5 +1,5 @@
+use libc::{c_int, c_void, free, getpid, pid_t};
 use std::io;
-use libc::{c_int, c_void, getpid, pid_t, free};
 use {Error, Protection, Region, Result};
 
 pub fn get_region(address: *const u8) -> Result<Region> {
@@ -35,18 +35,18 @@ pub fn get_region(address: *const u8) -> Result<Region> {
 
 impl Protection {
   fn from_native(protection: c_int) -> Self {
-    let mut result = Protection::None;
+    let mut result = Protection::NONE;
 
     if (protection & KVME_PROT_READ) == KVME_PROT_READ {
-      result |= Protection::Read;
+      result |= Protection::READ;
     }
 
     if (protection & KVME_PROT_WRITE) == KVME_PROT_WRITE {
-      result |= Protection::Write;
+      result |= Protection::WRITE;
     }
 
     if (protection & KVME_PROT_EXEC) == KVME_PROT_EXEC {
-      result |= Protection::Execute;
+      result |= Protection::EXECUTE;
     }
 
     result

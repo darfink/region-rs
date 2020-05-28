@@ -100,18 +100,17 @@ mod tests {
 
   #[test]
   fn lock_page() {
-    let map = alloc_pages(&[Protection::ReadWrite]);
+    let map = alloc_pages(&[Protection::READ_WRITE]);
     let _guard = lock(map.as_ptr(), page_size()).unwrap();
   }
 
   #[test]
   fn lock_page_release() {
-    let map = alloc_pages(&[Protection::ReadWrite]);
+    let map = alloc_pages(&[Protection::READ_WRITE]);
 
     unsafe {
-      lock(map.as_ptr(), page_size()).unwrap().release();
+      ::std::mem::forget(lock(map.as_ptr(), page_size()).unwrap());
       unlock(map.as_ptr(), page_size()).unwrap();
     }
   }
-
 }

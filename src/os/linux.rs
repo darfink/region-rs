@@ -3,19 +3,19 @@ use {Error, Protection, Region, Result};
 /// Parses flags from /proc/[pid]/maps (e.g 'r--p')
 fn parse_procfs_flags(protection: &str) -> (Protection, bool) {
   const MAPPING: &[(char, Protection)] = &[
-    ('r', Protection::Read),
-    ('w', Protection::Write),
-    ('x', Protection::Execute),
+    ('r', Protection::READ),
+    ('w', Protection::WRITE),
+    ('x', Protection::EXECUTE),
   ];
 
   let result = MAPPING
     .iter()
-    .fold(Protection::None, |acc, &(ident, prot)| {
+    .fold(Protection::NONE, |acc, &(ident, prot)| {
       acc
         | protection
           .find(ident)
           .map(|_| prot)
-          .unwrap_or(Protection::None)
+          .unwrap_or(Protection::NONE)
     });
 
   (result, protection.ends_with('s'))
@@ -70,15 +70,15 @@ mod tests {
 
   #[test]
   fn parse_flags() {
-    assert_eq!(parse_procfs_flags("r--s"), (Protection::Read, true));
-    assert_eq!(parse_procfs_flags("rw-p"), (Protection::ReadWrite, false));
-    assert_eq!(parse_procfs_flags("r-xs"), (Protection::ReadExecute, true));
+    assert_eq!(parse_procfs_flags("r--s"), (Protection::READ, true));
+    assert_eq!(parse_procfs_flags("rw-p"), (Protection::READ_WRITE, false));
+    assert_eq!(parse_procfs_flags("r-xs"), (Protection::READ_EXECUTE, true));
     assert_eq!(
       parse_procfs_flags("rwxs"),
-      (Protection::ReadWriteExecute, true)
+      (Protection::READ_WRITE_EXECUTE, true)
     );
-    assert_eq!(parse_procfs_flags("--xp"), (Protection::Execute, false));
-    assert_eq!(parse_procfs_flags("-w-s"), (Protection::Write, true));
+    assert_eq!(parse_procfs_flags("--xp"), (Protection::EXECUTE, false));
+    assert_eq!(parse_procfs_flags("-w-s"), (Protection::WRITE, true));
   }
 
   #[test]
@@ -88,7 +88,7 @@ mod tests {
 
     assert_eq!(region.base, 0x400000 as *mut u8);
     assert_eq!(region.guarded, false);
-    assert_eq!(region.protection, Protection::ReadExecute);
+    assert_eq!(region.protection, Protection::READ_EXECUTE);
     assert_eq!(region.shared, true);
     assert_eq!(region.size, 0x9000);
   }

@@ -5,18 +5,18 @@ use {Error, Protection, Region, Result};
 
 impl Protection {
   fn from_native(protection: vm_prot_t) -> Self {
-    let mut result = Protection::None;
+    let mut result = Protection::NONE;
 
     if (protection & VM_PROT_READ) == VM_PROT_READ {
-      result |= Protection::Read;
+      result |= Protection::READ;
     }
 
     if (protection & VM_PROT_WRITE) == VM_PROT_WRITE {
-      result |= Protection::Write;
+      result |= Protection::WRITE;
     }
 
     if (protection & VM_PROT_EXECUTE) == VM_PROT_EXECUTE {
-      result |= Protection::Execute;
+      result |= Protection::EXECUTE;
     }
 
     result

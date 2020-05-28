@@ -47,10 +47,10 @@
 //!   let qr = region::query_range(data.as_ptr(), data.len())?;
 //!
 //!   // VirtualProtect | mprotect
-//!   region::protect(data.as_ptr(), data.len(), Protection::ReadWriteExecute)?;
+//!   region::protect(data.as_ptr(), data.len(), Protection::READ_WRITE_EXECUTE)?;
 //!
 //!   // ... you can also temporarily change a region's protection
-//!   let handle = region::protect_with_handle(data.as_ptr(), data.len(), Protection::ReadWriteExecute)?;
+//!   let handle = region::protect_with_handle(data.as_ptr(), data.len(), Protection::READ_WRITE_EXECUTE)?;
 //!
 //!   // VirtualLock | mlock
 //!   let guard = region::lock(data.as_ptr(), data.len())?;
@@ -122,7 +122,7 @@ unsafe impl Sync for Region {}
 /// let data = [0; 100];
 /// let region = region::query(data.as_ptr()).unwrap();
 ///
-/// assert_eq!(region.protection, Protection::ReadWrite);
+/// assert_eq!(region.protection, Protection::READ_WRITE);
 /// ```
 pub fn query(address: *const u8) -> Result<Region> {
   if address.is_null() {
@@ -212,11 +212,11 @@ mod tests {
   #[test]
   fn query_alloc() {
     let size = page::size() * 2;
-    let mut map = alloc_pages(&[Protection::ReadExecute, Protection::ReadExecute]);
+    let mut map = alloc_pages(&[Protection::READ_EXECUTE, Protection::READ_EXECUTE]);
     let region = query(map.as_ptr()).unwrap();
 
     assert_eq!(region.guarded, false);
-    assert_eq!(region.protection, Protection::ReadExecute);
+    assert_eq!(region.protection, Protection::READ_EXECUTE);
     assert!(!region.base.is_null() && region.base <= map.as_mut_ptr());
     assert!(region.size >= size);
   }
@@ -229,7 +229,7 @@ mod tests {
   #[test]
   fn query_area_overlap() {
     let pz = page::size();
-    let prots = [Protection::ReadExecute, Protection::ReadWrite];
+    let prots = [Protection::READ_EXECUTE, Protection::READ_WRITE];
     let map = alloc_pages(&prots);
 
     // Query an area that overlaps both pages
@@ -246,9 +246,9 @@ mod tests {
   fn query_area_alloc() {
     let pz = page::size();
     let prots = [
-      Protection::Read,
-      Protection::ReadWrite,
-      Protection::ReadExecute,
+      Protection::READ,
+      Protection::READ_WRITE,
+      Protection::READ_EXECUTE,
     ];
     let map = alloc_pages(&prots);
 

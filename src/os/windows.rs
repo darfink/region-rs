@@ -11,27 +11,27 @@ impl Protection {
       | winapi::um::winnt::PAGE_WRITECOMBINE;
 
     match protection & !ignored {
-      winapi::um::winnt::PAGE_EXECUTE => Protection::Execute,
-      winapi::um::winnt::PAGE_EXECUTE_READ => Protection::ReadExecute,
-      winapi::um::winnt::PAGE_EXECUTE_READWRITE => Protection::ReadWriteExecute,
-      winapi::um::winnt::PAGE_EXECUTE_WRITECOPY => Protection::ReadWriteExecute,
-      winapi::um::winnt::PAGE_NOACCESS => Protection::None,
-      winapi::um::winnt::PAGE_READONLY => Protection::Read,
-      winapi::um::winnt::PAGE_READWRITE => Protection::ReadWrite,
-      winapi::um::winnt::PAGE_WRITECOPY => Protection::ReadWrite,
+      winapi::um::winnt::PAGE_EXECUTE => Protection::EXECUTE,
+      winapi::um::winnt::PAGE_EXECUTE_READ => Protection::READ_EXECUTE,
+      winapi::um::winnt::PAGE_EXECUTE_READWRITE => Protection::READ_WRITE_EXECUTE,
+      winapi::um::winnt::PAGE_EXECUTE_WRITECOPY => Protection::READ_WRITE_EXECUTE,
+      winapi::um::winnt::PAGE_NOACCESS => Protection::NONE,
+      winapi::um::winnt::PAGE_READONLY => Protection::READ,
+      winapi::um::winnt::PAGE_READWRITE => Protection::READ_WRITE,
+      winapi::um::winnt::PAGE_WRITECOPY => Protection::READ_WRITE,
       _ => unreachable!("Protection: 0x{:X}", protection),
     }
   }
 
   fn to_native(self) -> winapi::shared::minwindef::DWORD {
     match self {
-      Protection::None => winapi::um::winnt::PAGE_NOACCESS,
-      Protection::Read => winapi::um::winnt::PAGE_READONLY,
-      Protection::Execute => winapi::um::winnt::PAGE_EXECUTE,
-      Protection::ReadExecute => winapi::um::winnt::PAGE_EXECUTE_READ,
-      Protection::ReadWrite => winapi::um::winnt::PAGE_READWRITE,
-      Protection::ReadWriteExecute => winapi::um::winnt::PAGE_EXECUTE_READWRITE,
-      Protection::WriteExecute => winapi::um::winnt::PAGE_EXECUTE_READWRITE,
+      Protection::NONE => winapi::um::winnt::PAGE_NOACCESS,
+      Protection::READ => winapi::um::winnt::PAGE_READONLY,
+      Protection::EXECUTE => winapi::um::winnt::PAGE_EXECUTE,
+      Protection::READ_EXECUTE => winapi::um::winnt::PAGE_EXECUTE_READ,
+      Protection::READ_WRITE => winapi::um::winnt::PAGE_READWRITE,
+      Protection::READ_WRITE_EXECUTE => winapi::um::winnt::PAGE_EXECUTE_READWRITE,
+      Protection::WRITE_EXECUTE => winapi::um::winnt::PAGE_EXECUTE_READWRITE,
       _ => unreachable!("Protection: {:?}", self),
     }
   }
@@ -64,7 +64,7 @@ pub fn get_region(base: *const u8) -> Result<Region> {
   if bytes > 0 {
     let (protection, guarded) = match info.State {
       winapi::um::winnt::MEM_FREE => Err(Error::FreeMemory)?,
-      winapi::um::winnt::MEM_RESERVE => (Protection::None, false),
+      winapi::um::winnt::MEM_RESERVE => (Protection::NONE, false),
       winapi::um::winnt::MEM_COMMIT => (
         Protection::from_native(info.Protect),
         (info.Protect & winapi::um::winnt::PAGE_GUARD) != 0,
