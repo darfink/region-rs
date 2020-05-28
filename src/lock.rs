@@ -20,11 +20,11 @@ use {os, page, Error, Result};
 /// ```
 pub fn lock(address: *const u8, size: usize) -> Result<LockGuard> {
   if address.is_null() {
-    Err(Error::NullAddress)?;
+    return Err(Error::NullAddress);
   }
 
   if size == 0 {
-    Err(Error::EmptyRange)?;
+    return Err(Error::EmptyRange);
   }
 
   os::lock(
@@ -36,23 +36,25 @@ pub fn lock(address: *const u8, size: usize) -> Result<LockGuard> {
 
 /// Unlocks one or more memory regions from RAM.
 ///
-/// This function is unsafe since it cannot be known whether it is called on a
-/// locked region or not. In normal uses cases, the `LockGuard` is recommended
-/// for safe code.
-///
 /// - The range is `[address, address + size)`
 /// - The address may not be null.
 /// - The address is rounded down to the closest page boundary.
 /// - The size may not be zero.
 /// - The size is rounded up to the closest page boundary, relative to the
 ///   address.
+///
+/// # Safety
+///
+/// This function is unsafe since it cannot be known whether it is called on a
+/// locked region or not. In normal uses cases, the `LockGuard` is recommended
+/// for safe code.
 pub unsafe fn unlock(address: *const u8, size: usize) -> Result<()> {
   if address.is_null() {
-    Err(Error::NullAddress)?;
+    return Err(Error::NullAddress);
   }
 
   if size == 0 {
-    Err(Error::EmptyRange)?;
+    return Err(Error::EmptyRange);
   }
 
   os::unlock(
@@ -76,7 +78,7 @@ impl LockGuard {
 
   /// Releases the guards ownership of the virtual lock.
   #[deprecated(since = "2.1.3", note = "Use std::mem::forget instead")]
-  pub unsafe fn release(self) {
+  pub fn release(self) {
     ::std::mem::forget(self);
   }
 }

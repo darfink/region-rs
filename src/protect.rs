@@ -16,6 +16,11 @@ use {os, page, query_range, Error, Region, Result};
 /// - The size is rounded up to the closest page boundary, relative to the
 ///   address.
 ///
+/// # Safety
+///
+/// This is unsafe since it can change read-only properties of constants and/or
+/// modify the executable properties of any code segments.
+///
 /// # Examples
 ///
 /// ```
@@ -32,11 +37,11 @@ use {os, page, query_range, Error, Region, Result};
 /// ```
 pub unsafe fn protect(address: *const u8, size: usize, protection: Protection) -> Result<()> {
   if address.is_null() {
-    Err(Error::NullAddress)?;
+    return Err(Error::NullAddress);
   }
 
   if size == 0 {
-    Err(Error::EmptyRange)?;
+    return Err(Error::EmptyRange);
   }
 
   // Ignore the preservation of previous protection flags
@@ -63,6 +68,11 @@ pub unsafe fn protect(address: *const u8, size: usize, protection: Protection) -
 /// - The size may not be zero.
 /// - The size is rounded up to the closest page boundary, relative to the
 ///   address.
+///
+/// # Safety
+///
+/// This is unsafe since it can change read-only properties of constants and/or
+/// modify the executable properties of any code segments.
 pub unsafe fn protect_with_handle(
   address: *const u8,
   size: usize,
@@ -107,7 +117,7 @@ impl ProtectGuard {
 
   /// Releases the guards ownership of the memory protection.
   #[deprecated(since = "2.1.3", note = "Use std::mem::forget instead")]
-  pub unsafe fn release(self) {
+  pub fn release(self) {
     ::std::mem::forget(self);
   }
 }

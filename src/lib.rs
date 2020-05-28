@@ -126,7 +126,7 @@ unsafe impl Sync for Region {}
 /// ```
 pub fn query(address: *const u8) -> Result<Region> {
   if address.is_null() {
-    Err(Error::NullAddress)?;
+    return Err(Error::NullAddress);
   }
 
   // The address must be aligned to the closest page boundary
@@ -154,7 +154,7 @@ pub fn query(address: *const u8) -> Result<Region> {
 /// ```
 pub fn query_range(address: *const u8, size: usize) -> Result<Vec<Region>> {
   if size == 0 {
-    Err(Error::EmptyRange)?;
+    return Err(Error::EmptyRange);
   }
 
   let mut result = Vec::new();
