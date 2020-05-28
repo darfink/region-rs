@@ -13,11 +13,20 @@ It is implemented using platform specific APIs (e.g `VirtualQuery`,
 
 ## Platforms
 
-This library has (so far) support for:
+This library provides CI for the following targets:
+
+- Linux
+  * `aarch64-linux-android`
+  * `armv7-unknown-linux-gnueabihf`
+  * `i686-unknown-linux-gnu`
+  * `x86_64-unknown-linux-gnu`
 - Windows
-- Linux & Android
-- macOS & iOS
+  * `x86_64-pc-windows-gnu`
+  * `x86_64-pc-windows-msvc`
+- macOS
+  * `x86_64-apple-darwin`
 - FreeBSD
+  * `x86_64-unknown-freebsd`
 
 ## Installation
 
