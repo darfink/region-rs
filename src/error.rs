@@ -11,13 +11,13 @@ pub type Result<T> = std::result::Result<T, Error>;
 pub enum Error {
   /// The queried memory is umapped.
   ///
-  /// This does not necessarily mean that the memory region can be allocated,
-  /// queried addresses outside of a process' adress range are also identified as
-  /// unmapped regions.
+  /// This does not necessarily mean that the memory region is up for grabs.
+  /// Besides OS-specific requirements, queried addresses outside of a process'
+  /// adress range are also identified as unmapped regions.
   UnmappedRegion,
   /// A supplied parameter is invalid.
   InvalidParameter(&'static str),
-  /// Invalid procfs input.
+  /// A procfs region failed to be parsed.
   ProcfsInput(String),
   /// A system call failed.
   SystemCall(io::Error),

@@ -14,8 +14,9 @@
 //! # Parallelism
 //!
 //! The properties of virtual memory pages can change at any time, unless all
-//! threads that are unaccounted for are stopped. This affects all type of
-//! operations, e.g. [query](query()), [protect](protect()) and [lock](lock()).
+//! threads that are unaccounted for in a process are stopped. Therefore to
+//! obtain, e.g., a true picture of a process' virtual memory, all other threads
+//! must be halted.
 //!
 //! # Installation
 //!

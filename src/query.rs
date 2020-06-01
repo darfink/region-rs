@@ -2,8 +2,9 @@ use crate::{os, round_to_page_boundaries, Error, Region, Result};
 
 /// Queries the OS with an address, returning the region it resides within.
 ///
-/// If the queried address does not reside within any mapped region,
-/// [Error::UnmappedRegion] will be returned.
+/// If the queried address does not reside within any mapped region, or if it's
+/// outside the process' address space, the function will error with
+/// [Error::UnmappedRegion].
 ///
 /// # Parameters
 ///
@@ -17,8 +18,8 @@ use crate::{os, round_to_page_boundaries, Error, Region, Result};
 /// [Error::UnmappedRegion].
 ///
 /// On Windows, in contrast to other operating systems, a region does not include
-/// pages with the same properties *before* the provided `address`. This is due
-/// to the implemented behavior of `VirtualQuery`.
+/// pages with the same properties that precede the provided `address`. This is
+/// due to the behavior of `VirtualQuery`.
 ///
 /// # Examples
 ///
@@ -45,8 +46,12 @@ pub fn query<T>(address: *const T) -> Result<Region> {
 /// Queries the OS for mapped regions that overlap with the specified range.
 ///
 /// In contrast to [query], this function only returns mapped regions. If
-/// necessary, unmapped regions can be manually identified by inspecting
+/// required, unmapped regions can be manually identified by inspecting the
 /// potential gaps between two neighboring regions.
+///
+/// The implementation clamps any input that exceeds the boundaries of a process'
+/// address space. Therefore it's safe to, e.g., pass in [std::ptr::null] and
+/// [usize::max_value] to iterate the mapped memory pages of an entire process.
 ///
 /// If an error is encountered during iteration, the error will be the last item
 /// that is yielded. Thereafter the iterator becomes fused.

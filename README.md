@@ -55,8 +55,6 @@ let data = [0xDE, 0xAD, 0xBE, 0xEF];
 
 // Page size
 let pz = region::page::size();
-let pc = region::page::ceil(1234);
-let pf = region::page::floor(1234);
 
 // VirtualQuery | '/proc/self/maps'
 let q  = region::query(data.as_ptr())?;

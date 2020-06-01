@@ -54,11 +54,14 @@ pub unsafe fn protect<T>(address: *const T, size: usize, protection: Protection)
 ///
 /// This function uses [query_range](crate::query_range) internally and is
 /// therefore less performant than [protect]. Use this function only if you need
-/// to preserve the memory protection flags of a region after operations.
+/// to reapply the memory protection flags of one or more regions after
+/// operations.
 ///
-/// Remember not to confuse the *black hole* syntax with the ignored, but unused,
-/// variable syntax. Otherwise the [ProtectGuard] instantly resets the protection
-/// flags of all pages.
+/// # Guard
+///
+/// Remember not to conflate the *black hole* syntax with the ignored, but
+/// unused, variable syntax. Otherwise the [ProtectGuard] instantly resets the
+/// protection flags of all pages.
 ///
 /// ```ignore
 /// let _ = protect_with_handle(...);      // Pages are instantly reset
@@ -107,7 +110,7 @@ pub unsafe fn protect_with_handle<T>(
 
 /// An RAII implementation of a scoped protection guard.
 ///
-/// When this structure is dropped (falls out of scope), the memory region
+/// When this structure is dropped (falls out of scope), the memory regions'
 /// protection will be reset.
 #[must_use]
 pub struct ProtectGuard {
