@@ -1,12 +1,19 @@
 //! Page related functions.
 
-use os;
+use crate::os;
 use std::sync::Once;
 
 /// Returns the operating system's page size.
 ///
-/// This call internally caches the page size and can therefore be called
-/// frequently without any performance penalty.
+/// This call uses an internally cached page size, and can be called frequently
+/// without incurring a significant performance penalty.
+///
+/// # Examples
+///
+/// ```
+/// # use region::page;
+/// let size = page::size(); // Most likely 4096
+/// ```
 #[inline]
 pub fn size() -> usize {
   static INIT: Once = Once::new();
@@ -18,27 +25,37 @@ pub fn size() -> usize {
   }
 }
 
-/// Rounds an address down to the closest page boundary.
+/// Rounds an address down to its closest page boundary.
+///
+/// # Examples
+///
+/// ```
+/// # use region::page;
+/// let unaligned_pointer = (page::size() + 1) as *const ();
+///
+/// assert_eq!(page::floor(unaligned_pointer), page::size() as *const _);
+/// ```
 #[inline]
-pub fn floor(address: usize) -> usize {
-  address & !(size() - 1)
+pub fn floor<T>(address: *const T) -> *const T {
+  (address as usize & !(size() - 1)) as *const T
 }
 
-/// Rounds an address up to the closest page boundary.
+/// Rounds an address up to its closest page boundary.
+///
+/// # Examples
+///
+/// ```
+/// # use region::page;
+/// let unaligned_pointer = (page::size() - 1) as *const ();
+///
+/// assert_eq!(page::ceil(unaligned_pointer), page::size() as *const _);
+/// ```
 #[inline]
-pub fn ceil(address: usize) -> usize {
-  let page_size = size();
-  (address + page_size - 1) & !(page_size - 1)
-}
-
-/// Rounds a size up to the closest page boundary, relative to an address.
-#[inline]
-pub fn size_from_range(address: *const u8, sz: usize) -> usize {
-  let sz = if sz == 0 { size() } else { sz };
-
-  // The [address+size] may straddle between two or more pages; e.g if the
-  // address is 4095 and the size is 2, this may be rounded up to 8192.
-  ceil(address as usize % size() + sz)
+pub fn ceil<T>(address: *const T) -> *const T {
+  match (address as usize).checked_add(size()) {
+    Some(offset) => ((offset - 1) & !(size() - 1)) as *const T,
+    None => floor(address),
+  }
 }
 
 #[cfg(test)]
@@ -46,26 +63,25 @@ mod tests {
   use super::*;
 
   #[test]
-  fn page_size_value() {
+  fn page_size_is_reasonable() {
     let pz = size();
 
     assert!(pz > 0);
-    assert!(pz % 2 == 0);
+    assert_eq!(pz % 2, 0);
+    assert_eq!(pz, size());
   }
 
   #[test]
-  fn page_rounding() {
+  fn page_rounding_works() {
     let pz = size();
+    let point = 1 as *const ();
 
-    // Truncates down
-    assert_eq!(floor(1), 0);
-    assert_eq!(floor(pz), pz);
-    assert_eq!(floor(pz + 1), pz);
+    assert_eq!(floor(point) as usize, 0);
+    assert_eq!(floor(pz as *const ()) as usize, pz);
+    assert_eq!(floor(usize::max_value() as *const ()) as usize % pz, 0);
 
-    // Rounds up
-    assert_eq!(ceil(0), 0);
-    assert_eq!(ceil(1), pz);
-    assert_eq!(ceil(pz), pz);
-    assert_eq!(ceil(pz + 1), pz * 2);
+    assert_eq!(ceil(point) as usize, pz);
+    assert_eq!(ceil(pz as *const ()) as usize, pz);
+    assert_eq!(ceil(usize::max_value() as *const ()) as usize % pz, 0);
   }
 }

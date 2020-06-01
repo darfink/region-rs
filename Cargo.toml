@@ -1,7 +1,8 @@
 [package]
 authors = ["Elliott Linder <elliott.darfink@gmail.com>"]
-description = "A library for manipulating memory regions"
+description = "Cross-platform Rust API for manipulating memory regions"
 documentation = "https://docs.rs/region"
+edition = "2018"
 homepage = "https://github.com/darfink/region-rs"
 keywords = ["region", "page", "lock", "protect", "maps"]
 license = "MIT"
@@ -16,6 +17,7 @@ azure-devops = { project = "darfink/region-rs", pipeline = "darfink.region-rs" }
 [dependencies]
 bitflags = "1.0"
 libc = "0.2"
+take-until = "0.1.0"
 
 [dev-dependencies]
 memmap = "0.7"

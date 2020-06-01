@@ -1,8 +1,8 @@
+use crate::{Error, Protection, Region, Result};
 use libc::{c_int, c_void, free, getpid, pid_t};
 use std::io;
-use {Error, Protection, Region, Result};
 
-pub fn get_region(address: *const u8) -> Result<Region> {
+pub fn query<T>(origin: *const T, size: usize) -> Result<impl Iterator<Item = Result<Region>>> {
   let mut vm_cnt = 0;
   let vm = unsafe { kinfo_getvmmap(getpid(), &mut vm_cnt) };
 
@@ -11,45 +11,45 @@ pub fn get_region(address: *const u8) -> Result<Region> {
   }
 
   // The caller is expected to free the VM entry
-  let _guard = ScopeGuard::new(|| unsafe { free(vm as *mut c_void) });
+  let guard = ScopeGuard::new(move || unsafe { free(vm as *mut c_void) });
+  let upper_bound = (origin as usize).saturating_add(size);
 
-  for index in 0..vm_cnt {
-    // Since the struct size is given in the struct, it can be used future-proof
-    // (the definition is not required to be updated when new fields are added).
-    let offset = unsafe { index as isize * (*vm).kve_structsize as isize };
-    let entry = unsafe { &*((vm as *const c_void).offset(offset) as *const kinfo_vmentry) };
+  let iterator = (0..vm_cnt)
+    .map(move |index| {
+      // This must be moved into the closure to ensure its lifetime
+      let _guard = &guard;
 
-    if address >= entry.kve_start as *const _ && address < entry.kve_end as *const _ {
-      return Ok(Region {
+      // Since the struct size is given in the struct, it can be used future-proof
+      // (the definition is not required to be updated when new fields are added).
+      let offset = unsafe { index as isize * (*vm).kve_structsize as isize };
+      let entry = unsafe { &*((vm as *const c_void).offset(offset) as *const kinfo_vmentry) };
+
+      Region {
         base: entry.kve_start as *const _,
         size: (entry.kve_end - entry.kve_start) as _,
         guarded: false,
         protection: Protection::from_native(entry.kve_protection),
         shared: entry.kve_type == KVME_TYPE_DEFAULT,
-      });
-    }
-  }
-
-  Err(Error::FreeMemory)
+      }
+    })
+    .skip_while(move |region| region.as_range().end <= origin as usize)
+    .take_while(move |region| region.as_range().start < upper_bound)
+    .map(Ok);
+  Ok(iterator)
 }
 
 impl Protection {
   fn from_native(protection: c_int) -> Self {
-    let mut result = Protection::NONE;
+    const MAPPINGS: &[(c_int, Protection)] = &[
+      (KVME_PROT_READ, Protection::READ),
+      (KVME_PROT_WRITE, Protection::WRITE),
+      (KVME_PROT_EXEC, Protection::EXECUTE),
+    ];
 
-    if (protection & KVME_PROT_READ) == KVME_PROT_READ {
-      result |= Protection::READ;
-    }
-
-    if (protection & KVME_PROT_WRITE) == KVME_PROT_WRITE {
-      result |= Protection::WRITE;
-    }
-
-    if (protection & KVME_PROT_EXEC) == KVME_PROT_EXEC {
-      result |= Protection::EXECUTE;
-    }
-
-    result
+    MAPPINGS
+      .iter()
+      .filter(|(flag, _)| protection & *flag == *flag)
+      .fold(Protection::NONE, |acc, (_, prot)| acc | *prot)
   }
 }
 
@@ -90,4 +90,20 @@ const KVME_PROT_EXEC: c_int = 4;
 #[link(name = "util")]
 extern "C" {
   fn kinfo_getvmmap(pid: pid_t, cntp: *mut c_int) -> *mut kinfo_vmentry;
+}
+
+#[cfg(test)]
+mod tests {
+  use super::*;
+
+  #[test]
+  fn protection_flags_are_mapped_from_native() {
+    let rw = KVME_PROT_READ | KVME_PROT_WRITE;
+    let rwx = rw | KVME_PROT_EXEC;
+
+    assert_eq!(Protection::from_native(0), Protection::NONE);
+    assert_eq!(Protection::from_native(KVME_PROT_READ), Protection::READ);
+    assert_eq!(Protection::from_native(rw), Protection::READ_WRITE);
+    assert_eq!(Protection::from_native(rwx), Protection::READ_WRITE_EXECUTE);
+  }
 }

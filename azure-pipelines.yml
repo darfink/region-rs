@@ -8,16 +8,22 @@ stages:
           # Targets are specified as arrays (due to missing 'split' function in
           # azure) so 'join' can be used for defining alpha numeric job names,
           # whilst also being used for specifying the rust target triple.
+          - target: i686-pc-windows-msvc
           - target: x86_64-pc-windows-msvc
+          - target: i686-pc-windows-gnu
           - target: x86_64-pc-windows-gnu
           - target: x86_64-apple-darwin
           - target: i686-unknown-linux-gnu
             preSteps:
             - script: sudo apt-get update && sudo apt-get install gcc-multilib
               displayName: Install GCC 32-bit libs
+          - target: x86_64-unknown-linux-musl
+            cross: true
           - target: x86_64-unknown-linux-gnu
             channels: [stable, nightly]
           - target: armv7-unknown-linux-gnueabihf
             cross: true
           - target: aarch64-linux-android
+            cross: true
+          - target: mips-unknown-linux-gnu
             cross: true

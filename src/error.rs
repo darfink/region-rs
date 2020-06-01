@@ -4,34 +4,35 @@ use std::error::Error as StdError;
 use std::{fmt, io};
 
 /// The result type used by this library.
-pub type Result<T> = ::std::result::Result<T, Error>;
+pub type Result<T> = std::result::Result<T, Error>;
 
 /// A collection of possible errors.
 #[derive(Debug)]
 pub enum Error {
-  /// The supplied address is null.
-  NullAddress,
-  /// The supplied address range is empty.
-  EmptyRange,
-  /// The queried memory is free.
-  FreeMemory,
+  /// The queried memory is umapped.
+  ///
+  /// This does not necessarily mean that the memory region can be allocated,
+  /// queried addresses outside of a process' adress range are also identified as
+  /// unmapped regions.
+  UnmappedRegion,
+  /// A supplied parameter is invalid.
+  InvalidParameter(&'static str),
   /// Invalid procfs input.
-  ProcfsInput,
+  ProcfsInput(String),
   /// A system call failed.
   SystemCall(io::Error),
   /// A macOS kernel call failed
-  MachRegion(::libc::c_int),
+  MachCall(libc::c_int),
 }
 
 impl fmt::Display for Error {
   fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
     match self {
-      Error::NullAddress => write!(f, "Address must not be null"),
-      Error::EmptyRange => write!(f, "Address range must be larger than zero"),
-      Error::FreeMemory => write!(f, "Address does not contain allocated memory"),
-      Error::ProcfsInput => write!(f, "Invalid procfs input"),
+      Error::UnmappedRegion => write!(f, "Queried memory is unmapped"),
+      Error::InvalidParameter(param) => write!(f, "Invalid parameter value: {}", param),
+      Error::ProcfsInput(ref input) => write!(f, "Invalid procfs input: {}", input),
       Error::SystemCall(ref error) => write!(f, "System call failed: {}", error),
-      Error::MachRegion(code) => write!(f, "macOS kernel call failed: {}", code),
+      Error::MachCall(code) => write!(f, "macOS kernel call failed: {}", code),
     }
   }
 }

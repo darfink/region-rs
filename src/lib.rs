@@ -1,16 +1,21 @@
 #![deny(missing_docs)]
-//! A library for manipulating memory regions
+//! A cross-platform Rust API for manipulating memory regions
 //!
-//! This crate provides several functions for handling memory pages and regions.
-//! It is implemented using platform specific APIs. The library exposes both low
-//! and high level functionality for manipulating pages.
+//! This crate provides several functions for querying, modifying and locking
+//! memory regions and their pages.
 //!
-//! Not all OS specific quirks are abstracted away. For instance; some OSs
-//! enforce memory pages to be readable whilst other may prevent pages from
-//! becoming executable (i.e DEP).
+//! It is implemented using platform specific APIs, but not all OS specific
+//! quirks are abstracted away. For instance; some OSs enforce memory pages to be
+//! readable whilst other may prevent pages from becoming executable (i.e DEP).
 //!
 //! *Note: a region is a collection of one or more pages laying consecutively in
 //! memory, with the same properties.*
+//!
+//! # Parallelism
+//!
+//! The properties of virtual memory pages can change at any time, unless all
+//! threads that are unaccounted for are stopped. This affects all type of
+//! operations, e.g. [query](query()), [protect](protect()) and [lock](lock()).
 //!
 //! # Installation
 //!
@@ -39,8 +44,8 @@
 //!
 //!   // Page size
 //!   let pz = region::page::size();
-//!   let pc = region::page::ceil(1234);
-//!   let pf = region::page::floor(1234);
+//!   let pc = region::page::ceil(data.as_ptr());
+//!   let pf = region::page::floor(data.as_ptr());
 //!
 //!   // VirtualQuery | '/proc/self/maps'
 //!   let q  = region::query(data.as_ptr())?;
@@ -60,136 +65,109 @@
 
 #[macro_use]
 extern crate bitflags;
-extern crate libc;
 
 pub use error::{Error, Result};
 pub use lock::{lock, unlock, LockGuard};
 pub use protect::{protect, protect_with_handle, ProtectGuard, Protection};
+pub use query::{query, query_range};
 
 mod error;
 mod lock;
 mod os;
 pub mod page;
 mod protect;
+mod query;
 
-/// A descriptor for a memory region
-///
-/// This type acts as a POD-type, i.e it has no functionality but merely
-/// stores region information.
-#[derive(Debug, Clone, Copy)]
+/// A descriptor for a mapped memory region.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct Region {
   /// Base address of the region
-  pub base: *const u8,
+  base: *const (),
   /// Whether the region is guarded or not
-  pub guarded: bool,
+  guarded: bool,
   /// Protection of the region
-  pub protection: Protection,
+  protection: Protection,
   /// Whether the region is shared or not
-  pub shared: bool,
+  shared: bool,
   /// Size of the region (multiple of page size)
-  pub size: usize,
+  size: usize,
 }
 
 impl Region {
-  /// Returns the region's lower bound.
-  pub fn lower(&self) -> usize {
-    self.base as usize
+  /// Returns a pointer to the region's base address.
+  pub fn as_ptr<T>(&self) -> *const T {
+    self.base as *const T
   }
 
-  /// Returns the region's upper bound.
-  pub fn upper(&self) -> usize {
-    self.lower() + self.size
+  /// Returns a range representing the region's address space.
+  pub fn as_range(&self) -> std::ops::Range<usize> {
+    (self.base as usize)..(self.base as usize).saturating_add(self.size)
+  }
+
+  /// Returns whether the region is readable or not.
+  pub fn is_readable(&self) -> bool {
+    self.protection & Protection::READ == Protection::READ
+  }
+
+  /// Returns whether the region is writable or not.
+  pub fn is_writable(&self) -> bool {
+    self.protection & Protection::WRITE == Protection::WRITE
+  }
+
+  /// Returns whether the region is executable or not.
+  pub fn is_executable(&self) -> bool {
+    self.protection & Protection::EXECUTE == Protection::EXECUTE
+  }
+
+  /// Returns whether the region is guarded or not.
+  pub fn is_guarded(&self) -> bool {
+    self.guarded
+  }
+
+  /// Returns whether the region is shared or not.
+  pub fn is_shared(&self) -> bool {
+    self.shared
+  }
+
+  /// Returns the size of the region.
+  pub fn len(&self) -> usize {
+    self.size
+  }
+
+  /// Returns the protection flags of the region.
+  pub fn protection(&self) -> Protection {
+    self.protection
   }
 }
 
 unsafe impl Send for Region {}
 unsafe impl Sync for Region {}
 
-/// Queries the OS with an address, returning the region it resides within.
-///
-/// The implementation uses `VirtualQuery` on Windows, `mach_vm_region` on macOS,
-/// `kinfo_getvmmap` on FreeBSD, and parses `proc/[pid]/maps` on Linux.
-///
-/// - The enclosing region can be of multiple page sizes.
-/// - The address is rounded down to the closest page boundary.
-/// - The address may not be null.
-///
-/// # Examples
-///
-/// ```
-/// use region::{Protection};
-///
-/// let data = [0; 100];
-/// let region = region::query(data.as_ptr()).unwrap();
-///
-/// assert_eq!(region.protection, Protection::READ_WRITE);
-/// ```
-pub fn query(address: *const u8) -> Result<Region> {
-  if address.is_null() {
-    return Err(Error::NullAddress);
-  }
-
-  // The address must be aligned to the closest page boundary
-  os::get_region(page::floor(address as usize) as *const u8)
-}
-
-/// Queries the OS with a range, returning the regions it contains.
-///
-/// A 2-byte range straddling a page boundary will return both pages (or one
-/// region, if the pages have the same properties). The implementation uses
-/// `query` internally.
-///
-/// - The range is `[address, address + size)`
-/// - The address is rounded down to the closest page boundary.
-/// - The address may not be null.
-/// - The size may not be zero.
-///
-/// # Examples
-///
-/// ```
-/// let data = [0; 100];
-/// let region = region::query_range(data.as_ptr(), data.len()).unwrap();
-///
-/// assert!(region.len() > 0);
-/// ```
-pub fn query_range(address: *const u8, size: usize) -> Result<Vec<Region>> {
+/// Validates & rounds an address-size pair to their respective page boundary.
+fn round_to_page_boundaries<T>(address: *const T, size: usize) -> Result<(*const T, usize)> {
   if size == 0 {
-    return Err(Error::EmptyRange);
+    return Err(Error::InvalidParameter("size"));
   }
 
-  let mut result = Vec::new();
-  let mut base = page::floor(address as usize);
-  let limit = address as usize + size;
-
-  loop {
-    let region = query(base as *const u8)?;
-    result.push(region);
-    base = region.upper();
-
-    if limit <= region.upper() {
-      break;
-    }
-  }
-
-  Ok(result)
+  let size = (address as usize % page::size()).saturating_add(size);
+  let size = page::ceil(size as *const T) as usize;
+  Ok((page::floor(address), size))
 }
 
 #[cfg(test)]
 mod tests {
-  extern crate memmap;
-
-  use self::memmap::MmapMut;
   use super::*;
+  use memmap::MmapMut;
 
-  pub fn alloc_pages(prots: &[Protection]) -> MmapMut {
-    let pz = page::size();
-    let map = MmapMut::map_anon(pz * prots.len()).unwrap();
+  /// Allocates one or more sequential pages for each protection flag.
+  pub fn alloc_pages(pages: &[Protection]) -> MmapMut {
+    let map = MmapMut::map_anon(page::size() * pages.len()).unwrap();
     let mut base = map.as_ptr();
 
-    for protection in prots {
+    for protection in pages {
       unsafe {
-        protect(base, pz, *protection).unwrap();
-        base = base.offset(pz as isize);
+        protect(base, page::size(), *protection).unwrap();
+        base = base.offset(page::size() as isize);
       }
     }
 
@@ -197,72 +175,21 @@ mod tests {
   }
 
   #[test]
-  fn query_null() {
-    assert!(query(::std::ptr::null()).is_err());
-  }
-
-  #[test]
-  fn query_code() {
-    let region = query(query_code as *const () as *const u8).unwrap();
-
-    assert_eq!(region.guarded, false);
-    assert_eq!(region.shared, cfg!(windows));
-  }
-
-  #[test]
-  fn query_alloc() {
-    let size = page::size() * 2;
-    let mut map = alloc_pages(&[Protection::READ_EXECUTE, Protection::READ_EXECUTE]);
-    let region = query(map.as_ptr()).unwrap();
-
-    assert_eq!(region.guarded, false);
-    assert_eq!(region.protection, Protection::READ_EXECUTE);
-    assert!(!region.base.is_null() && region.base <= map.as_mut_ptr());
-    assert!(region.size >= size);
-  }
-
-  #[test]
-  fn query_area_zero() {
-    assert!(query_range(&query_area_zero as *const _ as *const u8, 0).is_err());
-  }
-
-  #[test]
-  fn query_area_overlap() {
+  fn round_to_page_boundaries_works() -> Result<()> {
     let pz = page::size();
-    let prots = [Protection::READ_EXECUTE, Protection::READ_WRITE];
-    let map = alloc_pages(&prots);
-
-    // Query an area that overlaps both pages
-    let address = unsafe { map.as_ptr().offset(pz as isize - 1) };
-    let result = query_range(address, 2).unwrap();
-
-    assert_eq!(result.len(), prots.len());
-    for i in 0..prots.len() {
-      assert_eq!(result[i].protection, prots[i]);
-    }
-  }
-
-  #[test]
-  fn query_area_alloc() {
-    let pz = page::size();
-    let prots = [
-      Protection::READ,
-      Protection::READ_WRITE,
-      Protection::READ_EXECUTE,
+    let values = &[
+      ((1, pz), (0, pz * 2)),
+      ((0, pz - 1), (0, pz)),
+      ((0, pz + 1), (0, pz * 2)),
+      ((pz - 1, 1), (0, pz)),
+      ((pz + 1, pz), (pz, pz * 2)),
+      ((pz, pz), (pz, pz)),
     ];
-    let map = alloc_pages(&prots);
 
-    // Confirm only one page is retrieved
-    let result = query_range(map.as_ptr(), pz).unwrap();
-    assert_eq!(result.len(), 1);
-    assert_eq!(result[0].protection, prots[0]);
-
-    // Retrieve all allocated pages
-    let result = query_range(map.as_ptr(), pz * prots.len()).unwrap();
-    assert_eq!(result.len(), prots.len());
-    assert_eq!(result[1].size, pz);
-    for i in 0..prots.len() {
-      assert_eq!(result[i].protection, prots[i]);
+    for ((before_address, before_size), (after_address, after_size)) in values {
+      let (address, size) = round_to_page_boundaries(*before_address as *const (), *before_size)?;
+      assert_eq!((address, size), (*after_address as *const (), *after_size));
     }
+    Ok(())
   }
 }
