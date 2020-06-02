@@ -52,10 +52,10 @@ fn parse_procfs_line(input: &str) -> Option<Region> {
 
   Some(Region {
     base: lower as *const _,
-    size: upper - lower,
-    guarded: false,
     protection,
     shared,
+    size: upper - lower,
+    ..Default::default()
   })
 }
 

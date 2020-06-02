@@ -151,6 +151,7 @@ bitflags! {
   /// let combine = Protection::READ | Protection::WRITE;
   /// let shorthand = Protection::READ_WRITE;
   /// ```
+  #[derive(Default)]
   pub struct Protection: usize {
     /// No access allowed at all.
     const NONE = 0;

@@ -6,7 +6,7 @@ use std::{io, iter};
 use take_until::TakeUntilExt;
 use winapi::um::memoryapi::{VirtualLock, VirtualProtect, VirtualQuery, VirtualUnlock};
 use winapi::um::sysinfoapi::{GetNativeSystemInfo, SYSTEM_INFO};
-use winapi::um::winnt::MEMORY_BASIC_INFORMATION;
+use winapi::um::winnt::{MEMORY_BASIC_INFORMATION, MEM_COMMIT, MEM_RESERVE};
 
 pub fn query<T>(origin: *const T, size: usize) -> Result<impl Iterator<Item = Result<Region>>> {
   let system = system_info();
@@ -36,14 +36,21 @@ pub fn query<T>(origin: *const T, size: usize) -> Result<impl Iterator<Item = Re
       region_base = (info.BaseAddress as usize).saturating_add(info.RegionSize);
 
       // Only mapped memory regions are of interest
-      if info.State == winapi::um::winnt::MEM_COMMIT {
-        return Some(Ok(Region {
+      if info.State == MEM_RESERVE || info.State == MEM_COMMIT {
+        let mut region = Region {
           base: info.BaseAddress as *const _,
+          committed: info.State == MEM_COMMIT,
+          guarded: (info.Protect & winapi::um::winnt::PAGE_GUARD) != 0,
           shared: (info.Type & winapi::um::winnt::MEM_PRIVATE) == 0,
           size: info.RegionSize as usize,
-          protection: Protection::from_native(info.Protect),
-          guarded: (info.Protect & winapi::um::winnt::PAGE_GUARD) != 0,
-        }));
+          ..Default::default()
+        };
+
+        if region.is_committed() {
+          region.protection = Protection::from_native(info.Protect);
+        }
+
+        return Some(Ok(region));
       }
     }
 
@@ -59,12 +66,11 @@ pub fn page_size() -> usize {
 }
 
 pub unsafe fn protect<T>(base: *const T, size: usize, protection: Protection) -> Result<()> {
-  let mut prev_flags = 0;
   let result = VirtualProtect(
     base as winapi::um::winnt::PVOID,
     size as winapi::shared::basetsd::SIZE_T,
     protection.to_native(),
-    &mut prev_flags,
+    &mut 0,
   );
 
   if result == winapi::shared::minwindef::FALSE {

@@ -84,6 +84,8 @@ mod query;
 pub struct Region {
   /// Base address of the region
   base: *const (),
+  /// Whether the region is committed or not
+  committed: bool,
   /// Whether the region is guarded or not
   guarded: bool,
   /// Protection of the region
@@ -103,6 +105,14 @@ impl Region {
   /// Returns a range representing the region's address space.
   pub fn as_range(&self) -> std::ops::Range<usize> {
     (self.base as usize)..(self.base as usize).saturating_add(self.size)
+  }
+
+  /// Returns whether the region is committed or not.
+  ///
+  /// This is true for all memory regions, the exception being `MEM_RESERVE`
+  /// pages on Windows.
+  pub fn is_committed(&self) -> bool {
+    self.committed
   }
 
   /// Returns whether the region is readable or not.
@@ -138,6 +148,19 @@ impl Region {
   /// Returns the protection flags of the region.
   pub fn protection(&self) -> Protection {
     self.protection
+  }
+}
+
+impl Default for Region {
+  fn default() -> Self {
+    Region {
+      base: std::ptr::null(),
+      committed: true,
+      guarded: false,
+      protection: Protection::NONE,
+      shared: false,
+      size: 0,
+    }
   }
 }
 

@@ -13,10 +13,6 @@ use crate::{os, round_to_page_boundaries, Error, Region, Result};
 ///
 /// # Windows
 ///
-/// Memory pages that are `MEM_RESERVE` or `MEM_FREE` are discarded. To ensure a
-/// consistent cross-platform behavior, both types are represented as
-/// [Error::UnmappedRegion].
-///
 /// On Windows, in contrast to other operating systems, a region does not include
 /// pages with the same properties that precede the provided `address`. This is
 /// due to the behavior of `VirtualQuery`.

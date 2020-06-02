@@ -51,6 +51,7 @@ pub fn query<T>(origin: *const T, size: usize) -> Result<impl Iterator<Item = Re
           protection: Protection::from_native(info.protection),
           shared: SHARE_MODES.contains(&info.share_mode),
           size: region_size as usize,
+          ..Default::default()
         };
 
         region_base = region_base.saturating_add(region_size);

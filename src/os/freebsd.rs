@@ -26,10 +26,10 @@ pub fn query<T>(origin: *const T, size: usize) -> Result<impl Iterator<Item = Re
 
       Region {
         base: entry.kve_start as *const _,
-        size: (entry.kve_end - entry.kve_start) as _,
-        guarded: false,
         protection: Protection::from_native(entry.kve_protection),
         shared: entry.kve_type == KVME_TYPE_DEFAULT,
+        size: (entry.kve_end - entry.kve_start) as _,
+        ..Default::default()
       }
     })
     .skip_while(move |region| region.as_range().end <= origin as usize)

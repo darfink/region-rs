@@ -13,7 +13,7 @@ Its underlying implementation uses platform specific APIs (e.g
 
 ## Platforms
 
-This library provides CI for the following targets:
+This library provides CI for these targets:
 
 - Linux
   * `aarch64-linux-android`
