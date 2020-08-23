@@ -27,3 +27,9 @@ mod freebsd;
 
 #[cfg(target_os = "freebsd")]
 pub use self::freebsd::*;
+
+#[cfg(target_os = "illumos")]
+mod illumos;
+
+#[cfg(target_os = "illumos")]
+pub use self::illumos::*;
