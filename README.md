@@ -1,10 +1,14 @@
-region
-======
+<div align="center">
+
+# `region-rs`
+ 
 [![Azure build Status][azure-shield]][azure]
 [![Cirrus build status][cirrus-shield]][cirrus]
 [![crates.io version][crate-shield]][crate]
 [![Documentation][docs-shield]][docs]
 [![Language (Rust)][rust-shield]][rust]
+ 
+ </div>
 
 A cross-platform Rust API for manipulating memory regions
 
