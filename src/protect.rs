@@ -26,7 +26,7 @@ use crate::{os, round_to_page_boundaries, Region, Result};
 ///
 /// ```
 /// # fn main() -> region::Result<()> {
-/// # if cfg!(any(target_arch = "x86", target_arch = "x86_64")) {
+/// # if cfg!(any(target_arch = "x86", target_arch = "x86_64")) && !cfg!(target_os = "openbsd") {
 /// use region::Protection;
 /// let ret5 = [0xB8, 0x05, 0x00, 0x00, 0x00, 0xC3u8];
 ///
@@ -184,6 +184,7 @@ mod tests {
   }
 
   #[test]
+  #[cfg(not(target_os = "openbsd"))]
   fn protect_can_alter_text_segments() {
     let address = &mut protect_can_alter_text_segments as *mut _ as *mut u8;
     unsafe {
@@ -209,14 +210,14 @@ mod tests {
     let straddle = unsafe { base_exec.offset(pz as isize - 1) };
 
     // Change the protection over two page boundaries
-    unsafe { protect(straddle, 2, Protection::READ_WRITE_EXECUTE)? };
+    unsafe { protect(straddle, 2, Protection::NONE)? };
 
-    // Ensure that the pages have merged into one region
+    // Query the two pages that reside within the outer two
     let result = query_range(base_exec, pz * 2)?.collect::<Result<Vec<_>>>()?;
 
-    assert_eq!(result.len(), 1);
-    assert_eq!(result[0].protection, Protection::READ_WRITE_EXECUTE);
-    assert_eq!(result[0].size, pz * 2);
+    assert!(matches!(result.len(), 1 | 2));
+    assert_eq!(result.iter().map(|r| r.len()).sum::<usize>(), pz * 2);
+    assert_eq!(result[0].protection(), Protection::NONE);
     Ok(())
   }
 
@@ -233,25 +234,25 @@ mod tests {
     let second_page = unsafe { map.as_ptr().offset(page::size() as isize) };
     unsafe {
       let edge = second_page.offset(page::size() as isize - 1);
-      protect(edge, 1, Protection::READ_WRITE_EXECUTE)?;
+      protect(edge, 1, Protection::NONE)?;
     }
 
     let regions = query_range(map.as_ptr(), page::size() * 3)?.collect::<Result<Vec<_>>>()?;
     assert_eq!(regions.len(), 3);
     assert_eq!(regions[0].protection(), Protection::READ_WRITE);
-    assert_eq!(regions[1].protection(), Protection::READ_WRITE_EXECUTE);
+    assert_eq!(regions[1].protection(), Protection::NONE);
     assert_eq!(regions[2].protection(), Protection::READ_WRITE);
 
-    // Alter the protection of 'page_base .. page_end + 1'
+    // Alter the protection of '2nd_page_start .. 2nd_page_end + 1'
     unsafe {
-      protect(second_page, page::size() + 1, Protection::NONE)?;
+      protect(second_page, page::size() + 1, Protection::READ_EXECUTE)?;
     }
 
     let regions = query_range(map.as_ptr(), page::size() * 3)?.collect::<Result<Vec<_>>>()?;
-    assert_eq!(regions.len(), 2);
+    assert!(regions.len() >= 2);
     assert_eq!(regions[0].protection(), Protection::READ_WRITE);
-    assert_eq!(regions[1].protection(), Protection::NONE);
-    assert_eq!(regions[1].len(), page::size() * 2);
+    assert_eq!(regions[1].protection(), Protection::READ_EXECUTE);
+    assert!(regions[1].len() >= page::size());
 
     Ok(())
   }
@@ -275,19 +276,13 @@ mod tests {
       Protection::READ,
       Protection::READ,
       Protection::READ_WRITE,
-      Protection::READ_WRITE_EXECUTE,
-      Protection::READ_WRITE_EXECUTE,
+      Protection::READ_EXECUTE,
+      Protection::READ_EXECUTE,
     ];
     let map = alloc_pages(&pages);
 
     let second_page = unsafe { map.as_ptr().offset(page::size() as isize) };
     let region_size = page::size() * 3;
-
-    // Ensure that the first two pages are part of the same region
-    assert_eq!(
-      query(map.as_ptr())?.as_range().end,
-      second_page as usize + page::size()
-    );
 
     unsafe {
       let _handle = protect_with_handle(second_page, region_size, Protection::NONE)?;
@@ -295,17 +290,13 @@ mod tests {
 
       assert_eq!(region.protection(), Protection::NONE);
       assert_eq!(region.as_ptr(), second_page);
-      assert_eq!(region.len(), region_size);
     }
 
     let regions =
       query_range(map.as_ptr(), page::size() * pages.len())?.collect::<Result<Vec<_>>>()?;
-    assert_eq!(regions.len(), 3);
+    assert!(matches!(regions.len(), 3 | 4 | 5));
     assert!(regions[0].as_ptr() <= map.as_ptr());
     assert_eq!(regions[0].protection(), Protection::READ);
-    assert_eq!(regions[1].protection(), Protection::READ_WRITE);
-    assert_eq!(regions[1].len(), page::size());
-    assert_eq!(regions[2].protection(), Protection::READ_WRITE_EXECUTE);
 
     Ok(())
   }

@@ -33,3 +33,9 @@ mod illumos;
 
 #[cfg(target_os = "illumos")]
 pub use self::illumos::*;
+
+#[cfg(target_os = "openbsd")]
+mod openbsd;
+
+#[cfg(target_os = "openbsd")]
+pub use self::openbsd::*;

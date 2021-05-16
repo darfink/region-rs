@@ -98,11 +98,6 @@ mod tests {
 
   #[test]
   fn query_returns_correct_region_for_text_segment() -> Result<()> {
-    println!(
-      "{:?}",
-      query(query_returns_correct_region_for_text_segment as *const ())
-    );
-
     let region = query(query_returns_correct_region_for_text_segment as *const ())?;
     assert_eq!(region.protection(), Protection::READ_EXECUTE);
     assert_eq!(region.is_guarded(), false);
@@ -111,6 +106,7 @@ mod tests {
   }
 
   #[test]
+  #[cfg(not(target_os = "openbsd"))]
   fn query_returns_one_region_for_identical_adjacent_pages() -> Result<()> {
     let pages = [Protection::READ_EXECUTE, Protection::READ_EXECUTE];
     let map = alloc_pages(&pages);
