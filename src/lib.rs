@@ -145,6 +145,11 @@ impl Region {
     self.size
   }
 
+  /// Returns whether region is empty or not.
+  pub fn is_empty(&self) -> bool {
+    self.size == 0
+  }
+
   /// Returns the protection flags of the region.
   pub fn protection(&self) -> Protection {
     self.protection
