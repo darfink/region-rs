@@ -7,11 +7,18 @@ use take_until::TakeUntilExt;
 pub fn query<T>(origin: *const T, size: usize) -> Result<impl Iterator<Item = Result<Region>>> {
   let upper_bound = (origin as usize).saturating_add(size);
   let mib: [c_int; 3] = [CTL_KERN, KERN_PROC_VMMAP, unsafe { getpid() }];
+
   let mut len = std::mem::size_of::<kinfo_vmentry>();
   let mut entry: kinfo_vmentry = unsafe { std::mem::zeroed() };
-  let mut old_end = 0;
+  let mut previous_end = 0;
 
   let iterator = iter::from_fn(move || {
+    // Albeit it would be preferred to query the information for all virtual
+    // pages at once, the system call does not seem to respond consistently. If
+    // called once during a process' lifetime, it returns all pages, but if
+    // called again, it returns an empty buffer. This may be caused due to an
+    // oversight, but in this case, the solution is to query one memory region
+    // at a time.
     let result = unsafe {
       sysctl(
         mib.as_ptr(),
@@ -22,12 +29,13 @@ pub fn query<T>(origin: *const T, size: usize) -> Result<impl Iterator<Item = Re
         0,
       )
     };
+    assert_eq!(len, std::mem::size_of::<kinfo_vmentry>());
 
     if result == -1 {
       return Some(Err(Error::SystemCall(io::Error::last_os_error())));
     }
 
-    if entry.kve_end == old_end {
+    if entry.kve_end == previous_end {
       return None;
     }
 
@@ -39,7 +47,7 @@ pub fn query<T>(origin: *const T, size: usize) -> Result<impl Iterator<Item = Re
       ..Default::default()
     };
 
-    old_end = entry.kve_end;
+    previous_end = entry.kve_end;
     entry.kve_start += 1;
 
     Some(Ok(region))
@@ -66,6 +74,8 @@ impl Protection {
   }
 }
 
+// These defintions come from <sys/sysctl.h>, describing data returned by the
+// `KERN_PROC_VMMAP` system call.
 #[repr(C)]
 struct kinfo_vmentry {
   kve_start: c_ulong,

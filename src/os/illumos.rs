@@ -3,8 +3,8 @@ use std::fs::File;
 use std::io::Read;
 use take_until::TakeUntilExt;
 
-// As per proc(4), the file "/proc/$PID/map" contains an array of C structs of
-// type "prmap_t".  The layout of this struct, and thus this file, is a stable
+// As per proc(4), the file `/proc/$PID/map` contains an array of C structs of
+// type `prmap_t`.  The layout of this struct, and thus this file, is a stable
 // interface.
 #[repr(C)]
 struct PrMap {
@@ -76,16 +76,17 @@ impl Iterator for PrMapIterator {
 }
 
 pub fn query<T>(origin: *const T, size: usize) -> Result<impl Iterator<Item = Result<Region>>> {
-  // Do not use a buffered reader here: as much as possible, we want a single
-  // large read(2) call to the proc file.
+  // Do not use a buffered reader here to avoid multiple read(2) calls to the
+  // proc file, ensuring a consistent view of the virtual memory.
   let mut file = File::open("/proc/self/map").map_err(Error::SystemCall)?;
   let mut buf: Vec<u8> = Vec::with_capacity(8 * PRMAP_SIZE);
 
-  let sz = file.read_to_end(&mut buf).map_err(Error::SystemCall)?;
-  if sz % PRMAP_SIZE != 0 {
+  let bytes_read = file.read_to_end(&mut buf).map_err(Error::SystemCall)?;
+
+  if bytes_read % PRMAP_SIZE != 0 {
     return Err(Error::ProcfsInput(format!(
       "file size {} is not a multiple of prmap_t size ({})",
-      sz, PRMAP_SIZE
+      bytes_read, PRMAP_SIZE
     )));
   }
 

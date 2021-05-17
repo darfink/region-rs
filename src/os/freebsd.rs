@@ -67,6 +67,8 @@ impl<F: FnOnce()> Drop for ScopeGuard<F> {
   }
 }
 
+// These defintions come from <sys/user.h>, describing data returned by the
+// `kinfo_getvmmap` system call.
 #[repr(C)]
 struct kinfo_vmentry {
   kve_structsize: c_int,
