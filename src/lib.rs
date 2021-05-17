@@ -273,11 +273,30 @@ mod tests {
   pub mod util {
     use crate::{page, Protection};
     use std::ops::Deref;
-    use winapi::um::memoryapi::VirtualAlloc;
-    use winapi::um::winnt::{MEM_COMMIT, MEM_RESERVE, PAGE_NOACCESS};
+    use winapi::um::memoryapi::{VirtualAlloc, VirtualFree};
+    use winapi::um::winnt::{MEM_COMMIT, MEM_RELEASE, MEM_RESERVE, PAGE_NOACCESS};
+
+    struct AllocatedPages(*const (), usize);
+
+    impl Deref for AllocatedPages {
+      type Target = [u8];
+
+      fn deref(&self) -> &Self::Target {
+        unsafe { std::slice::from_raw_parts(self.0 as *const _, self.1) }
+      }
+    }
+
+    impl Drop for AllocatedPages {
+      fn drop(&mut self) {
+        unsafe {
+          assert_ne!(VirtualFree(self.0 as *mut _, 0, MEM_RELEASE), 0);
+        }
+      }
+    }
 
     /// Allocates one or more sequential pages for each protection flag.
     pub fn alloc_pages(pages: &[Protection]) -> impl Deref<Target = [u8]> {
+      // Reserve enough memory to fit each page
       let total_size = page::size() * pages.len();
       let allocation_base =
         unsafe { VirtualAlloc(std::ptr::null_mut(), total_size, MEM_RESERVE, PAGE_NOACCESS) };
@@ -296,12 +315,10 @@ mod tests {
           )
         };
         assert_eq!(address, page_address);
-
         page_address = (address as usize + page::size()) as *mut _;
       }
 
-      // Skip deallocating since it's only used during testing
-      unsafe { std::slice::from_raw_parts(allocation_base as *const _, total_size) }
+      AllocatedPages(allocation_base as *const _, total_size)
     }
   }
 }
