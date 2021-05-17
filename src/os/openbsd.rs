@@ -7,8 +7,8 @@ use take_until::TakeUntilExt;
 pub fn query<T>(origin: *const T, size: usize) -> Result<impl Iterator<Item = Result<Region>>> {
   let upper_bound = (origin as usize).saturating_add(size);
   let mib: [c_int; 3] = [CTL_KERN, KERN_PROC_VMMAP, unsafe { getpid() }];
-  let mut len = ::std::mem::size_of::<kinfo_vmentry>();
-  let mut entry: kinfo_vmentry = unsafe { ::std::mem::zeroed() };
+  let mut len = std::mem::size_of::<kinfo_vmentry>();
+  let mut entry: kinfo_vmentry = unsafe { std::mem::zeroed() };
   let mut old_end = 0;
 
   let iterator = iter::from_fn(move || {
@@ -18,7 +18,7 @@ pub fn query<T>(origin: *const T, size: usize) -> Result<impl Iterator<Item = Re
         mib.len() as u32,
         &mut entry as *mut _ as *mut _,
         &mut len,
-        ::std::ptr::null_mut(),
+        std::ptr::null_mut(),
         0,
       )
     };
