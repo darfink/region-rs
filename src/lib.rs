@@ -1,4 +1,5 @@
 #![deny(missing_docs)]
+#![cfg_attr(feature = "cargo-clippy", warn(clippy::print_stdout))]
 //! A cross-platform Rust API for manipulating memory regions
 //!
 //! This crate provides several functions for querying, modifying and locking
@@ -186,21 +187,62 @@ fn round_to_page_boundaries<T>(address: *const T, size: usize) -> Result<(*const
 #[cfg(test)]
 mod tests {
   use super::*;
-  use memmap::MmapMut;
+  use mmap::{MapOption, MemoryMap};
+  use std::ops::Deref;
 
-  /// Allocates one or more sequential pages for each protection flag.
-  pub fn alloc_pages(pages: &[Protection]) -> MmapMut {
-    let map = MmapMut::map_anon(page::size() * pages.len()).unwrap();
-    let mut base = map.as_ptr();
+  struct AllocatedPages(Vec<MemoryMap>);
 
-    for protection in pages {
+  impl Deref for AllocatedPages {
+    type Target = [u8];
+
+    fn deref(&self) -> &Self::Target {
       unsafe {
-        protect(base, page::size(), *protection).unwrap();
-        base = base.offset(page::size() as isize);
+        std::slice::from_raw_parts(self.0[0].data() as *const _, self.0.len() * page::size())
       }
     }
+  }
 
-    map
+  impl From<Protection> for &'static [MapOption] {
+    fn from(protection: Protection) -> Self {
+      match protection {
+        Protection::NONE => &[],
+        Protection::READ => &[MapOption::MapReadable],
+        Protection::READ_WRITE => &[MapOption::MapReadable, MapOption::MapWritable],
+        Protection::READ_EXECUTE => &[MapOption::MapReadable, MapOption::MapExecutable],
+        _ => panic!("Unsupported protection {:?}", protection),
+      }
+    }
+  }
+
+  /// Allocates one or more sequential pages for each protection flag.
+  pub fn alloc_pages(pages: &[Protection]) -> impl Deref<Target = [u8]> {
+    // Find a region which fits all pages
+    let region = MemoryMap::new(page::size() * pages.len(), &[]).expect("allocating pages");
+    let mut base = region.data();
+
+    // Drop the region to ensure it's free
+    std::mem::forget(region);
+
+    // Allocate one page at a time with explicit page permissions. Since this
+    // introduces a race condition, it would be expected to be an issue, but
+    // only one thread is used during testing (after all, only one thread should
+    // ever be active when querying and/or manipulating memory regions).
+    let allocated_pages = pages
+      .iter()
+      .map(|protection| {
+        let mut options = vec![MapOption::MapAddr(base)];
+        options.extend_from_slice(Into::into(*protection));
+
+        let map = MemoryMap::new(page::size(), &options).expect("allocating page");
+        assert_eq!(map.data(), base);
+        assert_eq!(map.len(), page::size());
+
+        base = (base as usize + page::size()) as *mut _;
+        map
+      })
+      .collect::<Vec<_>>();
+
+    AllocatedPages(allocated_pages)
   }
 
   #[test]
