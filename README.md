@@ -18,7 +18,7 @@ implemented using platform specific APIs (e.g `VirtualQuery`, `VirtualLock`,
 
 ## Platforms
 
-This library provides CI for these targets:
+This library is continuously tested against these targets:
 
 - Linux
   * `aarch64-linux-android`
@@ -37,7 +37,7 @@ This library provides CI for these targets:
 - FreeBSD
   * `x86_64-unknown-freebsd`
 
-Beyond these continuously tested targets, the library is also expected to work
+Beyond these continuously tested triplets, the library is also expected to work
 against a multitude of omitted architectures & `x86_64-unknown-illumos`.
 
 ## Installation

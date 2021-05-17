@@ -16,7 +16,7 @@ jobs:
           - i686-pc-windows-msvc
           - x86_64-pc-windows-gnu
           - x86_64-pc-windows-msvc
-    name: stable-${{ matrix.target }}
+    name: Windows (${{ matrix.target }})
     steps:
     - name: Checkout
       uses: actions/checkout@v2
@@ -34,7 +34,7 @@ jobs:
 
   test-macos:
     runs-on: macos-10.15
-    name: stable-x86_64-apple-darwin
+    name: macOS (x86_64-apple-darwin)
     steps:
     - name: Checkout
       uses: actions/checkout@v2
@@ -51,7 +51,7 @@ jobs:
           - i686-unknown-linux-musl
           - x86_64-unknown-linux-gnu
           - x86_64-unknown-linux-musl
-    name: stable-${{ matrix.target }}
+    name: Linux (${{ matrix.target }})
     steps:
     - name: Checkout
       uses: actions/checkout@v2
@@ -75,7 +75,8 @@ jobs:
           - armv7-unknown-linux-gnueabihf
           - aarch64-linux-android
           - mips-unknown-linux-gnu
-    name: stable-${{ matrix.target }}
+          - x86_64-unknown-freebsd
+    name: Cross (${{ matrix.target }})
     steps:
     - name: Checkout
       uses: actions/checkout@v2
