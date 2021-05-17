@@ -172,6 +172,26 @@ bitflags! {
   }
 }
 
+impl std::fmt::Display for Protection {
+  fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+    const MAPPINGS: &[(Protection, char)] = &[
+      (Protection::READ, 'r'),
+      (Protection::WRITE, 'w'),
+      (Protection::EXECUTE, 'x'),
+    ];
+
+    for (flag, symbol) in MAPPINGS {
+      if self.contains(*flag) {
+        write!(f, "{}", symbol)?;
+      } else {
+        write!(f, "-")?;
+      }
+    }
+
+    Ok(())
+  }
+}
+
 #[cfg(test)]
 mod tests {
   use super::*;
@@ -299,5 +319,13 @@ mod tests {
     assert_eq!(regions[0].protection(), Protection::READ);
 
     Ok(())
+  }
+
+  #[test]
+  fn protection_implements_display() {
+    assert_eq!(Protection::READ.to_string(), "r--");
+    assert_eq!(Protection::READ_WRITE.to_string(), "rw-");
+    assert_eq!(Protection::READ_WRITE_EXECUTE.to_string(), "rwx");
+    assert_eq!(Protection::WRITE.to_string(), "-w-");
   }
 }
