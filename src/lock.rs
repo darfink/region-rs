@@ -76,7 +76,7 @@ unsafe impl Sync for LockGuard {}
 #[cfg(test)]
 mod tests {
   use super::*;
-  use crate::tests::alloc_pages;
+  use crate::tests::util::alloc_pages;
   use crate::{page, Protection};
 
   #[test]

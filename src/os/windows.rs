@@ -140,7 +140,7 @@ impl Protection {
     }
   }
 
-  fn to_native(self) -> winapi::shared::minwindef::DWORD {
+  pub(crate) fn to_native(self) -> winapi::shared::minwindef::DWORD {
     match self {
       Protection::NONE => winapi::um::winnt::PAGE_NOACCESS,
       Protection::READ => winapi::um::winnt::PAGE_READONLY,

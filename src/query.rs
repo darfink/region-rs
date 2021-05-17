@@ -86,7 +86,7 @@ pub fn query_range<T>(
 #[cfg(test)]
 mod tests {
   use super::*;
-  use crate::tests::alloc_pages;
+  use crate::tests::util::alloc_pages;
   use crate::{page, Protection};
 
   #[test]

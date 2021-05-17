@@ -175,7 +175,7 @@ bitflags! {
 #[cfg(test)]
 mod tests {
   use super::*;
-  use crate::tests::alloc_pages;
+  use crate::tests::util::alloc_pages;
   use crate::{page, query, query_range};
 
   #[test]

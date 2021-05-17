@@ -187,63 +187,6 @@ fn round_to_page_boundaries<T>(address: *const T, size: usize) -> Result<(*const
 #[cfg(test)]
 mod tests {
   use super::*;
-  use mmap::{MapOption, MemoryMap};
-  use std::ops::Deref;
-
-  struct AllocatedPages(Vec<MemoryMap>);
-
-  impl Deref for AllocatedPages {
-    type Target = [u8];
-
-    fn deref(&self) -> &Self::Target {
-      unsafe {
-        std::slice::from_raw_parts(self.0[0].data() as *const _, self.0.len() * page::size())
-      }
-    }
-  }
-
-  impl From<Protection> for &'static [MapOption] {
-    fn from(protection: Protection) -> Self {
-      match protection {
-        Protection::NONE => &[],
-        Protection::READ => &[MapOption::MapReadable],
-        Protection::READ_WRITE => &[MapOption::MapReadable, MapOption::MapWritable],
-        Protection::READ_EXECUTE => &[MapOption::MapReadable, MapOption::MapExecutable],
-        _ => panic!("Unsupported protection {:?}", protection),
-      }
-    }
-  }
-
-  /// Allocates one or more sequential pages for each protection flag.
-  pub fn alloc_pages(pages: &[Protection]) -> impl Deref<Target = [u8]> {
-    // Find a region which fits all pages
-    let region = MemoryMap::new(page::size() * pages.len(), &[]).expect("allocating pages");
-    let mut base = region.data();
-
-    // Drop the region to ensure it's free
-    std::mem::forget(region);
-
-    // Allocate one page at a time with explicit page permissions. Since this
-    // introduces a race condition, it would be expected to be an issue, but
-    // only one thread is used during testing (after all, only one thread should
-    // ever be active when querying and/or manipulating memory regions).
-    let allocated_pages = pages
-      .iter()
-      .map(|protection| {
-        let mut options = vec![MapOption::MapAddr(base)];
-        options.extend_from_slice(Into::into(*protection));
-
-        let map = MemoryMap::new(page::size(), &options).expect("allocating page");
-        assert_eq!(map.data(), base);
-        assert_eq!(map.len(), page::size());
-
-        base = (base as usize + page::size()) as *mut _;
-        map
-      })
-      .collect::<Vec<_>>();
-
-    AllocatedPages(allocated_pages)
-  }
 
   #[test]
   fn round_to_page_boundaries_works() -> Result<()> {
@@ -262,5 +205,103 @@ mod tests {
       assert_eq!((address, size), (*after_address as *const (), *after_size));
     }
     Ok(())
+  }
+
+  #[cfg(unix)]
+  pub mod util {
+    use crate::{page, Protection};
+    use mmap::{MapOption, MemoryMap};
+    use std::ops::Deref;
+
+    struct AllocatedPages(Vec<MemoryMap>);
+
+    impl Deref for AllocatedPages {
+      type Target = [u8];
+
+      fn deref(&self) -> &Self::Target {
+        unsafe {
+          std::slice::from_raw_parts(self.0[0].data() as *const _, self.0.len() * page::size())
+        }
+      }
+    }
+
+    impl From<Protection> for &'static [MapOption] {
+      fn from(protection: Protection) -> Self {
+        match protection {
+          Protection::NONE => &[],
+          Protection::READ => &[MapOption::MapReadable],
+          Protection::READ_WRITE => &[MapOption::MapReadable, MapOption::MapWritable],
+          Protection::READ_EXECUTE => &[MapOption::MapReadable, MapOption::MapExecutable],
+          _ => panic!("Unsupported protection {:?}", protection),
+        }
+      }
+    }
+
+    /// Allocates one or more sequential pages for each protection flag.
+    pub fn alloc_pages(pages: &[Protection]) -> impl Deref<Target = [u8]> {
+      // Find a region which fits all pages
+      let region = MemoryMap::new(page::size() * pages.len(), &[]).expect("allocating pages");
+      let mut page_address = region.data();
+
+      // Drop the region to ensure it's free
+      std::mem::forget(region);
+
+      // Allocate one page at a time with explicit page permissions. Since this
+      // introduces a race condition, it would normally be an issue, but only one
+      // thread is used during testing (after all, only one thread should ever be
+      // active when querying and/or manipulating memory regions).
+      let allocated_pages = pages
+        .iter()
+        .map(|protection| {
+          let mut options = vec![MapOption::MapAddr(page_address)];
+          options.extend_from_slice(Into::into(*protection));
+
+          let map = MemoryMap::new(page::size(), &options).expect("allocating page");
+          assert_eq!(map.data(), page_address);
+          assert_eq!(map.len(), page::size());
+
+          page_address = (page_address as usize + page::size()) as *mut _;
+          map
+        })
+        .collect::<Vec<_>>();
+
+      AllocatedPages(allocated_pages)
+    }
+  }
+
+  #[cfg(windows)]
+  pub mod util {
+    use crate::{page, Protection};
+    use std::ops::Deref;
+    use winapi::um::memoryapi::VirtualAlloc;
+    use winapi::um::winnt::{MEM_COMMIT, MEM_RESERVE, PAGE_NOACCESS};
+
+    /// Allocates one or more sequential pages for each protection flag.
+    pub fn alloc_pages(pages: &[Protection]) -> impl Deref<Target = [u8]> {
+      let total_size = page::size() * pages.len();
+      let allocation_base =
+        unsafe { VirtualAlloc(std::ptr::null_mut(), total_size, MEM_RESERVE, PAGE_NOACCESS) };
+      assert_ne!(allocation_base, std::ptr::null_mut());
+
+      let mut page_address = allocation_base;
+
+      // Commit one page at a time with the expected permissions
+      for protection in pages {
+        let address = unsafe {
+          VirtualAlloc(
+            page_address,
+            page::size(),
+            MEM_COMMIT,
+            protection.to_native(),
+          )
+        };
+        assert_eq!(address, page_address);
+
+        page_address = (address as usize + page::size()) as *mut _;
+      }
+
+      // Skip deallocating since it's only used during testing
+      unsafe { std::slice::from_raw_parts(allocation_base as *const _, total_size) }
+    }
   }
 }
