@@ -94,18 +94,3 @@ jobs:
         use-cross: true
         command: test
         args: --target ${{ matrix.target }}
-
-  test-freebsd:
-    runs-on: macos-latest
-    name: x86_64-unknown-freebsd
-    steps:
-    - name: Checkout
-      uses: actions/checkout@v2
-    - name: Run tests
-      id: test
-      uses: vmactions/freebsd-vm@v0.1.4
-      with:
-        usesh: true
-        prepare: pkg install -y curl && curl https://sh.rustup.rs -sSf | sh -s -- -y --default-toolchain stable
-        run: |
-          cargo test
