@@ -16,6 +16,7 @@ jobs:
           - i686-pc-windows-msvc
           - x86_64-pc-windows-gnu
           - x86_64-pc-windows-msvc
+    name: ${{ matrix.target }}
     steps:
     - name: Checkout
       uses: actions/checkout@v2
@@ -33,6 +34,7 @@ jobs:
 
   test-macos:
     runs-on: macos-10.15
+    name: x86_64-apple-darwin
     steps:
     - name: Checkout
       uses: actions/checkout@v2
@@ -49,6 +51,7 @@ jobs:
           - i686-unknown-linux-musl
           - x86_64-unknown-linux-gnu
           - x86_64-unknown-linux-musl
+    name: ${{ matrix.target }}
     steps:
     - name: Checkout
       uses: actions/checkout@v2
@@ -91,3 +94,18 @@ jobs:
         use-cross: true
         command: test
         args: --target ${{ matrix.target }}
+
+  test-freebsd:
+    runs-on: macos-latest
+    name: x86_64-unknown-freebsd
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v2
+    - name: Run tests
+      id: test
+      uses: vmactions/freebsd-vm@v0.1.4
+      with:
+        usesh: true
+        prepare: pkg install -y curl && curl https://sh.rustup.rs -sSf | sh -s -- -y --default-toolchain stable
+        run: |
+          cargo test
