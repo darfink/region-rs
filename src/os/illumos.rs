@@ -6,13 +6,11 @@ use take_until::TakeUntilExt;
 // As per proc(4), the file "/proc/$PID/map" contains an array of C structs of
 // type "prmap_t".  The layout of this struct, and thus this file, is a stable
 // interface.
-const PRMAPSZ: usize = 64;
-#[derive(Debug)]
 #[repr(C)]
 struct PrMap {
   pr_vaddr: *const (),
   pr_size: usize,
-  pr_mapname: [i8; PRMAPSZ],
+  pr_mapname: [i8; 64],
   pr_offset: isize,
   pr_mflags: i32,
   pr_pagesize: i32,
@@ -20,7 +18,7 @@ struct PrMap {
   _pr_filler: [i32; 1],
 }
 
-const ELEMENT_SIZE: usize = std::mem::size_of::<PrMap>();
+const PRMAP_SIZE: usize = std::mem::size_of::<PrMap>();
 
 // These come from <sys/procfs.h>, describing bits in the pr_mflags member:
 const MA_EXEC: i32 = 0x1;
@@ -81,13 +79,13 @@ pub fn query<T>(origin: *const T, size: usize) -> Result<impl Iterator<Item = Re
   // Do not use a buffered reader here: as much as possible, we want a single
   // large read(2) call to the proc file.
   let mut file = File::open("/proc/self/map").map_err(Error::SystemCall)?;
-  let mut buf: Vec<u8> = Vec::with_capacity(8 * ELEMENT_SIZE);
+  let mut buf: Vec<u8> = Vec::with_capacity(8 * PRMAP_SIZE);
 
   let sz = file.read_to_end(&mut buf).map_err(Error::SystemCall)?;
-  if sz % ELEMENT_SIZE != 0 {
+  if sz % PRMAP_SIZE != 0 {
     return Err(Error::ProcfsInput(format!(
       "file size {} is not a multiple of prmap_t size ({})",
-      sz, ELEMENT_SIZE
+      sz, PRMAP_SIZE
     )));
   }
 
