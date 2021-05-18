@@ -1,5 +1,4 @@
 use crate::{os, round_to_page_boundaries, Error, Region, Result};
-use std::iter::Iterator;
 
 /// TODO:
 pub struct QueryIter {

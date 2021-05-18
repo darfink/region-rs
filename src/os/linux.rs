@@ -1,6 +1,5 @@
 use crate::{Error, Protection, Region, Result};
 use std::fs;
-use std::iter::Iterator;
 
 pub struct QueryIter {
   proc_maps: String,

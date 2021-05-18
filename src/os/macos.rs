@@ -1,6 +1,5 @@
 use crate::{Error, Protection, Region, Result};
 use mach::vm_prot::*;
-use std::iter::Iterator;
 
 pub struct QueryIter {
   region_address: mach::vm_types::mach_vm_address_t,
