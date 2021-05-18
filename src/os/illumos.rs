@@ -77,7 +77,7 @@ impl Iterator for PrMapIterator {
 
 pub fn query<T>(origin: *const T, size: usize) -> Result<impl Iterator<Item = Result<Region>>> {
   // Do not use a buffered reader here to avoid multiple read(2) calls to the
-  // proc file, ensuring a consistent view of the virtual memory.
+  // proc file, ensuring a consistent snapshot of the virtual memory.
   let mut file = File::open("/proc/self/map").map_err(Error::SystemCall)?;
   let mut buf: Vec<u8> = Vec::with_capacity(8 * PRMAP_SIZE);
 

@@ -1,4 +1,4 @@
-use crate::{os, round_to_page_boundaries, Region, Result};
+use crate::{os, round_to_page_boundaries, QueryIter, Region, Result};
 
 /// Changes the memory protection of one or more pages.
 ///
@@ -87,7 +87,7 @@ pub unsafe fn protect_with_handle<T>(
   let (address, size) = round_to_page_boundaries(address, size)?;
 
   // Preserve the current regions' flags
-  let mut regions = os::query(address, size)?.collect::<Result<Vec<_>>>()?;
+  let mut regions = QueryIter::new(address, size)?.collect::<Result<Vec<_>>>()?;
 
   // Apply the desired protection flags
   protect(address, size, protection)?;

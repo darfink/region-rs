@@ -96,7 +96,7 @@ jobs:
         override: true
 
     - name: Run check
-      run: cargo check
+      run: cargo check --target ${{ matrix.target }}
 
   lint:
     name: Lint
