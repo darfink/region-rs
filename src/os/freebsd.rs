@@ -2,40 +2,63 @@ use crate::{Error, Protection, Region, Result};
 use libc::{c_int, c_void, free, getpid, pid_t};
 use std::io;
 
-pub fn query<T>(origin: *const T, size: usize) -> Result<impl Iterator<Item = Result<Region>>> {
-  let mut vm_cnt = 0;
-  let vm = unsafe { kinfo_getvmmap(getpid(), &mut vm_cnt) };
+pub struct QueryIter {
+  vmmap: *mut kinfo_vmentry,
+  vmmap_len: usize,
+  vmmap_index: usize,
+  upper_bound: usize,
+}
 
-  if vm.is_null() {
-    return Err(Error::SystemCall(io::Error::last_os_error()));
+impl QueryIter {
+  pub fn new(origin: *const (), size: usize) -> Result<QueryIter> {
+    let mut vmmap_len = 0;
+    let vmmap = unsafe { kinfo_getvmmap(getpid(), &mut vmmap_len) };
+
+    if vmmap.is_null() {
+      return Err(Error::SystemCall(io::Error::last_os_error()));
+    }
+
+    Ok(QueryIter {
+      vmmap,
+      vmmap_len: vmmap_len as usize,
+      vmmap_index: 0,
+      upper_bound: (origin as usize).saturating_add(size),
+    })
   }
 
-  // The caller is expected to free the VM entry
-  let guard = ScopeGuard::new(move || unsafe { free(vm as *mut c_void) });
-  let upper_bound = (origin as usize).saturating_add(size);
+  pub fn upper_bound(&self) -> usize {
+    self.upper_bound
+  }
+}
 
-  let iterator = (0..vm_cnt)
-    .map(move |index| {
-      // This must be moved into the closure to ensure its lifetime
-      let _guard = &guard;
+impl Iterator for QueryIter {
+  type Item = Result<Region>;
 
-      // Since the struct size is given in the struct, it can be used future-proof
-      // (the definition is not required to be updated when new fields are added).
-      let offset = unsafe { index as isize * (*vm).kve_structsize as isize };
-      let entry = unsafe { &*((vm as *const c_void).offset(offset) as *const kinfo_vmentry) };
+  fn next(&mut self) -> Option<Self::Item> {
+    if self.vmmap_index >= self.vmmap_len {
+      return None;
+    }
 
-      Region {
-        base: entry.kve_start as *const _,
-        protection: Protection::from_native(entry.kve_protection),
-        shared: entry.kve_type == KVME_TYPE_DEFAULT,
-        size: (entry.kve_end - entry.kve_start) as _,
-        ..Default::default()
-      }
-    })
-    .skip_while(move |region| region.as_range().end <= origin as usize)
-    .take_while(move |region| region.as_range().start < upper_bound)
-    .map(Ok);
-  Ok(iterator)
+    // Since the struct size is given in the struct, it can be used future-proof
+    // (the definition is not required to be updated when new fields are added).
+    let offset = unsafe { self.vmmap_index * (*self.vmmap).kve_structsize as usize };
+    let entry = unsafe { &*((self.vmmap as *const c_void).add(offset) as *const kinfo_vmentry) };
+
+    self.vmmap_index += 1;
+    Some(Ok(Region {
+      base: entry.kve_start as *const _,
+      protection: Protection::from_native(entry.kve_protection),
+      shared: entry.kve_type == KVME_TYPE_DEFAULT,
+      size: (entry.kve_end - entry.kve_start) as _,
+      ..Default::default()
+    }))
+  }
+}
+
+impl Drop for QueryIter {
+  fn drop(&mut self) {
+    unsafe { free(self.vmmap as *mut c_void) }
+  }
 }
 
 impl Protection {
@@ -50,20 +73,6 @@ impl Protection {
       .iter()
       .filter(|(flag, _)| protection & *flag == *flag)
       .fold(Protection::NONE, |acc, (_, prot)| acc | *prot)
-  }
-}
-
-struct ScopeGuard<F: FnOnce()>(Option<F>);
-
-impl<F: FnOnce()> ScopeGuard<F> {
-  pub fn new(closure: F) -> Self {
-    ScopeGuard(Some(closure))
-  }
-}
-
-impl<F: FnOnce()> Drop for ScopeGuard<F> {
-  fn drop(&mut self) {
-    self.0.take().unwrap()()
   }
 }
 

@@ -1,28 +1,39 @@
 use crate::{Error, Protection, Region, Result};
-use std::fs::File;
-use std::io::{BufRead, BufReader};
-use std::iter;
-use take_until::TakeUntilExt;
+use std::fs;
 
-pub fn query<T>(origin: *const T, size: usize) -> Result<impl Iterator<Item = Result<Region>>> {
-  let file = File::open("/proc/self/maps").map_err(Error::SystemCall)?;
-  let mut reader = BufReader::new(file);
-  let mut line = String::new();
+pub struct QueryIter {
+  proc_maps: String,
+  upper_bound: usize,
+  offset: usize,
+}
 
-  let upper_bound = (origin as usize).saturating_add(size);
-  let iterator = iter::from_fn(move || {
-    line.clear();
-    match reader.read_line(&mut line) {
-      Ok(0) => None,
-      Ok(_) => Some(parse_procfs_line(&line).ok_or_else(|| Error::ProcfsInput(line.clone()))),
-      Err(error) => Some(Err(Error::SystemCall(error))),
-    }
-  })
-  .skip_while(move |res| matches!(res, Ok(region) if region.as_range().end <= origin as usize))
-  .take_while(move |res| !matches!(res, Ok(region) if region.as_range().start >= upper_bound))
-  .take_until(|res| res.is_err())
-  .fuse();
-  Ok(iterator)
+impl QueryIter {
+  pub fn new(origin: *const (), size: usize) -> Result<QueryIter> {
+    // Do not use a buffered reader here to avoid multiple read(2) calls to the
+    // proc file, ensuring a consistent snapshot of the virtual memory.
+    let proc_maps = fs::read_to_string("/proc/self/maps").map_err(Error::SystemCall)?;
+
+    Ok(QueryIter {
+      proc_maps,
+      upper_bound: (origin as usize).saturating_add(size),
+      offset: 0,
+    })
+  }
+
+  pub fn upper_bound(&self) -> usize {
+    self.upper_bound
+  }
+}
+
+impl Iterator for QueryIter {
+  type Item = Result<Region>;
+
+  fn next(&mut self) -> Option<Self::Item> {
+    let (line, _) = self.proc_maps.get(self.offset..)?.split_once('\n')?;
+    self.offset += line.len() + 1;
+
+    Some(parse_procfs_line(line).ok_or_else(|| Error::ProcfsInput(line.to_string())))
+  }
 }
 
 /// Parses flags from /proc/[pid]/maps (e.g 'r--p').

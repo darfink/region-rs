@@ -71,7 +71,7 @@ extern crate bitflags;
 pub use error::{Error, Result};
 pub use lock::{lock, unlock, LockGuard};
 pub use protect::{protect, protect_with_handle, ProtectGuard, Protection};
-pub use query::{query, query_range};
+pub use query::{query, query_range, QueryIter};
 
 mod error;
 mod lock;

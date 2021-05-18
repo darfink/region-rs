@@ -1,18 +1,35 @@
 use crate::{Error, Protection, Region, Result};
-use libc::{c_int, c_ulong, getpid, sysctl, CTL_KERN, KERN_PROC_VMMAP};
+use libc::{c_int, c_uint, c_ulong, getpid, sysctl, CTL_KERN, KERN_PROC_VMMAP};
 use std::io;
-use std::iter;
-use take_until::TakeUntilExt;
 
-pub fn query<T>(origin: *const T, size: usize) -> Result<impl Iterator<Item = Result<Region>>> {
-  let upper_bound = (origin as usize).saturating_add(size);
-  let mib: [c_int; 3] = [CTL_KERN, KERN_PROC_VMMAP, unsafe { getpid() }];
+pub struct QueryIter {
+  mib: [c_int; 3],
+  vmentry: kinfo_vmentry,
+  previous_boundary: usize,
+  upper_bound: usize,
+}
 
-  let mut len = std::mem::size_of::<kinfo_vmentry>();
-  let mut entry: kinfo_vmentry = unsafe { std::mem::zeroed() };
-  let mut previous_end = 0;
+impl QueryIter {
+  pub fn new(origin: *const (), size: usize) -> Result<QueryIter> {
+    Ok(QueryIter {
+      mib: [CTL_KERN, KERN_PROC_VMMAP, unsafe { getpid() }],
+      vmentry: unsafe { std::mem::zeroed() },
+      upper_bound: (origin as usize).saturating_add(size),
+      previous_boundary: 0,
+    })
+  }
 
-  let iterator = iter::from_fn(move || {
+  pub fn upper_bound(&self) -> usize {
+    self.upper_bound
+  }
+}
+
+impl Iterator for QueryIter {
+  type Item = Result<Region>;
+
+  fn next(&mut self) -> Option<Self::Item> {
+    let mut len = std::mem::size_of::<kinfo_vmentry>();
+
     // Albeit it would be preferred to query the information for all virtual
     // pages at once, the system call does not seem to respond consistently. If
     // called once during a process' lifetime, it returns all pages, but if
@@ -21,42 +38,38 @@ pub fn query<T>(origin: *const T, size: usize) -> Result<impl Iterator<Item = Re
     // at a time.
     let result = unsafe {
       sysctl(
-        mib.as_ptr(),
-        mib.len() as u32,
-        &mut entry as *mut _ as *mut _,
+        self.mib.as_ptr(),
+        self.mib.len() as c_uint,
+        &mut self.vmentry as *mut _ as *mut _,
         &mut len,
         std::ptr::null_mut(),
         0,
       )
     };
-    assert_eq!(len, std::mem::size_of::<kinfo_vmentry>());
 
     if result == -1 {
       return Some(Err(Error::SystemCall(io::Error::last_os_error())));
     }
 
-    if entry.kve_end == previous_end {
+    if len == 0 || self.vmentry.kve_end as usize == self.previous_boundary {
       return None;
     }
 
     let region = Region {
-      base: entry.kve_start as *const _,
-      protection: Protection::from_native(entry.kve_protection),
-      shared: (entry.kve_etype & KVE_ET_COPYONWRITE) == 0,
-      size: (entry.kve_end - entry.kve_start) as _,
+      base: self.vmentry.kve_start as *const _,
+      protection: Protection::from_native(self.vmentry.kve_protection),
+      shared: (self.vmentry.kve_etype & KVE_ET_COPYONWRITE) == 0,
+      size: (self.vmentry.kve_end - self.vmentry.kve_start) as _,
       ..Default::default()
     };
 
-    previous_end = entry.kve_end;
-    entry.kve_start += 1;
-
+    // Since OpenBSD returns the first region whose base address is at, or after
+    // `kve_start`, the address can simply be incremented by one to retrieve the
+    // next region.
+    self.vmentry.kve_start += 1;
+    self.previous_boundary = self.vmentry.kve_end as usize;
     Some(Ok(region))
-  })
-  .skip_while(move |res| matches!(res, Ok(region) if region.as_range().end <= origin as usize))
-  .take_while(move |res| !matches!(res, Ok(region) if region.as_range().start >= upper_bound))
-  .take_until(|res| res.is_err())
-  .fuse();
-  Ok(iterator)
+  }
 }
 
 impl Protection {

@@ -1,5 +1,60 @@
 use crate::{os, round_to_page_boundaries, Error, Region, Result};
 
+/// TODO:
+pub struct QueryIter {
+  iterator: Option<os::QueryIter>,
+  origin: *const (),
+}
+
+impl QueryIter {
+  pub(crate) fn new<T>(origin: *const T, size: usize) -> Result<QueryIter> {
+    let origin = origin as *const ();
+
+    os::QueryIter::new(origin, size).map(|iterator| QueryIter {
+      iterator: Some(iterator),
+      origin,
+    })
+  }
+}
+
+impl Iterator for QueryIter {
+  type Item = Result<Region>;
+
+  fn next(&mut self) -> Option<Self::Item> {
+    let regions = self.iterator.as_mut()?;
+
+    while let Some(result) = regions.next() {
+      match result {
+        Ok(region) => {
+          let range = region.as_range();
+
+          // Skip the region if it is prior to the queried range
+          if range.end <= self.origin as usize {
+            continue;
+          }
+
+          // Stop iteration if the region is after the queried range
+          if range.start >= regions.upper_bound() {
+            break;
+          }
+
+          return Some(Ok(region));
+        }
+        Err(error) => {
+          self.iterator.take();
+          return Some(Err(error));
+        }
+      }
+    }
+
+    self.iterator.take();
+    None
+  }
+}
+
+unsafe impl Send for QueryIter {}
+unsafe impl Sync for QueryIter {}
+
 /// Queries the OS with an address, returning the region it resides within.
 ///
 /// If the queried address does not reside within any mapped region, or if it's
@@ -34,7 +89,7 @@ pub fn query<T>(address: *const T) -> Result<Region> {
   // For UNIX systems, the address must be aligned to the closest page boundary
   let (address, size) = round_to_page_boundaries(address, 1)?;
 
-  os::query(address, size)?
+  QueryIter::new(address, size)?
     .next()
     .ok_or(Error::UnmappedRegion)?
 }
@@ -75,12 +130,9 @@ pub fn query<T>(address: *const T) -> Result<Region> {
 /// # Ok(())
 /// # }
 /// ```
-pub fn query_range<T>(
-  address: *const T,
-  size: usize,
-) -> Result<impl Iterator<Item = Result<Region>>> {
+pub fn query_range<T>(address: *const T, size: usize) -> Result<QueryIter> {
   let (address, size) = round_to_page_boundaries(address, size)?;
-  os::query(address, size)
+  QueryIter::new(address, size)
 }
 
 #[cfg(test)]
