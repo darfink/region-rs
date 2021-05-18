@@ -200,7 +200,7 @@ mod tests {
 
   #[test]
   fn protect_null_fails() {
-    assert!(unsafe { protect(0 as *const (), 0, Protection::NONE) }.is_err());
+    assert!(unsafe { protect(std::ptr::null::<()>(), 0, Protection::NONE) }.is_err());
   }
 
   #[test]
@@ -226,8 +226,8 @@ mod tests {
       Protection::READ,
     ]);
 
-    let base_exec = unsafe { map.as_ptr().offset(pz as isize) };
-    let straddle = unsafe { base_exec.offset(pz as isize - 1) };
+    let base_exec = unsafe { map.as_ptr().add(pz) };
+    let straddle = unsafe { base_exec.add(pz - 1) };
 
     // Change the protection over two page boundaries
     unsafe { protect(straddle, 2, Protection::NONE)? };
@@ -251,7 +251,7 @@ mod tests {
     ]);
 
     // Alter the protection of the second page
-    let second_page = unsafe { map.as_ptr().offset(page::size() as isize) };
+    let second_page = unsafe { map.as_ptr().add(page::size()) };
     unsafe {
       let edge = second_page.offset(page::size() as isize - 1);
       protect(edge, 1, Protection::NONE)?;
@@ -301,7 +301,7 @@ mod tests {
     ];
     let map = alloc_pages(&pages);
 
-    let second_page = unsafe { map.as_ptr().offset(page::size() as isize) };
+    let second_page = unsafe { map.as_ptr().add(page::size()) };
     let region_size = page::size() * 3;
 
     unsafe {

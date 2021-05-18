@@ -91,7 +91,7 @@ mod tests {
 
   #[test]
   fn query_returns_unmapped_for_oob_address() {
-    let (min, max) = (0 as *const (), usize::max_value() as *const ());
+    let (min, max) = (std::ptr::null::<()>(), usize::max_value() as *const ());
     assert!(matches!(query(min), Err(Error::UnmappedRegion)));
     assert!(matches!(query(max), Err(Error::UnmappedRegion)));
   }
@@ -100,8 +100,8 @@ mod tests {
   fn query_returns_correct_region_for_text_segment() -> Result<()> {
     let region = query(query_returns_correct_region_for_text_segment as *const ())?;
     assert_eq!(region.protection(), Protection::READ_EXECUTE);
-    assert_eq!(region.is_guarded(), false);
     assert_eq!(region.is_shared(), cfg!(windows));
+    assert!(!region.is_guarded());
     Ok(())
   }
 
@@ -112,8 +112,8 @@ mod tests {
     let map = alloc_pages(&pages);
     let region = query(map.as_ptr())?;
 
-    assert_eq!(region.is_guarded(), false);
     assert_eq!(region.protection(), Protection::READ_EXECUTE);
+    assert!(!region.is_guarded());
     assert!(region.as_ptr() <= map.as_ptr());
     assert!(region.len() >= page::size() * pages.len());
     Ok(())
@@ -124,7 +124,7 @@ mod tests {
     let pages = [Protection::READ, Protection::READ_EXECUTE, Protection::READ];
     let map = alloc_pages(&pages);
 
-    let page_mid = unsafe { map.as_ptr().offset(page::size() as isize) };
+    let page_mid = unsafe { map.as_ptr().add(page::size()) };
     let region = query(page_mid)?;
 
     assert_eq!(region.protection(), Protection::READ_EXECUTE);
@@ -139,7 +139,7 @@ mod tests {
 
   #[test]
   fn query_range_does_not_return_unmapped_regions() -> Result<()> {
-    let regions = query_range(0 as *const (), 1)?.collect::<Result<Vec<_>>>()?;
+    let regions = query_range(std::ptr::null::<()>(), 1)?.collect::<Result<Vec<_>>>()?;
     assert!(regions.is_empty());
     Ok(())
   }
@@ -178,7 +178,8 @@ mod tests {
 
   #[test]
   fn query_range_can_iterate_over_entire_process() -> Result<()> {
-    let regions = query_range(0 as *const (), usize::max_value())?.collect::<Result<Vec<_>>>()?;
+    let regions =
+      query_range(std::ptr::null::<()>(), usize::max_value())?.collect::<Result<Vec<_>>>()?;
     let (r, rw, rx) = (
       Protection::READ,
       Protection::READ_WRITE,
