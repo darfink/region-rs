@@ -1,6 +1,6 @@
 use crate::{os, util, Error, Region, Result};
 
-/// An iterator over the [Region]s inside an address range.
+/// An iterator over the [Region]s that encompass an address range.
 ///
 /// This `struct` is created by [query_range]. See its documentation for more.
 pub struct QueryIter {
