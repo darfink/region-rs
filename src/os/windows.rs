@@ -78,7 +78,7 @@ pub fn page_size() -> usize {
   system_info().dwPageSize as usize
 }
 
-pub unsafe fn protect<T>(base: *const T, size: usize, protection: Protection) -> Result<()> {
+pub unsafe fn protect(base: *const (), size: usize, protection: Protection) -> Result<()> {
   let result = VirtualProtect(
     base as winapi::um::winnt::PVOID,
     size as winapi::shared::basetsd::SIZE_T,
@@ -93,7 +93,7 @@ pub unsafe fn protect<T>(base: *const T, size: usize, protection: Protection) ->
   }
 }
 
-pub fn lock<T>(base: *const T, size: usize) -> Result<()> {
+pub fn lock(base: *const (), size: usize) -> Result<()> {
   let result = unsafe {
     VirtualLock(
       base as winapi::um::winnt::PVOID,
@@ -108,7 +108,7 @@ pub fn lock<T>(base: *const T, size: usize) -> Result<()> {
   }
 }
 
-pub fn unlock<T>(base: *const T, size: usize) -> Result<()> {
+pub fn unlock(base: *const (), size: usize) -> Result<()> {
   let result = unsafe {
     VirtualUnlock(
       base as winapi::um::winnt::PVOID,

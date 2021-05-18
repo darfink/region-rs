@@ -42,7 +42,7 @@ use crate::{os, util, Protection, QueryIter, Region, Result};
 /// ```
 pub unsafe fn protect<T>(address: *const T, size: usize, protection: Protection) -> Result<()> {
   let (address, size) = util::round_to_page_boundaries(address, size)?;
-  os::protect(address, size, protection)
+  os::protect(address as *const _, size, protection)
 }
 
 /// Temporarily changes the memory protection of one or more pages.

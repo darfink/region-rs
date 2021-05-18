@@ -25,7 +25,7 @@ use crate::{os, util, Result};
 /// ```
 pub fn lock<T>(address: *const T, size: usize) -> Result<LockGuard> {
   let (address, size) = util::round_to_page_boundaries(address, size)?;
-  os::lock(address, size).map(|_| LockGuard::new(address, size))
+  os::lock(address as *const _, size).map(|_| LockGuard::new(address, size))
 }
 
 /// Unlocks one or more memory regions from RAM.
@@ -41,7 +41,7 @@ pub fn lock<T>(address: *const T, size: usize) -> Result<LockGuard> {
 ///   address.
 pub fn unlock<T>(address: *const T, size: usize) -> Result<()> {
   let (address, size) = util::round_to_page_boundaries(address, size)?;
-  os::unlock(address, size)
+  os::unlock(address as *const _, size)
 }
 
 /// A RAII implementation of a scoped lock.

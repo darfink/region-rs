@@ -6,21 +6,21 @@ pub fn page_size() -> usize {
   unsafe { libc::sysconf(libc::_SC_PAGESIZE) as usize }
 }
 
-pub unsafe fn protect<T>(base: *const T, size: usize, protection: Protection) -> Result<()> {
+pub unsafe fn protect(base: *const (), size: usize, protection: Protection) -> Result<()> {
   match libc::mprotect(base as *mut _, size, protection.to_native()) {
     0 => Ok(()),
     _ => Err(Error::SystemCall(io::Error::last_os_error())),
   }
 }
 
-pub fn lock<T>(base: *const T, size: usize) -> Result<()> {
+pub fn lock(base: *const (), size: usize) -> Result<()> {
   match unsafe { libc::mlock(base as *const libc::c_void, size) } {
     0 => Ok(()),
     _ => Err(Error::SystemCall(io::Error::last_os_error())),
   }
 }
 
-pub fn unlock<T>(base: *const T, size: usize) -> Result<()> {
+pub fn unlock(base: *const (), size: usize) -> Result<()> {
   match unsafe { libc::munlock(base as *const libc::c_void, size) } {
     0 => Ok(()),
     _ => Err(Error::SystemCall(io::Error::last_os_error())),

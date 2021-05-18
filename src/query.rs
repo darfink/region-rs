@@ -104,10 +104,6 @@ pub fn query<T>(address: *const T) -> Result<Region> {
 
 /// Queries the OS for mapped regions that overlap with the specified range.
 ///
-/// In contrast to [query], this function only returns mapped regions. If
-/// required, unmapped regions can be manually identified by inspecting the
-/// potential gaps between two neighboring regions.
-///
 /// The implementation clamps any input that exceeds the boundaries of a process'
 /// address space. Therefore it's safe to, e.g., pass in [std::ptr::null] and
 /// [usize::max_value] to iterate the mapped memory pages of an entire process.
@@ -117,6 +113,10 @@ pub fn query<T>(address: *const T) -> Result<Region> {
 ///
 /// A 2-byte range straddling a page boundary, will return both pages (or one
 /// region, if the pages share the same properties).
+///
+/// In contrast to [query], this function only returns mapped regions. If
+/// required, unmapped regions can be manually identified by inspecting the
+/// potential gaps between two neighboring regions.
 ///
 /// # Parameters
 ///
