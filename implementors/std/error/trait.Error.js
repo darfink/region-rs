@@ -1,0 +1,3 @@
+(function() {var implementors = {};
+implementors["region"] = [{"text":"impl <a class=\"trait\" href=\"https://doc.rust-lang.org/nightly/std/error/trait.Error.html\" title=\"trait std::error::Error\">Error</a> for <a class=\"enum\" href=\"region/enum.Error.html\" title=\"enum region::Error\">Error</a>","synthetic":false,"types":["region::error::Error"]}];
+if (window.register_implementors) {window.register_implementors(implementors);} else {window.pending_implementors = implementors;}})()
