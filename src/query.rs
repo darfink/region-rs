@@ -25,10 +25,6 @@ impl Iterator for QueryIter {
 
     while let Some(result) = regions.next() {
       match result {
-        Err(error) => {
-          self.iterator.take();
-          return Some(Err(error));
-        }
         Ok(region) => {
           let range = region.as_range();
 
@@ -43,6 +39,10 @@ impl Iterator for QueryIter {
           }
 
           return Some(Ok(region));
+        }
+        Err(error) => {
+          self.iterator.take();
+          return Some(Err(error));
         }
       }
     }
