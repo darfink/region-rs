@@ -1,14 +1,14 @@
 <div align="center">
 
 # `region-rs`
- 
+
 ## Cross-platform virtual memory API
 
 [![GitHub CI Status][github-shield]][github]
 [![crates.io version][crate-shield]][crate]
 [![Documentation][docs-shield]][docs]
 [![License][license-shield]][license]
- 
+
  </div>
 
 This crate provides a cross-platform Rust API for querying and manipulating
@@ -34,11 +34,16 @@ This library is continuously tested against these targets:
   * `x86_64-pc-windows-msvc`
 - macOS
   * `x86_64-apple-darwin`
+
+... and continuously checked against these targets:
+
 - FreeBSD
   * `x86_64-unknown-freebsd`
+- Illumos
+  * `x86_64-unknown-illumos`
 
-Beyond these continuously tested triplets, the library is also expected to work
-against a multitude of omitted architectures & `x86_64-unknown-illumos`.
+Beyond these continuously integrated triplets, the library is also expected to
+work against a multitude of omitted architectures.
 
 ## Installation
 
