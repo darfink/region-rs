@@ -42,8 +42,13 @@ This library is continuously tested against these targets:
 - Illumos
   * `x86_64-unknown-illumos`
 
-Beyond these continuously integrated triplets, the library is also expected to
-work against a multitude of omitted architectures.
+... and is also expected to support these targets:
+
+- OpenBSD
+  * `x86_64-unknown-freebsd`
+
+Beyond the aformentioned target triplets, the library is also expected to work
+against a multitude of omitted architectures.
 
 ## Installation
 
