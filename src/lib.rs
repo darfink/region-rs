@@ -103,9 +103,20 @@ impl Region {
     self.base as *const T
   }
 
-  /// Returns a range representing the region's address space.
+  /// Returns a range spanning the region's address space.
   pub fn as_range(&self) -> std::ops::Range<usize> {
     (self.base as usize)..(self.base as usize).saturating_add(self.size)
+  }
+
+  /// Returns two raw pointers spanning the region's address space.
+  ///
+  /// The returned range is half-open, which means that the end pointer points
+  /// one past the last element of the region. This way, an empty region is
+  /// represented by two equal pointers, and the difference between the two
+  /// pointers represents the size of the region.
+  pub fn as_ptr_range<T>(&self) -> std::ops::Range<*const T> {
+    let range = self.as_range();
+    (range.start as *const T)..(range.end as *const T)
   }
 
   /// Returns whether the region is committed or not.
