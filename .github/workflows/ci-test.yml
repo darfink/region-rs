@@ -7,16 +7,46 @@ env:
   RUST_TEST_THREADS: 1
 
 jobs:
-  test-windows:
+  test:
     name: Test (${{ matrix.target }})
-    runs-on: windows-2019
+    runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        target:
-          - i686-pc-windows-gnu
-          - i686-pc-windows-msvc
-          - x86_64-pc-windows-gnu
-          - x86_64-pc-windows-msvc
+        include:
+          # Linux
+          - target: i686-unknown-linux-gnu
+            os: ubuntu-18.04
+          - target: i686-unknown-linux-musl
+            os: ubuntu-18.04
+          - target: x86_64-unknown-linux-gnu
+            os: ubuntu-18.04
+          - target: x86_64-unknown-linux-musl
+            os: ubuntu-18.04
+
+          # Cross
+          - target: armv7-unknown-linux-gnueabihf
+            os: ubuntu-18.04
+            use-cross: true
+          - target: aarch64-linux-android
+            os: ubuntu-18.04
+            use-cross: true
+          - target: mips-unknown-linux-gnu
+            os: ubuntu-18.04
+            use-cross: true
+
+          # Windows
+          - target: i686-pc-windows-gnu
+            os: windows-2019
+          - target: i686-pc-windows-msvc
+            os: windows-2019
+          - target: x86_64-pc-windows-gnu
+            os: windows-2019
+          - target: x86_64-pc-windows-msvc
+            os: windows-2019
+
+          # macOS
+          - target: x86_64-apple-darwin
+            os: macos-10.15
       fail-fast: false
     steps:
     - name: Checkout
@@ -30,74 +60,17 @@ jobs:
         target: ${{ matrix.target }}
         override: true
 
-    - name: Run tests
-      run: cargo test
-
-  test-macos:
-    name: Test (x86_64-apple-darwin)
-    runs-on: macos-10.15
-    steps:
-    - name: Checkout
-      uses: actions/checkout@v2
-
-    - name: Run tests
-      run: cargo test
-
-  test-linux:
-    name: Test (${{ matrix.target }})
-    runs-on: ubuntu-18.04
-    strategy:
-      matrix:
-        target:
-          - i686-unknown-linux-gnu
-          - i686-unknown-linux-musl
-          - x86_64-unknown-linux-gnu
-          - x86_64-unknown-linux-musl
-      fail-fast: false
-    steps:
-    - name: Checkout
-      uses: actions/checkout@v2
-
-    - name: Install toolchain
-      uses: actions-rs/toolchain@v1
-      with:
-        toolchain: stable
-        profile: minimal
-        target: ${{ matrix.target }}
-        override: true
-
-    - name: Run tests
-      run: cargo test
-
-  test-cross:
-    name: Test (${{ matrix.target }})
-    runs-on: ubuntu-18.04
-    strategy:
-      matrix:
-        target:
-          - armv7-unknown-linux-gnueabihf
-          - aarch64-linux-android
-          - mips-unknown-linux-gnu
-          # - x86_64-unknown-freebsd
-      fail-fast: false
-    steps:
-    - name: Checkout
-      uses: actions/checkout@v2
-
-    - name: Install toolchain
-      uses: actions-rs/toolchain@v1
-      with:
-        toolchain: stable
-        profile: minimal
-        target: ${{ matrix.target }}
-        override: true
-
-    - name: Run tests
+    - name: Run tests (cross)
+      if: ${{ matrix.use-cross }}
       uses: actions-rs/cargo@v1
       with:
         use-cross: true
         command: test
         args: --target ${{ matrix.target }}
+
+    - name: Run tests (cargo)
+      if: ${{ !matrix.use-cross }}
+      run: cargo test
 
   check:
     name: Check (${{ matrix.target }})
