@@ -1,6 +1,8 @@
-use crate::{os, round_to_page_boundaries, Error, Region, Result};
+use crate::{os, util, Error, Region, Result};
 
-/// TODO:
+/// An iterator over the [Region]s inside an address range.
+///
+/// This `struct` is created by [query_range]. See its documentation for more.
 pub struct QueryIter {
   iterator: Option<os::QueryIter>,
   origin: *const (),
@@ -20,6 +22,12 @@ impl QueryIter {
 impl Iterator for QueryIter {
   type Item = Result<Region>;
 
+  /// Advances the iterator and returns the next region.
+  ///
+  /// If the iterator has been exhausted (i.e. all [Region]s have been queried),
+  /// or if an error is encountered during iteration, all further invocations
+  /// will return [None] (in the case of an error, the error will be the last
+  /// item that is yielded before the iterator is fused).
   fn next(&mut self) -> Option<Self::Item> {
     let regions = self.iterator.as_mut()?;
 
@@ -87,7 +95,7 @@ unsafe impl Sync for QueryIter {}
 /// ```
 pub fn query<T>(address: *const T) -> Result<Region> {
   // For UNIX systems, the address must be aligned to the closest page boundary
-  let (address, size) = round_to_page_boundaries(address, 1)?;
+  let (address, size) = util::round_to_page_boundaries(address, 1)?;
 
   QueryIter::new(address, size)?
     .next()
@@ -131,7 +139,7 @@ pub fn query<T>(address: *const T) -> Result<Region> {
 /// # }
 /// ```
 pub fn query_range<T>(address: *const T, size: usize) -> Result<QueryIter> {
-  let (address, size) = round_to_page_boundaries(address, size)?;
+  let (address, size) = util::round_to_page_boundaries(address, size)?;
   QueryIter::new(address, size)
 }
 

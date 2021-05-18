@@ -1,4 +1,4 @@
-use crate::{os, round_to_page_boundaries, Result};
+use crate::{os, util, Result};
 
 /// Locks one or more memory regions to RAM.
 ///
@@ -24,7 +24,7 @@ use crate::{os, round_to_page_boundaries, Result};
 /// # }
 /// ```
 pub fn lock<T>(address: *const T, size: usize) -> Result<LockGuard> {
-  let (address, size) = round_to_page_boundaries(address, size)?;
+  let (address, size) = util::round_to_page_boundaries(address, size)?;
   os::lock(address, size).map(|_| LockGuard::new(address, size))
 }
 
@@ -40,14 +40,14 @@ pub fn lock<T>(address: *const T, size: usize) -> Result<LockGuard> {
 /// - The size is rounded up to the closest page boundary, relative to the
 ///   address.
 pub fn unlock<T>(address: *const T, size: usize) -> Result<()> {
-  let (address, size) = round_to_page_boundaries(address, size)?;
+  let (address, size) = util::round_to_page_boundaries(address, size)?;
   os::unlock(address, size)
 }
 
-/// An RAII implementation of a scoped lock.
+/// A RAII implementation of a scoped lock.
 ///
 /// When this structure is dropped (falls out of scope), the virtual lock will be
-/// unlocked.
+/// released.
 #[must_use]
 pub struct LockGuard {
   address: *const (),

@@ -1,4 +1,4 @@
-use crate::{os, round_to_page_boundaries, QueryIter, Region, Result};
+use crate::{os, util, Protection, QueryIter, Region, Result};
 
 /// Changes the memory protection of one or more pages.
 ///
@@ -41,7 +41,7 @@ use crate::{os, round_to_page_boundaries, QueryIter, Region, Result};
 /// # }
 /// ```
 pub unsafe fn protect<T>(address: *const T, size: usize, protection: Protection) -> Result<()> {
-  let (address, size) = round_to_page_boundaries(address, size)?;
+  let (address, size) = util::round_to_page_boundaries(address, size)?;
   os::protect(address, size, protection)
 }
 
@@ -84,7 +84,7 @@ pub unsafe fn protect_with_handle<T>(
   size: usize,
   protection: Protection,
 ) -> Result<ProtectGuard> {
-  let (address, size) = round_to_page_boundaries(address, size)?;
+  let (address, size) = util::round_to_page_boundaries(address, size)?;
 
   // Preserve the current regions' flags
   let mut regions = QueryIter::new(address, size)?.collect::<Result<Vec<_>>>()?;
@@ -94,21 +94,20 @@ pub unsafe fn protect_with_handle<T>(
 
   if let Some(region) = regions.first_mut() {
     // Offset the lower region to the smallest page boundary
-    let delta = address as usize - region.as_ptr() as *const () as usize;
-    region.base = (region.base as usize + delta) as *const _;
-    region.size -= delta;
+    region.base = address as *const _;
+    region.size -= address as usize - region.as_range().start;
   }
 
   if let Some(ref mut region) = regions.last_mut() {
     // Truncate the upper region to the smallest page boundary
-    let delta = (region.as_ptr() as *const () as usize + region.len()) - (address as usize + size);
-    region.size -= delta;
+    let protect_end = address as usize + size;
+    region.size -= region.as_range().end - protect_end;
   }
 
   Ok(ProtectGuard::new(regions))
 }
 
-/// An RAII implementation of a scoped protection guard.
+/// A RAII implementation of a scoped protection guard.
 ///
 /// When this structure is dropped (falls out of scope), the memory regions'
 /// protection will be reset.
@@ -135,62 +134,6 @@ impl Drop for ProtectGuard {
 
 unsafe impl Send for ProtectGuard {}
 unsafe impl Sync for ProtectGuard {}
-
-bitflags! {
-  /// Memory page protection constants.
-  ///
-  /// Determines the access rights for a specific page and/or region. Some
-  /// combination of flags may not work depending on the OS (e.g macOS
-  /// enforces pages to be readable).
-  ///
-  /// # Examples
-  ///
-  /// ```
-  /// use region::Protection;
-  ///
-  /// let combine = Protection::READ | Protection::WRITE;
-  /// let shorthand = Protection::READ_WRITE;
-  /// ```
-  #[derive(Default)]
-  pub struct Protection: usize {
-    /// No access allowed at all.
-    const NONE = 0;
-    /// Read access; writing and/or executing data will panic.
-    const READ = (1 << 1);
-    /// Write access; this flag alone may not be supported on all OSs.
-    const WRITE = (1 << 2);
-    /// Execute access; this may not be allowed depending on DEP.
-    const EXECUTE = (1 << 3);
-    /// Read and execute shorthand.
-    const READ_EXECUTE = (Self::READ.bits | Self::EXECUTE.bits);
-    /// Read and write shorthand.
-    const READ_WRITE = (Self::READ.bits | Self::WRITE.bits);
-    /// Read, write and execute shorthand.
-    const READ_WRITE_EXECUTE = (Self::READ.bits | Self::WRITE.bits | Self::EXECUTE.bits);
-    /// Write and execute shorthand.
-    const WRITE_EXECUTE = (Self::WRITE.bits | Self::EXECUTE.bits);
-  }
-}
-
-impl std::fmt::Display for Protection {
-  fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
-    const MAPPINGS: &[(Protection, char)] = &[
-      (Protection::READ, 'r'),
-      (Protection::WRITE, 'w'),
-      (Protection::EXECUTE, 'x'),
-    ];
-
-    for (flag, symbol) in MAPPINGS {
-      if self.contains(*flag) {
-        write!(f, "{}", symbol)?;
-      } else {
-        write!(f, "-")?;
-      }
-    }
-
-    Ok(())
-  }
-}
 
 #[cfg(test)]
 mod tests {
@@ -319,13 +262,5 @@ mod tests {
     assert_eq!(regions[0].protection(), Protection::READ);
 
     Ok(())
-  }
-
-  #[test]
-  fn protection_implements_display() {
-    assert_eq!(Protection::READ.to_string(), "r--");
-    assert_eq!(Protection::READ_WRITE.to_string(), "rw-");
-    assert_eq!(Protection::READ_WRITE_EXECUTE.to_string(), "rwx");
-    assert_eq!(Protection::WRITE.to_string(), "-w-");
   }
 }

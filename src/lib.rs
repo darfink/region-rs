@@ -1,13 +1,13 @@
 #![deny(missing_docs)]
 #![cfg_attr(feature = "cargo-clippy", warn(clippy::print_stdout))]
-//! A cross-platform Rust API for manipulating memory regions
+//! Cross-platform virtual memory API.
 //!
-//! This crate provides several functions for querying, modifying and locking
-//! memory regions and their pages.
-//!
-//! It is implemented using platform specific APIs, but not all OS specific
-//! quirks are abstracted away. For instance; some OSs enforce memory pages to be
-//! readable whilst other may prevent pages from becoming executable (i.e DEP).
+//! This crate provides a cross-platform Rust API for querying and manipulating
+//! virtual memory. It is a thin abstraction, with the underlying interaction
+//! implemented using platform specific APIs (e.g VirtualQuery, VirtualLock,
+//! mprotect, mlock). Albeit not all OS specific quirks are abstracted away; for
+//! instance, some OSs enforce memory pages to be readable, whilst other may
+//! prevent pages from becoming executable (i.e DEP).
 //!
 //! *Note: a region is a collection of one or more pages laying consecutively in
 //! memory, with the same properties.*
@@ -27,12 +27,6 @@
 //! ```toml
 //! [dependencies]
 //! region = "2.2.0"
-//! ```
-//!
-//! and this to your crate root:
-//!
-//! ```rust
-//! extern crate region;
 //! ```
 //!
 //! # Examples
@@ -70,7 +64,7 @@ extern crate bitflags;
 
 pub use error::{Error, Result};
 pub use lock::{lock, unlock, LockGuard};
-pub use protect::{protect, protect_with_handle, ProtectGuard, Protection};
+pub use protect::{protect, protect_with_handle, ProtectGuard};
 pub use query::{query, query_range, QueryIter};
 
 mod error;
@@ -79,6 +73,7 @@ mod os;
 pub mod page;
 mod protect;
 mod query;
+mod util;
 
 /// A descriptor for a mapped memory region.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -184,15 +179,60 @@ impl Default for Region {
 unsafe impl Send for Region {}
 unsafe impl Sync for Region {}
 
-/// Validates & rounds an address-size pair to their respective page boundary.
-fn round_to_page_boundaries<T>(address: *const T, size: usize) -> Result<(*const T, usize)> {
-  if size == 0 {
-    return Err(Error::InvalidParameter("size"));
+bitflags! {
+  /// A bitflag of zero or more protection attributes.
+  ///
+  /// Determines the access rights for a specific page and/or region. Some
+  /// combination of flags may not work depending on the OS (e.g macOS enforces
+  /// executable pages to be readable).
+  ///
+  /// # Examples
+  ///
+  /// ```
+  /// use region::Protection;
+  ///
+  /// let combine = Protection::READ | Protection::WRITE;
+  /// let shorthand = Protection::READ_WRITE;
+  /// ```
+  #[derive(Default)]
+  pub struct Protection: usize {
+    /// No access allowed at all.
+    const NONE = 0;
+    /// Read access; writing and/or executing data will panic.
+    const READ = (1 << 1);
+    /// Write access; this flag alone may not be supported on all OSs.
+    const WRITE = (1 << 2);
+    /// Execute access; this may not be allowed depending on DEP.
+    const EXECUTE = (1 << 3);
+    /// Read and execute shorthand.
+    const READ_EXECUTE = (Self::READ.bits | Self::EXECUTE.bits);
+    /// Read and write shorthand.
+    const READ_WRITE = (Self::READ.bits | Self::WRITE.bits);
+    /// Read, write and execute shorthand.
+    const READ_WRITE_EXECUTE = (Self::READ.bits | Self::WRITE.bits | Self::EXECUTE.bits);
+    /// Write and execute shorthand.
+    const WRITE_EXECUTE = (Self::WRITE.bits | Self::EXECUTE.bits);
   }
+}
 
-  let size = (address as usize % page::size()).saturating_add(size);
-  let size = page::ceil(size as *const T) as usize;
-  Ok((page::floor(address), size))
+impl std::fmt::Display for Protection {
+  fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+    const MAPPINGS: &[(Protection, char)] = &[
+      (Protection::READ, 'r'),
+      (Protection::WRITE, 'w'),
+      (Protection::EXECUTE, 'x'),
+    ];
+
+    for (flag, symbol) in MAPPINGS {
+      if self.contains(*flag) {
+        write!(f, "{}", symbol)?;
+      } else {
+        write!(f, "-")?;
+      }
+    }
+
+    Ok(())
+  }
 }
 
 #[cfg(test)]
@@ -200,22 +240,11 @@ mod tests {
   use super::*;
 
   #[test]
-  fn round_to_page_boundaries_works() -> Result<()> {
-    let pz = page::size();
-    let values = &[
-      ((1, pz), (0, pz * 2)),
-      ((0, pz - 1), (0, pz)),
-      ((0, pz + 1), (0, pz * 2)),
-      ((pz - 1, 1), (0, pz)),
-      ((pz + 1, pz), (pz, pz * 2)),
-      ((pz, pz), (pz, pz)),
-    ];
-
-    for ((before_address, before_size), (after_address, after_size)) in values {
-      let (address, size) = round_to_page_boundaries(*before_address as *const (), *before_size)?;
-      assert_eq!((address, size), (*after_address as *const (), *after_size));
-    }
-    Ok(())
+  fn protection_implements_display() {
+    assert_eq!(Protection::READ.to_string(), "r--");
+    assert_eq!(Protection::READ_WRITE.to_string(), "rw-");
+    assert_eq!(Protection::READ_WRITE_EXECUTE.to_string(), "rwx");
+    assert_eq!(Protection::WRITE.to_string(), "-w-");
   }
 
   #[cfg(unix)]
