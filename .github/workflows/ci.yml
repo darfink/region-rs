@@ -72,13 +72,74 @@ jobs:
       if: ${{ !matrix.use-cross }}
       run: cargo test
 
+  test-qemu:
+    name: Test (${{ matrix.target }})
+    runs-on: ubuntu-18.04
+    env: { SSHPASS: 12345 }
+    strategy:
+      matrix:
+        include:
+          - target: x86_64-unknown-freebsd
+            image: http://files.housegordon.org/pretest/v0.1/freebsd111.build-ready.qcow2.xz
+
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v2
+
+    - name: Install QEMU
+      run: sudo apt-get install -y qemu-system-x86
+
+    - name: Lookup image
+      id: lookup-image
+      uses: actions/cache@v2
+      with:
+        path: ~/image.qcow2
+        key: ${{ matrix.target }}-image
+
+    - name: Download image
+      if: steps.lookup-image.outputs.cache-hit != 'true'
+      run: |
+        wget -O ~/image.qcow2.xz --no-check-certificate --progress=dot:mega ${{ matrix.image }}
+        echo "Decompressing image..."
+        unxz ~/image.qcow2.xz
+
+    - name: Boot image
+      run: |
+        qemu-system-x86_64 -m 1024 \
+          -nographic -nodefaults -snapshot \
+          -net user,hostfwd=tcp:127.0.0.1:1025-:22 \
+          -net nic,model=virtio \
+          -drive if=virtio,media=disk,index=0,file=$HOME/image.qcow2 \
+          -daemonize
+
+    - name: Configure SSH
+      run: |
+        ssh-keygen -t rsa -N '' -f ~/.ssh/id_rsa
+        cat > ~/.ssh/config <<EOF
+          Host qemu
+            User miles
+            HostName localhost
+            Port 1025
+        EOF
+        chmod og-rw ~
+        sshpass -e ssh-copy-id -o StrictHostKeyChecking=no qemu
+
+    - name: Install toolchain
+      run: |
+        ssh qemu "curl https://sh.rustup.rs -sSf | sh -s -- -y --profile minimal"
+
+    - name: Copy crate
+      run: rsync -r . qemu:crate
+
+    - name: Run tests
+      run: ssh qemu ". ~/.cargo/env && cd crate && cargo test"
+
   check:
     name: Check (${{ matrix.target }})
     runs-on: ubuntu-18.04
     strategy:
       matrix:
         target:
-          - x86_64-unknown-freebsd
           - x86_64-unknown-illumos
           # - x86_64-unknown-openbsd
       fail-fast: false
