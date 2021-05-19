@@ -364,10 +364,6 @@
 
 <span class="doccomment">/// Queries the OS for mapped regions that overlap with the specified range.</span>
 <span class="doccomment">///</span>
-<span class="doccomment">/// In contrast to [query], this function only returns mapped regions. If</span>
-<span class="doccomment">/// required, unmapped regions can be manually identified by inspecting the</span>
-<span class="doccomment">/// potential gaps between two neighboring regions.</span>
-<span class="doccomment">///</span>
 <span class="doccomment">/// The implementation clamps any input that exceeds the boundaries of a process&#39;</span>
 <span class="doccomment">/// address space. Therefore it&#39;s safe to, e.g., pass in [std::ptr::null] and</span>
 <span class="doccomment">/// [usize::max_value] to iterate the mapped memory pages of an entire process.</span>
@@ -377,6 +373,10 @@
 <span class="doccomment">///</span>
 <span class="doccomment">/// A 2-byte range straddling a page boundary, will return both pages (or one</span>
 <span class="doccomment">/// region, if the pages share the same properties).</span>
+<span class="doccomment">///</span>
+<span class="doccomment">/// In contrast to [query], this function only returns mapped regions. If</span>
+<span class="doccomment">/// required, unmapped regions can be manually identified by inspecting the</span>
+<span class="doccomment">/// potential gaps between two neighboring regions.</span>
 <span class="doccomment">///</span>
 <span class="doccomment">/// # Parameters</span>
 <span class="doccomment">///</span>
