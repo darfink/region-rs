@@ -34,11 +34,11 @@ This library is continuously tested against these targets:
   * `x86_64-pc-windows-msvc`
 - macOS
   * `x86_64-apple-darwin`
+- FreeBSD
+  * `x86_64-unknown-freebsd`
 
 ... and continuously checked against these targets:
 
-- FreeBSD
-  * `x86_64-unknown-freebsd`
 - Illumos
   * `x86_64-unknown-illumos`
 
@@ -84,7 +84,7 @@ let guard = region::lock(data.as_ptr(), data.len())?;
 
 <!-- Links -->
 [github-shield]: https://img.shields.io/github/workflow/status/darfink/region-rs/CI/master?label=actions&logo=github&style=for-the-badge
-[github]: https://github.com/darfink/region-rs/actions/workflows/ci-test.yml?query=branch%3Amaster
+[github]: https://github.com/darfink/region-rs/actions/workflows/ci.yml?query=branch%3Amaster
 [crate-shield]: https://img.shields.io/crates/v/region.svg?style=for-the-badge
 [crate]: https://crates.io/crates/region
 [docs-shield]: https://img.shields.io/badge/docs-crates-green.svg?style=for-the-badge
