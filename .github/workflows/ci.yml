@@ -7,70 +7,70 @@ env:
   RUST_TEST_THREADS: 1
 
 jobs:
-  # test:
-  #   name: Test (${{ matrix.target }})
-  #   runs-on: ${{ matrix.os }}
-  #   strategy:
-  #     matrix:
-  #       include:
-  #         # Linux
-  #         - target: i686-unknown-linux-gnu
-  #           os: ubuntu-18.04
-  #         - target: i686-unknown-linux-musl
-  #           os: ubuntu-18.04
-  #         - target: x86_64-unknown-linux-gnu
-  #           os: ubuntu-18.04
-  #         - target: x86_64-unknown-linux-musl
-  #           os: ubuntu-18.04
+  test:
+    name: Test (${{ matrix.target }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        include:
+          # Linux
+          - target: i686-unknown-linux-gnu
+            os: ubuntu-18.04
+          - target: i686-unknown-linux-musl
+            os: ubuntu-18.04
+          - target: x86_64-unknown-linux-gnu
+            os: ubuntu-18.04
+          - target: x86_64-unknown-linux-musl
+            os: ubuntu-18.04
 
-  #         # Cross
-  #         - target: armv7-unknown-linux-gnueabihf
-  #           os: ubuntu-18.04
-  #           use-cross: true
-  #         - target: aarch64-linux-android
-  #           os: ubuntu-18.04
-  #           use-cross: true
-  #         - target: mips-unknown-linux-gnu
-  #           os: ubuntu-18.04
-  #           use-cross: true
+          # Cross
+          - target: armv7-unknown-linux-gnueabihf
+            os: ubuntu-18.04
+            use-cross: true
+          - target: aarch64-linux-android
+            os: ubuntu-18.04
+            use-cross: true
+          - target: mips-unknown-linux-gnu
+            os: ubuntu-18.04
+            use-cross: true
 
-  #         # Windows
-  #         - target: i686-pc-windows-gnu
-  #           os: windows-2019
-  #         - target: i686-pc-windows-msvc
-  #           os: windows-2019
-  #         - target: x86_64-pc-windows-gnu
-  #           os: windows-2019
-  #         - target: x86_64-pc-windows-msvc
-  #           os: windows-2019
+          # Windows
+          - target: i686-pc-windows-gnu
+            os: windows-2019
+          - target: i686-pc-windows-msvc
+            os: windows-2019
+          - target: x86_64-pc-windows-gnu
+            os: windows-2019
+          - target: x86_64-pc-windows-msvc
+            os: windows-2019
 
-  #         # macOS
-  #         - target: x86_64-apple-darwin
-  #           os: macos-10.15
-  #     fail-fast: false
-  #   steps:
-  #   - name: Checkout
-  #     uses: actions/checkout@v2
+          # macOS
+          - target: x86_64-apple-darwin
+            os: macos-10.15
+      fail-fast: false
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v2
 
-  #   - name: Install toolchain
-  #     uses: actions-rs/toolchain@v1
-  #     with:
-  #       toolchain: stable
-  #       profile: minimal
-  #       target: ${{ matrix.target }}
-  #       override: true
+    - name: Install toolchain
+      uses: actions-rs/toolchain@v1
+      with:
+        toolchain: stable
+        profile: minimal
+        target: ${{ matrix.target }}
+        override: true
 
-  #   - name: Run tests (cross)
-  #     if: ${{ matrix.use-cross }}
-  #     uses: actions-rs/cargo@v1
-  #     with:
-  #       use-cross: true
-  #       command: test
-  #       args: --target ${{ matrix.target }}
+    - name: Run tests (cross)
+      if: ${{ matrix.use-cross }}
+      uses: actions-rs/cargo@v1
+      with:
+        use-cross: true
+        command: test
+        args: --target ${{ matrix.target }}
 
-  #   - name: Run tests (cargo)
-  #     if: ${{ !matrix.use-cross }}
-  #     run: cargo test
+    - name: Run tests (cargo)
+      if: ${{ !matrix.use-cross }}
+      run: cargo test
 
   test-qemu:
     name: Test (${{ matrix.target }})
@@ -144,45 +144,45 @@ jobs:
     - name: Run tests
       run: ssh qemu "cd crate && cargo test"
 
-  # check:
-  #   name: Check (${{ matrix.target }})
-  #   runs-on: ubuntu-18.04
-  #   strategy:
-  #     matrix:
-  #       target:
-  #         - x86_64-unknown-illumos
-  #     fail-fast: false
+  check:
+    name: Check (${{ matrix.target }})
+    runs-on: ubuntu-18.04
+    strategy:
+      matrix:
+        target:
+          - x86_64-unknown-illumos
+      fail-fast: false
 
-  #   steps:
-  #   - name: Checkout
-  #     uses: actions/checkout@v2
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v2
 
-  #   - name: Install toolchain
-  #     uses: actions-rs/toolchain@v1
-  #     with:
-  #       toolchain: stable
-  #       profile: minimal
-  #       target: ${{ matrix.target }}
-  #       override: true
+    - name: Install toolchain
+      uses: actions-rs/toolchain@v1
+      with:
+        toolchain: stable
+        profile: minimal
+        target: ${{ matrix.target }}
+        override: true
 
-  #   - name: Run check
-  #     run: cargo check --target ${{ matrix.target }}
+    - name: Run check
+      run: cargo check --target ${{ matrix.target }}
 
-  # lint:
-  #   name: Lint
-  #   runs-on: ubuntu-18.04
-  #   steps:
-  #   - name: Checkout
-  #     uses: actions/checkout@v2
+  lint:
+    name: Lint
+    runs-on: ubuntu-18.04
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v2
 
-  #   - name: Install toolchain
-  #     uses: actions-rs/toolchain@v1
-  #     with:
-  #       toolchain: stable
-  #       profile: minimal
+    - name: Install toolchain
+      uses: actions-rs/toolchain@v1
+      with:
+        toolchain: stable
+        profile: minimal
 
-  #   - name: Run rustfmt
-  #     run: cargo fmt -- --check
+    - name: Run rustfmt
+      run: cargo fmt -- --check
 
-  #   - name: Run clippy
-  #     run: cargo clippy --all-targets
+    - name: Run clippy
+      run: cargo clippy --all-targets
