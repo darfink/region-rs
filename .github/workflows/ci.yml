@@ -7,70 +7,70 @@ env:
   RUST_TEST_THREADS: 1
 
 jobs:
-  test:
-    name: Test (${{ matrix.target }})
-    runs-on: ${{ matrix.os }}
-    strategy:
-      matrix:
-        include:
-          # Linux
-          - target: i686-unknown-linux-gnu
-            os: ubuntu-18.04
-          - target: i686-unknown-linux-musl
-            os: ubuntu-18.04
-          - target: x86_64-unknown-linux-gnu
-            os: ubuntu-18.04
-          - target: x86_64-unknown-linux-musl
-            os: ubuntu-18.04
+  # test:
+  #   name: Test (${{ matrix.target }})
+  #   runs-on: ${{ matrix.os }}
+  #   strategy:
+  #     matrix:
+  #       include:
+  #         # Linux
+  #         - target: i686-unknown-linux-gnu
+  #           os: ubuntu-18.04
+  #         - target: i686-unknown-linux-musl
+  #           os: ubuntu-18.04
+  #         - target: x86_64-unknown-linux-gnu
+  #           os: ubuntu-18.04
+  #         - target: x86_64-unknown-linux-musl
+  #           os: ubuntu-18.04
 
-          # Cross
-          - target: armv7-unknown-linux-gnueabihf
-            os: ubuntu-18.04
-            use-cross: true
-          - target: aarch64-linux-android
-            os: ubuntu-18.04
-            use-cross: true
-          - target: mips-unknown-linux-gnu
-            os: ubuntu-18.04
-            use-cross: true
+  #         # Cross
+  #         - target: armv7-unknown-linux-gnueabihf
+  #           os: ubuntu-18.04
+  #           use-cross: true
+  #         - target: aarch64-linux-android
+  #           os: ubuntu-18.04
+  #           use-cross: true
+  #         - target: mips-unknown-linux-gnu
+  #           os: ubuntu-18.04
+  #           use-cross: true
 
-          # Windows
-          - target: i686-pc-windows-gnu
-            os: windows-2019
-          - target: i686-pc-windows-msvc
-            os: windows-2019
-          - target: x86_64-pc-windows-gnu
-            os: windows-2019
-          - target: x86_64-pc-windows-msvc
-            os: windows-2019
+  #         # Windows
+  #         - target: i686-pc-windows-gnu
+  #           os: windows-2019
+  #         - target: i686-pc-windows-msvc
+  #           os: windows-2019
+  #         - target: x86_64-pc-windows-gnu
+  #           os: windows-2019
+  #         - target: x86_64-pc-windows-msvc
+  #           os: windows-2019
 
-          # macOS
-          - target: x86_64-apple-darwin
-            os: macos-10.15
-      fail-fast: false
-    steps:
-    - name: Checkout
-      uses: actions/checkout@v2
+  #         # macOS
+  #         - target: x86_64-apple-darwin
+  #           os: macos-10.15
+  #     fail-fast: false
+  #   steps:
+  #   - name: Checkout
+  #     uses: actions/checkout@v2
 
-    - name: Install toolchain
-      uses: actions-rs/toolchain@v1
-      with:
-        toolchain: stable
-        profile: minimal
-        target: ${{ matrix.target }}
-        override: true
+  #   - name: Install toolchain
+  #     uses: actions-rs/toolchain@v1
+  #     with:
+  #       toolchain: stable
+  #       profile: minimal
+  #       target: ${{ matrix.target }}
+  #       override: true
 
-    - name: Run tests (cross)
-      if: ${{ matrix.use-cross }}
-      uses: actions-rs/cargo@v1
-      with:
-        use-cross: true
-        command: test
-        args: --target ${{ matrix.target }}
+  #   - name: Run tests (cross)
+  #     if: ${{ matrix.use-cross }}
+  #     uses: actions-rs/cargo@v1
+  #     with:
+  #       use-cross: true
+  #       command: test
+  #       args: --target ${{ matrix.target }}
 
-    - name: Run tests (cargo)
-      if: ${{ !matrix.use-cross }}
-      run: cargo test
+  #   - name: Run tests (cargo)
+  #     if: ${{ !matrix.use-cross }}
+  #     run: cargo test
 
   test-qemu:
     name: Test (${{ matrix.target }})
@@ -81,13 +81,18 @@ jobs:
         include:
           - target: x86_64-unknown-freebsd
             image: http://files.housegordon.org/pretest/v0.1/freebsd111.build-ready.qcow2.xz
+            args: -net nic,model=virtio
+          - target: x86_64-unknown-openbsd
+            image: https://www.dropbox.com/s/p4buykmmjd8hjgx/openbsd69.qcow2.xz?dl=1
+            args: -net nic
+      fail-fast: false
 
     steps:
     - name: Checkout
       uses: actions/checkout@v2
 
     - name: Install QEMU
-      run: sudo apt-get install -y qemu-system-x86
+      run: sudo apt-get update && sudo apt-get install -y qemu-system-x86
 
     - name: Lookup image
       id: lookup-image
@@ -99,18 +104,16 @@ jobs:
     - name: Download image
       if: steps.lookup-image.outputs.cache-hit != 'true'
       run: |
-        wget -O ~/image.qcow2.xz --no-check-certificate --progress=dot:mega ${{ matrix.image }}
+        wget -O ~/image.qcow2.xz --no-check-certificate --progress=dot:mega "${{ matrix.image }}"
         echo "Decompressing image..."
         unxz ~/image.qcow2.xz
 
     - name: Boot image
       run: |
-        qemu-system-x86_64 -m 1024 \
-          -nographic -nodefaults -snapshot \
-          -net user,hostfwd=tcp:127.0.0.1:1025-:22 \
-          -net nic,model=virtio \
-          -drive if=virtio,media=disk,index=0,file=$HOME/image.qcow2 \
-          -daemonize
+        qemu-system-x86_64 -m 2048 -display none -snapshot -daemonize \
+          -drive if=virtio,media=disk,file=$HOME/image.qcow2 \
+          -net user,hostfwd=tcp::1025-:22 \
+          ${{ matrix.args }}
 
     - name: Configure SSH
       run: |
@@ -122,58 +125,64 @@ jobs:
             Port 1025
         EOF
         chmod og-rw ~
-        sshpass -e ssh-copy-id -o StrictHostKeyChecking=no qemu
+        parallel -t --retries 10 --delay 10 ::: 'sshpass -e ssh-copy-id -o StrictHostKeyChecking=no qemu'
 
-    - name: Install toolchain
+    - name: Install toolchain (via rustup)
+      if: ${{ !contains(matrix.target, 'openbsd') }}
       run: |
         ssh qemu "curl https://sh.rustup.rs -sSf | sh -s -- -y --profile minimal"
+        ssh qemu "ln -s ~/.cargo/bin ~/bin"
+
+    - name: Install toolchain (via pkg)
+      if: ${{ contains(matrix.target, 'openbsd') }}
+      run: ssh qemu "sudo pkg_add -I rust"
 
     - name: Copy crate
       run: rsync -r . qemu:crate
 
+    # TODO: Respect RUST_TEST_THREADS
     - name: Run tests
-      run: ssh qemu ". ~/.cargo/env && cd crate && cargo test"
+      run: ssh qemu "cd crate && cargo test"
 
-  check:
-    name: Check (${{ matrix.target }})
-    runs-on: ubuntu-18.04
-    strategy:
-      matrix:
-        target:
-          - x86_64-unknown-illumos
-          # - x86_64-unknown-openbsd
-      fail-fast: false
+  # check:
+  #   name: Check (${{ matrix.target }})
+  #   runs-on: ubuntu-18.04
+  #   strategy:
+  #     matrix:
+  #       target:
+  #         - x86_64-unknown-illumos
+  #     fail-fast: false
 
-    steps:
-    - name: Checkout
-      uses: actions/checkout@v2
+  #   steps:
+  #   - name: Checkout
+  #     uses: actions/checkout@v2
 
-    - name: Install toolchain
-      uses: actions-rs/toolchain@v1
-      with:
-        toolchain: stable
-        profile: minimal
-        target: ${{ matrix.target }}
-        override: true
+  #   - name: Install toolchain
+  #     uses: actions-rs/toolchain@v1
+  #     with:
+  #       toolchain: stable
+  #       profile: minimal
+  #       target: ${{ matrix.target }}
+  #       override: true
 
-    - name: Run check
-      run: cargo check --target ${{ matrix.target }}
+  #   - name: Run check
+  #     run: cargo check --target ${{ matrix.target }}
 
-  lint:
-    name: Lint
-    runs-on: ubuntu-18.04
-    steps:
-    - name: Checkout
-      uses: actions/checkout@v2
+  # lint:
+  #   name: Lint
+  #   runs-on: ubuntu-18.04
+  #   steps:
+  #   - name: Checkout
+  #     uses: actions/checkout@v2
 
-    - name: Install toolchain
-      uses: actions-rs/toolchain@v1
-      with:
-        toolchain: stable
-        profile: minimal
+  #   - name: Install toolchain
+  #     uses: actions-rs/toolchain@v1
+  #     with:
+  #       toolchain: stable
+  #       profile: minimal
 
-    - name: Run rustfmt
-      run: cargo fmt -- --check
+  #   - name: Run rustfmt
+  #     run: cargo fmt -- --check
 
-    - name: Run clippy
-      run: cargo clippy --all-targets
+  #   - name: Run clippy
+  #     run: cargo clippy --all-targets
