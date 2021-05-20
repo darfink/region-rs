@@ -81,9 +81,11 @@ jobs:
         include:
           - target: x86_64-unknown-freebsd
             image: http://files.housegordon.org/pretest/v0.1/freebsd111.build-ready.qcow2.xz
+            md5: 01ad7883c69476d90872eb38180085c0
             args: -net nic,model=virtio
           - target: x86_64-unknown-openbsd
             image: https://www.dropbox.com/s/p4buykmmjd8hjgx/openbsd69.qcow2.xz?dl=1
+            md5: 37ff51c30e360429550debf87a39d801
             args: -net nic
       fail-fast: false
 
@@ -104,7 +106,9 @@ jobs:
     - name: Download image
       if: steps.lookup-image.outputs.cache-hit != 'true'
       run: |
-        wget -O ~/image.qcow2.xz --no-check-certificate --progress=dot:mega "${{ matrix.image }}"
+        wget -O - --no-check-certificate --progress=dot:mega "${{ matrix.image }}" \
+          | tee ~/image.qcow2.xz \
+          | md5sum -c <(echo "${{ matrix.md5 }} -")
         echo "Decompressing image..."
         unxz ~/image.qcow2.xz
 
@@ -125,15 +129,15 @@ jobs:
             Port 1025
         EOF
         chmod og-rw ~
-        parallel -t --retries 10 --delay 10 ::: 'sshpass -e ssh-copy-id -o StrictHostKeyChecking=no qemu'
+        parallel -t --retries 20 --delay 5 ::: 'sshpass -e ssh-copy-id -o StrictHostKeyChecking=no qemu'
 
-    - name: Install toolchain (via rustup)
+    - name: Install toolchain (rustup)
       if: ${{ !contains(matrix.target, 'openbsd') }}
       run: |
         ssh qemu "curl https://sh.rustup.rs -sSf | sh -s -- -y --profile minimal"
         ssh qemu "ln -s ~/.cargo/bin ~/bin"
 
-    - name: Install toolchain (via pkg)
+    - name: Install toolchain (pkg)
       if: ${{ contains(matrix.target, 'openbsd') }}
       run: ssh qemu "sudo pkg_add -I rust"
 
