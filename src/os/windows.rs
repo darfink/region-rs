@@ -3,9 +3,11 @@ use std::cmp::{max, min};
 use std::io;
 use std::mem::{size_of, MaybeUninit};
 use std::sync::Once;
-use winapi::um::memoryapi::{VirtualLock, VirtualProtect, VirtualQuery, VirtualUnlock};
+use winapi::um::memoryapi::{
+  VirtualAlloc, VirtualFree, VirtualLock, VirtualProtect, VirtualQuery, VirtualUnlock,
+};
 use winapi::um::sysinfoapi::{GetNativeSystemInfo, SYSTEM_INFO};
-use winapi::um::winnt::{MEMORY_BASIC_INFORMATION, MEM_COMMIT, MEM_RESERVE};
+use winapi::um::winnt::{MEMORY_BASIC_INFORMATION, MEM_COMMIT, MEM_RELEASE, MEM_RESERVE};
 
 pub struct QueryIter {
   region_address: usize,
@@ -76,6 +78,28 @@ impl Iterator for QueryIter {
 
 pub fn page_size() -> usize {
   system_info().dwPageSize as usize
+}
+
+pub unsafe fn alloc(base: *const (), size: usize, protection: Protection) -> Result<*const ()> {
+  let allocation = VirtualAlloc(
+    base as winapi::um::winnt::PVOID,
+    size,
+    MEM_COMMIT | MEM_RESERVE,
+    protection.to_native(),
+  );
+
+  if allocation.is_null() {
+    return Err(Error::SystemCall(io::Error::last_os_error()));
+  }
+
+  Ok(allocation as *const ())
+}
+
+pub unsafe fn free(base: *const (), _size: usize) -> Result<()> {
+  match VirtualFree(base as winapi::um::winnt::PVOID, 0, MEM_RELEASE) {
+    winapi::shared::minwindef::FALSE => Err(Error::SystemCall(io::Error::last_os_error())),
+    _ => Ok(()),
+  }
 }
 
 pub unsafe fn protect(base: *const (), size: usize, protection: Protection) -> Result<()> {

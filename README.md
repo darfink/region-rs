@@ -13,8 +13,8 @@
 
 This crate provides a cross-platform Rust API for querying and manipulating
 virtual memory. It is a thin abstraction, with the underlying interaction
-implemented using platform specific APIs (e.g `VirtualQuery`, `VirtualLock`,
-`mprotect`, `mlock`).
+implemented using platform specific APIs (e.g `VirtualQuery`, `VirtualAlloc`,
+`VirtualLock`, `mprotect`, `mmap`, `mlock`).
 
 ## Platforms
 
@@ -68,6 +68,9 @@ let pz = region::page::size();
 // VirtualQuery | '/proc/self/maps'
 let q  = region::query(data.as_ptr())?;
 let qr = region::query_range(data.as_ptr(), data.len())?;
+
+// VirtualAlloc | mmap
+let alloc = region::alloc(100, Protection::READ_WRITE)?;
 
 // VirtualProtect | mprotect
 region::protect(data.as_ptr(), data.len(), Protection::READ_WRITE_EXECUTE)?;

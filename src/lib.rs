@@ -54,6 +54,9 @@
 //!   let q  = region::query(data.as_ptr())?;
 //!   let qr = region::query_range(data.as_ptr(), data.len())?;
 //!
+//!   // VirtualAlloc | mmap
+//!   let alloc = region::alloc(100, Protection::READ_WRITE)?;
+//!
 //!   // VirtualProtect | mprotect
 //!   region::protect(data.as_ptr(), data.len(), Protection::READ_WRITE_EXECUTE)?;
 //!
@@ -69,11 +72,13 @@
 #[macro_use]
 extern crate bitflags;
 
+pub use alloc::{alloc, alloc_at, Memory};
 pub use error::{Error, Result};
 pub use lock::{lock, unlock, LockGuard};
 pub use protect::{protect, protect_with_handle, ProtectGuard};
 pub use query::{query, query_range, QueryIter};
 
+mod alloc;
 mod error;
 mod lock;
 mod os;
