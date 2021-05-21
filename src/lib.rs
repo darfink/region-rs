@@ -90,8 +90,8 @@ mod util;
 pub struct Region {
   /// Base address of the region
   base: *const (),
-  /// Whether the region is committed or not
-  committed: bool,
+  /// Whether the region is reserved or not
+  reserved: bool,
   /// Whether the region is guarded or not
   guarded: bool,
   /// Protection of the region
@@ -131,7 +131,7 @@ impl Region {
   /// This is always true for all operating system's, the exception being
   /// `MEM_RESERVE` pages on Windows.
   pub fn is_committed(&self) -> bool {
-    self.committed
+    !self.reserved
   }
 
   /// Returns whether the region is readable or not.
@@ -181,7 +181,7 @@ impl Default for Region {
   fn default() -> Self {
     Region {
       base: std::ptr::null(),
-      committed: true,
+      reserved: false,
       guarded: false,
       protection: Protection::NONE,
       shared: false,

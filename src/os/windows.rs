@@ -55,7 +55,7 @@ impl Iterator for QueryIter {
       if info.State == MEM_RESERVE || info.State == MEM_COMMIT {
         let mut region = Region {
           base: info.BaseAddress as *const _,
-          committed: info.State == MEM_COMMIT,
+          reserved: info.State != MEM_COMMIT,
           guarded: (info.Protect & winapi::um::winnt::PAGE_GUARD) != 0,
           shared: (info.Type & winapi::um::winnt::MEM_PRIVATE) == 0,
           size: info.RegionSize as usize,
