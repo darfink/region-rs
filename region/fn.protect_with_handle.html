@@ -7,9 +7,8 @@ the range will be modified. The protection flag for each page will be reset
 once the handle is dropped. To conditionally prevent a reset, use
 <a href="https://doc.rust-lang.org/nightly/core/mem/fn.forget.html" title="std::mem::forget">std::mem::forget</a>.</p>
 <p>This function uses <a href="../region/fn.query_range.html">query_range</a> internally and is
-therefore less performant than <a href="../region/fn.protect.html" title="protect">protect</a>. Use this function only if you need
-to reapply the memory protection flags of one or more regions after
-operations.</p>
+therefore less performant than <a href="../region/fn.protect.html" title="protect">protect</a>. Use this function if you need to
+reapply the memory protection flags of one or more regions after operations.</p>
 <h1 id="guard" class="section-header"><a href="#guard">Guard</a></h1>
 <p>Remember not to conflate the <em>black hole</em> syntax with the ignored, but
 unused, variable syntax. Otherwise the <a href="../region/struct.ProtectGuard.html" title="ProtectGuard">ProtectGuard</a> instantly resets the

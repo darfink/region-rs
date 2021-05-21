@@ -132,10 +132,50 @@
 <span id="129">129</span>
 <span id="130">130</span>
 <span id="131">131</span>
+<span id="132">132</span>
+<span id="133">133</span>
+<span id="134">134</span>
+<span id="135">135</span>
+<span id="136">136</span>
+<span id="137">137</span>
+<span id="138">138</span>
+<span id="139">139</span>
+<span id="140">140</span>
+<span id="141">141</span>
+<span id="142">142</span>
+<span id="143">143</span>
+<span id="144">144</span>
+<span id="145">145</span>
+<span id="146">146</span>
+<span id="147">147</span>
+<span id="148">148</span>
+<span id="149">149</span>
+<span id="150">150</span>
+<span id="151">151</span>
+<span id="152">152</span>
+<span id="153">153</span>
+<span id="154">154</span>
+<span id="155">155</span>
+<span id="156">156</span>
+<span id="157">157</span>
+<span id="158">158</span>
+<span id="159">159</span>
+<span id="160">160</span>
+<span id="161">161</span>
+<span id="162">162</span>
+<span id="163">163</span>
+<span id="164">164</span>
+<span id="165">165</span>
+<span id="166">166</span>
+<span id="167">167</span>
+<span id="168">168</span>
+<span id="169">169</span>
+<span id="170">170</span>
+<span id="171">171</span>
 </pre><div class="example-wrap"><pre class="rust ">
 <span class="kw">use</span> <span class="kw">crate</span>::{<span class="ident">os</span>, <span class="ident">page</span>, <span class="ident">util</span>, <span class="ident">Error</span>, <span class="ident">Protection</span>, <span class="prelude-ty">Result</span>};
 
-<span class="doccomment">/// A handle to a mapped memory region.</span>
+<span class="doccomment">/// A handle to an owned region of memory.</span>
 <span class="doccomment">///</span>
 <span class="doccomment">/// This handle does not dereference to a slice, since the underlying memory may</span>
 <span class="doccomment">/// have been created with [Protection::NONE].</span>
@@ -169,7 +209,7 @@
     (<span class="ident">range</span>.<span class="ident">start</span> <span class="kw">as</span> <span class="kw-2">*</span><span class="kw">const</span> <span class="ident">T</span>)..(<span class="ident">range</span>.<span class="ident">end</span> <span class="kw">as</span> <span class="kw-2">*</span><span class="kw">const</span> <span class="ident">T</span>)
   }
 
-  <span class="doccomment">/// Returns the size of the allocation.</span>
+  <span class="doccomment">/// Returns the size of the allocation in bytes.</span>
   <span class="doccomment">///</span>
   <span class="doccomment">/// The size is always aligned to the operating system&#39;s page size.</span>
   <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">len</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="ident">usize</span> {
@@ -184,7 +224,40 @@
   }
 }
 
-<span class="doccomment">/// Allocates one or more pages of memory with defined a protection.</span>
+<span class="doccomment">/// Allocates one or more pages of memory, with a defined protection.</span>
+<span class="doccomment">///</span>
+<span class="doccomment">/// This function provides a very simple interface for allocating anonymous</span>
+<span class="doccomment">/// virtual pages. In case more elaborate functionality is required, such as</span>
+<span class="doccomment">/// memory mapped files, one of the many crates in the Rust ecosystem provides</span>
+<span class="doccomment">/// this feature.</span>
+<span class="doccomment">///</span>
+<span class="doccomment">/// # Parameters</span>
+<span class="doccomment">///</span>
+<span class="doccomment">/// - The size may not be zero.</span>
+<span class="doccomment">/// - The size is rounded up to the closest page boundary.</span>
+<span class="doccomment">///</span>
+<span class="doccomment">/// # Examples</span>
+<span class="doccomment">///</span>
+<span class="doccomment">/// ```</span>
+<span class="doccomment">/// # fn main() -&gt; region::Result&lt;()&gt; {</span>
+<span class="doccomment">/// # if cfg!(any(target_arch = &quot;x86&quot;, target_arch = &quot;x86_64&quot;)) &amp;&amp; !cfg!(target_os = &quot;openbsd&quot;) {</span>
+<span class="doccomment">///</span>
+<span class="doccomment">/// use region::Protection;</span>
+<span class="doccomment">/// let ret5 = [0xB8, 0x05, 0x00, 0x00, 0x00, 0xC3u8];</span>
+<span class="doccomment">///</span>
+<span class="doccomment">/// let memory = region::alloc(100, Protection::READ_WRITE_EXECUTE)?;</span>
+<span class="doccomment">/// let slice = unsafe {</span>
+<span class="doccomment">///   std::slice::from_raw_parts_mut(memory.as_ptr::&lt;u8&gt;() as *mut u8, memory.len())</span>
+<span class="doccomment">/// };</span>
+<span class="doccomment">///</span>
+<span class="doccomment">/// slice[..6].copy_from_slice(&amp;ret5);</span>
+<span class="doccomment">/// let x: extern &quot;C&quot; fn() -&gt; i32 = unsafe { std::mem::transmute(slice.as_ptr()) };</span>
+<span class="doccomment">///</span>
+<span class="doccomment">/// assert_eq!(x(), 5);</span>
+<span class="doccomment">/// # }</span>
+<span class="doccomment">/// # Ok(())</span>
+<span class="doccomment">/// # }</span>
+<span class="doccomment">/// ```</span>
 <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">alloc</span>(<span class="ident">size</span>: <span class="ident">usize</span>, <span class="ident">protection</span>: <span class="ident">Protection</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="ident">Memory</span><span class="op">&gt;</span> {
   <span class="kw">if</span> <span class="ident">size</span> <span class="op">=</span><span class="op">=</span> <span class="number">0</span> {
     <span class="kw">return</span> <span class="prelude-val">Err</span>(<span class="ident">Error</span>::<span class="ident">InvalidParameter</span>(<span class="string">&quot;size&quot;</span>));
@@ -202,9 +275,16 @@
 <span class="doccomment">/// protection.</span>
 <span class="doccomment">///</span>
 <span class="doccomment">/// The returned memory allocation is not guaranteed to reside at the provided</span>
-<span class="doccomment">/// address (for all operating systems). E.g. on Windows, new allocations that</span>
-<span class="doccomment">/// do not reside within already reserved memory, are aligned to the operating</span>
-<span class="doccomment">/// system&#39;s allocation granularity (in most cases 64KB).</span>
+<span class="doccomment">/// address. E.g. on Windows, new allocations that do not reside within already</span>
+<span class="doccomment">/// reserved memory, are aligned to the operating system&#39;s allocation</span>
+<span class="doccomment">/// granularity (most commonly 64KB).</span>
+<span class="doccomment">///</span>
+<span class="doccomment">/// # Parameters</span>
+<span class="doccomment">///</span>
+<span class="doccomment">/// - The address is rounded down to the closest page boundary.</span>
+<span class="doccomment">/// - The size may not be zero.</span>
+<span class="doccomment">/// - The size is rounded up to the closest page boundary, relative to the</span>
+<span class="doccomment">///   address.</span>
 <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">alloc_at</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span>(<span class="ident">address</span>: <span class="kw-2">*</span><span class="kw">const</span> <span class="ident">T</span>, <span class="ident">size</span>: <span class="ident">usize</span>, <span class="ident">protection</span>: <span class="ident">Protection</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="ident">Memory</span><span class="op">&gt;</span> {
   <span class="kw">let</span> (<span class="ident">address</span>, <span class="ident">size</span>) <span class="op">=</span> <span class="ident">util</span>::<span class="ident">round_to_page_boundaries</span>(<span class="ident">address</span>, <span class="ident">size</span>)<span class="question-mark">?</span>;
 

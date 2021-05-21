@@ -12,8 +12,8 @@
                    Variants<a href="#variants" class="anchor"></a></h2>
 <div id="variant.UnmappedRegion" class="variant small-section-header"><a href="#variant.UnmappedRegion" class="anchor field"></a><code>UnmappedRegion</code></div><div class="docblock"><p>The queried memory is unmapped.</p>
 <p>This does not necessarily mean that the memory region is available for
-allocation. Besides OS-specific requirements, queried addresses outside of
-a process’ adress range are also identified as unmapped regions.</p>
+allocation. Besides OS-specific semantics, queried addresses outside of a
+process’ adress range are also identified as unmapped regions.</p>
 </div><div id="variant.InvalidParameter" class="variant small-section-header"><a href="#variant.InvalidParameter" class="anchor field"></a><code>InvalidParameter(&amp;'static <a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.str.html">str</a>)</code></div><div class="docblock"><p>A supplied parameter is invalid.</p>
 </div><div id="variant.ProcfsInput" class="variant small-section-header"><a href="#variant.ProcfsInput" class="anchor field"></a><code>ProcfsInput(<a class="struct" href="https://doc.rust-lang.org/nightly/alloc/string/struct.String.html" title="struct alloc::string::String">String</a>)</code></div><div class="docblock"><p>A procfs region failed to be parsed.</p>
 </div><div id="variant.SystemCall" class="variant small-section-header"><a href="#variant.SystemCall" class="anchor field"></a><code>SystemCall(<a class="struct" href="https://doc.rust-lang.org/nightly/std/io/error/struct.Error.html" title="struct std::io::error::Error">Error</a>)</code></div><div class="docblock"><p>A system call failed.</p>

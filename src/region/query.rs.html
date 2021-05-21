@@ -257,6 +257,8 @@
 <span id="254">254</span>
 <span id="255">255</span>
 <span id="256">256</span>
+<span id="257">257</span>
+<span id="258">258</span>
 </pre><div class="example-wrap"><pre class="rust ">
 <span class="kw">use</span> <span class="kw">crate</span>::{<span class="ident">os</span>, <span class="ident">util</span>, <span class="ident">Error</span>, <span class="ident">Region</span>, <span class="prelude-ty">Result</span>};
 
@@ -383,6 +385,8 @@
 <span class="doccomment">/// - The range is `[address, address + size)`</span>
 <span class="doccomment">/// - The address is rounded down to the closest page boundary.</span>
 <span class="doccomment">/// - The size may not be zero.</span>
+<span class="doccomment">/// - The size is rounded up to the closest page boundary, relative to the</span>
+<span class="doccomment">///   address.</span>
 <span class="doccomment">///</span>
 <span class="doccomment">/// # Examples</span>
 <span class="doccomment">///</span>

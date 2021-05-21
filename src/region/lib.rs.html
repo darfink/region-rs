@@ -384,6 +384,7 @@
 <span id="381">381</span>
 <span id="382">382</span>
 <span id="383">383</span>
+<span id="384">384</span>
 </pre><div class="example-wrap"><pre class="rust ">
 <span class="attribute">#![<span class="ident">deny</span>(<span class="ident">missing_docs</span>)]</span>
 <span class="attribute">#![<span class="ident">cfg_attr</span>(<span class="ident">feature</span> <span class="op">=</span> <span class="string">&quot;cargo-clippy&quot;</span>, <span class="ident">warn</span>(<span class="ident">clippy</span>::<span class="ident">print_stdout</span>))]</span>
@@ -396,11 +397,11 @@
 <span class="doccomment">//! instance, some OSs enforce memory pages to be readable, whilst other may</span>
 <span class="doccomment">//! prevent pages from becoming executable (i.e DEP).</span>
 <span class="doccomment">//!</span>
-<span class="doccomment">//! This library operates on memory pages, which are aligned to the operating</span>
-<span class="doccomment">//! system&#39;s page size. Therefore, on some systems, the system calls for these</span>
-<span class="doccomment">//! operations require input to be aligned to a page boundary. To remedy this</span>
-<span class="doccomment">//! inconsistency, this library always aligns input to its closest page</span>
-<span class="doccomment">//! boundary.</span>
+<span class="doccomment">//! This implementation operates with memory pages, which are aligned to the</span>
+<span class="doccomment">//! operating system&#39;s page size. On some systems, but not all, the system calls</span>
+<span class="doccomment">//! for these operations require input to be aligned to a page boundary. To</span>
+<span class="doccomment">//! remedy this inconsistency, whenever applicable, input is aligned to its</span>
+<span class="doccomment">//! closest page boundary.</span>
 <span class="doccomment">//!</span>
 <span class="doccomment">//! *Note: a region is a collection of one or more pages laying consecutively in</span>
 <span class="doccomment">//! memory, with the same properties.*</span>
@@ -447,7 +448,7 @@
 <span class="doccomment">//!   // VirtualProtect | mprotect</span>
 <span class="doccomment">//!   region::protect(data.as_ptr(), data.len(), Protection::READ_WRITE_EXECUTE)?;</span>
 <span class="doccomment">//!</span>
-<span class="doccomment">//!   // ... you can also temporarily change a region&#39;s protection</span>
+<span class="doccomment">//!   // ... you can also temporarily change one or more pages&#39; protection</span>
 <span class="doccomment">//!   let handle = region::protect_with_handle(data.as_ptr(), data.len(), Protection::READ_WRITE_EXECUTE)?;</span>
 <span class="doccomment">//!</span>
 <span class="doccomment">//!   // VirtualLock | mlock</span>
@@ -546,14 +547,15 @@
     <span class="self">self</span>.<span class="ident">guarded</span>
   }
 
-  <span class="doccomment">/// Returns whether the region is shared or not.</span>
+  <span class="doccomment">/// Returns whether the region is shared between processes or not.</span>
   <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">is_shared</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="ident">bool</span> {
     <span class="self">self</span>.<span class="ident">shared</span>
   }
 
-  <span class="doccomment">/// Returns the size of the region.</span>
+  <span class="doccomment">/// Returns the size of the region in bytes.</span>
   <span class="doccomment">///</span>
-  <span class="doccomment">/// The size is always aligned to the operating system&#39;s page size.</span>
+  <span class="doccomment">/// The size is always aligned to a multiple of the operating system&#39;s page</span>
+  <span class="doccomment">/// size.</span>
   <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">len</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="ident">usize</span> {
     <span class="self">self</span>.<span class="ident">size</span>
   }
@@ -563,7 +565,7 @@
     <span class="self">self</span>.<span class="ident">size</span> <span class="op">=</span><span class="op">=</span> <span class="number">0</span>
   }
 
-  <span class="doccomment">/// Returns the protection flags of the region.</span>
+  <span class="doccomment">/// Returns the protection attributes of the region.</span>
   <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">protection</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="ident">Protection</span> {
     <span class="self">self</span>.<span class="ident">protection</span>
   }
@@ -589,8 +591,8 @@
   <span class="doccomment">/// A bitflag of zero or more protection attributes.</span>
   <span class="doccomment">///</span>
   <span class="doccomment">/// Determines the access rights for a specific page and/or region. Some</span>
-  <span class="doccomment">/// combination of flags may not work depending on the OS (e.g macOS enforces</span>
-  <span class="doccomment">/// executable pages to be readable).</span>
+  <span class="doccomment">/// combination of flags may not be applicable, depending on the OS (e.g macOS</span>
+  <span class="doccomment">/// enforces executable pages to be readable, OpenBSD requires W^X).</span>
   <span class="doccomment">///</span>
   <span class="doccomment">/// # Examples</span>
   <span class="doccomment">///</span>
