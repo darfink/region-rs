@@ -9,6 +9,12 @@
 //! instance, some OSs enforce memory pages to be readable, whilst other may
 //! prevent pages from becoming executable (i.e DEP).
 //!
+//! This library operates on memory pages, which are aligned to the operating
+//! system's page size. Therefore, on some systems, the system calls for these
+//! operations require input to be aligned to a page boundary. To remedy this
+//! inconsistency, this library always aligns input to its closest page
+//! boundary.
+//!
 //! *Note: a region is a collection of one or more pages laying consecutively in
 //! memory, with the same properties.*
 //!
@@ -17,7 +23,8 @@
 //! The properties of virtual memory pages can change at any time, unless all
 //! threads that are unaccounted for in a process are stopped. Therefore to
 //! obtain, e.g., a true picture of a process' virtual memory, all other threads
-//! must be halted.
+//! must be halted. Otherwise, a region descriptor only represents a snapshot in
+//! time.
 //!
 //! # Installation
 //!
@@ -76,6 +83,9 @@ mod query;
 mod util;
 
 /// A descriptor for a mapped memory region.
+///
+/// The region encompasses zero or more pages (e.g. OpenBSD can have null-sized
+/// virtual pages).
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct Region {
   /// Base address of the region
@@ -94,6 +104,8 @@ pub struct Region {
 
 impl Region {
   /// Returns a pointer to the region's base address.
+  ///
+  /// The address is always aligned to the operating system's page size.
   pub fn as_ptr<T>(&self) -> *const T {
     self.base as *const T
   }
@@ -116,8 +128,8 @@ impl Region {
 
   /// Returns whether the region is committed or not.
   ///
-  /// This is true for all memory regions, the exception being `MEM_RESERVE`
-  /// pages on Windows.
+  /// This is always true for all operating system's, the exception being
+  /// `MEM_RESERVE` pages on Windows.
   pub fn is_committed(&self) -> bool {
     self.committed
   }
@@ -148,6 +160,8 @@ impl Region {
   }
 
   /// Returns the size of the region.
+  ///
+  /// The size is always aligned to the operating system's page size.
   pub fn len(&self) -> usize {
     self.size
   }

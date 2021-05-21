@@ -1,6 +1,6 @@
 [package]
 authors = ["Elliott Linder <elliott.darfink@gmail.com>"]
-description = "Cross-platform Rust API for manipulating memory regions"
+description = "Cross-platform virtual memory API"
 documentation = "https://docs.rs/region"
 edition = "2018"
 homepage = "https://github.com/darfink/region-rs"
