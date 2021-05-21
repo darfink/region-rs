@@ -2,9 +2,10 @@ use crate::{os, util, Protection, QueryIter, Region, Result};
 
 /// Changes the memory protection of one or more pages.
 ///
-/// The address range may overlap one or more pages, and if so, all pages within
-/// the range will be modified. The previous protection flags are not preserved
-/// (if you desire to preserve the protection flags, use [protect_with_handle]).
+/// The address range may overlap one or more pages, and if so, all pages
+/// spanning the range will be modified. The previous protection flags are not
+/// preserved (if you desire to preserve the protection flags, use
+/// [protect_with_handle]).
 ///
 /// # Parameters
 ///
@@ -53,9 +54,8 @@ pub unsafe fn protect<T>(address: *const T, size: usize, protection: Protection)
 /// [std::mem::forget].
 ///
 /// This function uses [query_range](crate::query_range) internally and is
-/// therefore less performant than [protect]. Use this function only if you need
-/// to reapply the memory protection flags of one or more regions after
-/// operations.
+/// therefore less performant than [protect]. Use this function if you need to
+/// reapply the memory protection flags of one or more regions after operations.
 ///
 /// # Guard
 ///

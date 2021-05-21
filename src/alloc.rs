@@ -1,6 +1,6 @@
 use crate::{os, page, util, Error, Protection, Result};
 
-/// A handle to a mapped memory region.
+/// A handle to an owned region of memory.
 ///
 /// This handle does not dereference to a slice, since the underlying memory may
 /// have been created with [Protection::NONE].
@@ -34,7 +34,7 @@ impl Memory {
     (range.start as *const T)..(range.end as *const T)
   }
 
-  /// Returns the size of the allocation.
+  /// Returns the size of the allocation in bytes.
   ///
   /// The size is always aligned to the operating system's page size.
   pub fn len(&self) -> usize {
@@ -49,7 +49,40 @@ impl Drop for Memory {
   }
 }
 
-/// Allocates one or more pages of memory with defined a protection.
+/// Allocates one or more pages of memory, with a defined protection.
+///
+/// This function provides a very simple interface for allocating anonymous
+/// virtual pages. In case more elaborate functionality is required, such as
+/// memory mapped files, one of the many crates in the Rust ecosystem provides
+/// this feature.
+///
+/// # Parameters
+///
+/// - The size may not be zero.
+/// - The size is rounded up to the closest page boundary.
+///
+/// # Examples
+///
+/// ```
+/// # fn main() -> region::Result<()> {
+/// # if cfg!(any(target_arch = "x86", target_arch = "x86_64")) && !cfg!(target_os = "openbsd") {
+///
+/// use region::Protection;
+/// let ret5 = [0xB8, 0x05, 0x00, 0x00, 0x00, 0xC3u8];
+///
+/// let memory = region::alloc(100, Protection::READ_WRITE_EXECUTE)?;
+/// let slice = unsafe {
+///   std::slice::from_raw_parts_mut(memory.as_ptr::<u8>() as *mut u8, memory.len())
+/// };
+///
+/// slice[..6].copy_from_slice(&ret5);
+/// let x: extern "C" fn() -> i32 = unsafe { std::mem::transmute(slice.as_ptr()) };
+///
+/// assert_eq!(x(), 5);
+/// # }
+/// # Ok(())
+/// # }
+/// ```
 pub fn alloc(size: usize, protection: Protection) -> Result<Memory> {
   if size == 0 {
     return Err(Error::InvalidParameter("size"));
@@ -67,9 +100,16 @@ pub fn alloc(size: usize, protection: Protection) -> Result<Memory> {
 /// protection.
 ///
 /// The returned memory allocation is not guaranteed to reside at the provided
-/// address (for all operating systems). E.g. on Windows, new allocations that
-/// do not reside within already reserved memory, are aligned to the operating
-/// system's allocation granularity (in most cases 64KB).
+/// address. E.g. on Windows, new allocations that do not reside within already
+/// reserved memory, are aligned to the operating system's allocation
+/// granularity (most commonly 64KB).
+///
+/// # Parameters
+///
+/// - The address is rounded down to the closest page boundary.
+/// - The size may not be zero.
+/// - The size is rounded up to the closest page boundary, relative to the
+///   address.
 pub fn alloc_at<T>(address: *const T, size: usize, protection: Protection) -> Result<Memory> {
   let (address, size) = util::round_to_page_boundaries(address, size)?;
 

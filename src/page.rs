@@ -6,7 +6,7 @@ use std::sync::Once;
 /// Returns the operating system's page size.
 ///
 /// This function uses an internally cached page size, and can be called
-/// frequently without incurring a significant performance penalty.
+/// repeatedly without incurring a significant performance penalty.
 ///
 /// # Examples
 ///

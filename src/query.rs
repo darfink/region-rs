@@ -123,6 +123,8 @@ pub fn query<T>(address: *const T) -> Result<Region> {
 /// - The range is `[address, address + size)`
 /// - The address is rounded down to the closest page boundary.
 /// - The size may not be zero.
+/// - The size is rounded up to the closest page boundary, relative to the
+///   address.
 ///
 /// # Examples
 ///

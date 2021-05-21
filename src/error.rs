@@ -12,8 +12,8 @@ pub enum Error {
   /// The queried memory is unmapped.
   ///
   /// This does not necessarily mean that the memory region is available for
-  /// allocation. Besides OS-specific requirements, queried addresses outside of
-  /// a process' adress range are also identified as unmapped regions.
+  /// allocation. Besides OS-specific semantics, queried addresses outside of a
+  /// process' adress range are also identified as unmapped regions.
   UnmappedRegion,
   /// A supplied parameter is invalid.
   InvalidParameter(&'static str),

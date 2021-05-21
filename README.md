@@ -75,7 +75,7 @@ let alloc = region::alloc(100, Protection::READ_WRITE)?;
 // VirtualProtect | mprotect
 region::protect(data.as_ptr(), data.len(), Protection::READ_WRITE_EXECUTE)?;
 
-// ... you can also temporarily change a region's protection
+// ... you can also temporarily change one or more pages' protection
 let handle = region::protect_with_handle(data.as_ptr(), data.len(), Protection::READ_WRITE_EXECUTE)?;
 
 // VirtualLock | mlock

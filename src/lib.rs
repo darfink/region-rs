@@ -9,11 +9,11 @@
 //! instance, some OSs enforce memory pages to be readable, whilst other may
 //! prevent pages from becoming executable (i.e DEP).
 //!
-//! This library operates on memory pages, which are aligned to the operating
-//! system's page size. Therefore, on some systems, the system calls for these
-//! operations require input to be aligned to a page boundary. To remedy this
-//! inconsistency, this library always aligns input to its closest page
-//! boundary.
+//! This implementation operates with memory pages, which are aligned to the
+//! operating system's page size. On some systems, but not all, the system calls
+//! for these operations require input to be aligned to a page boundary. To
+//! remedy this inconsistency, whenever applicable, input is aligned to its
+//! closest page boundary.
 //!
 //! *Note: a region is a collection of one or more pages laying consecutively in
 //! memory, with the same properties.*
@@ -60,7 +60,7 @@
 //!   // VirtualProtect | mprotect
 //!   region::protect(data.as_ptr(), data.len(), Protection::READ_WRITE_EXECUTE)?;
 //!
-//!   // ... you can also temporarily change a region's protection
+//!   // ... you can also temporarily change one or more pages' protection
 //!   let handle = region::protect_with_handle(data.as_ptr(), data.len(), Protection::READ_WRITE_EXECUTE)?;
 //!
 //!   // VirtualLock | mlock
@@ -159,14 +159,15 @@ impl Region {
     self.guarded
   }
 
-  /// Returns whether the region is shared or not.
+  /// Returns whether the region is shared between processes or not.
   pub fn is_shared(&self) -> bool {
     self.shared
   }
 
-  /// Returns the size of the region.
+  /// Returns the size of the region in bytes.
   ///
-  /// The size is always aligned to the operating system's page size.
+  /// The size is always aligned to a multiple of the operating system's page
+  /// size.
   pub fn len(&self) -> usize {
     self.size
   }
@@ -176,7 +177,7 @@ impl Region {
     self.size == 0
   }
 
-  /// Returns the protection flags of the region.
+  /// Returns the protection attributes of the region.
   pub fn protection(&self) -> Protection {
     self.protection
   }
@@ -202,8 +203,8 @@ bitflags! {
   /// A bitflag of zero or more protection attributes.
   ///
   /// Determines the access rights for a specific page and/or region. Some
-  /// combination of flags may not work depending on the OS (e.g macOS enforces
-  /// executable pages to be readable).
+  /// combination of flags may not be applicable, depending on the OS (e.g macOS
+  /// enforces executable pages to be readable, OpenBSD requires W^X).
   ///
   /// # Examples
   ///
