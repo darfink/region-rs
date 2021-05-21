@@ -365,6 +365,25 @@
 <span id="362">362</span>
 <span id="363">363</span>
 <span id="364">364</span>
+<span id="365">365</span>
+<span id="366">366</span>
+<span id="367">367</span>
+<span id="368">368</span>
+<span id="369">369</span>
+<span id="370">370</span>
+<span id="371">371</span>
+<span id="372">372</span>
+<span id="373">373</span>
+<span id="374">374</span>
+<span id="375">375</span>
+<span id="376">376</span>
+<span id="377">377</span>
+<span id="378">378</span>
+<span id="379">379</span>
+<span id="380">380</span>
+<span id="381">381</span>
+<span id="382">382</span>
+<span id="383">383</span>
 </pre><div class="example-wrap"><pre class="rust ">
 <span class="attribute">#![<span class="ident">deny</span>(<span class="ident">missing_docs</span>)]</span>
 <span class="attribute">#![<span class="ident">cfg_attr</span>(<span class="ident">feature</span> <span class="op">=</span> <span class="string">&quot;cargo-clippy&quot;</span>, <span class="ident">warn</span>(<span class="ident">clippy</span>::<span class="ident">print_stdout</span>))]</span>
@@ -377,6 +396,12 @@
 <span class="doccomment">//! instance, some OSs enforce memory pages to be readable, whilst other may</span>
 <span class="doccomment">//! prevent pages from becoming executable (i.e DEP).</span>
 <span class="doccomment">//!</span>
+<span class="doccomment">//! This library operates on memory pages, which are aligned to the operating</span>
+<span class="doccomment">//! system&#39;s page size. Therefore, on some systems, the system calls for these</span>
+<span class="doccomment">//! operations require input to be aligned to a page boundary. To remedy this</span>
+<span class="doccomment">//! inconsistency, this library always aligns input to its closest page</span>
+<span class="doccomment">//! boundary.</span>
+<span class="doccomment">//!</span>
 <span class="doccomment">//! *Note: a region is a collection of one or more pages laying consecutively in</span>
 <span class="doccomment">//! memory, with the same properties.*</span>
 <span class="doccomment">//!</span>
@@ -385,7 +410,8 @@
 <span class="doccomment">//! The properties of virtual memory pages can change at any time, unless all</span>
 <span class="doccomment">//! threads that are unaccounted for in a process are stopped. Therefore to</span>
 <span class="doccomment">//! obtain, e.g., a true picture of a process&#39; virtual memory, all other threads</span>
-<span class="doccomment">//! must be halted.</span>
+<span class="doccomment">//! must be halted. Otherwise, a region descriptor only represents a snapshot in</span>
+<span class="doccomment">//! time.</span>
 <span class="doccomment">//!</span>
 <span class="doccomment">//! # Installation</span>
 <span class="doccomment">//!</span>
@@ -415,6 +441,9 @@
 <span class="doccomment">//!   let q  = region::query(data.as_ptr())?;</span>
 <span class="doccomment">//!   let qr = region::query_range(data.as_ptr(), data.len())?;</span>
 <span class="doccomment">//!</span>
+<span class="doccomment">//!   // VirtualAlloc | mmap</span>
+<span class="doccomment">//!   let alloc = region::alloc(100, Protection::READ_WRITE)?;</span>
+<span class="doccomment">//!</span>
 <span class="doccomment">//!   // VirtualProtect | mprotect</span>
 <span class="doccomment">//!   region::protect(data.as_ptr(), data.len(), Protection::READ_WRITE_EXECUTE)?;</span>
 <span class="doccomment">//!</span>
@@ -430,11 +459,13 @@
 <span class="attribute">#[<span class="ident">macro_use</span>]</span>
 <span class="kw">extern</span> <span class="kw">crate</span> <span class="ident">bitflags</span>;
 
+<span class="kw">pub</span> <span class="kw">use</span> <span class="ident">alloc</span>::{<span class="ident">alloc</span>, <span class="ident">alloc_at</span>, <span class="ident">Memory</span>};
 <span class="kw">pub</span> <span class="kw">use</span> <span class="ident">error</span>::{<span class="ident">Error</span>, <span class="prelude-ty">Result</span>};
 <span class="kw">pub</span> <span class="kw">use</span> <span class="ident">lock</span>::{<span class="ident">lock</span>, <span class="ident">unlock</span>, <span class="ident">LockGuard</span>};
 <span class="kw">pub</span> <span class="kw">use</span> <span class="ident">protect</span>::{<span class="ident">protect</span>, <span class="ident">protect_with_handle</span>, <span class="ident">ProtectGuard</span>};
 <span class="kw">pub</span> <span class="kw">use</span> <span class="ident">query</span>::{<span class="ident">query</span>, <span class="ident">query_range</span>, <span class="ident">QueryIter</span>};
 
+<span class="kw">mod</span> <span class="ident">alloc</span>;
 <span class="kw">mod</span> <span class="ident">error</span>;
 <span class="kw">mod</span> <span class="ident">lock</span>;
 <span class="kw">mod</span> <span class="ident">os</span>;
@@ -444,12 +475,15 @@
 <span class="kw">mod</span> <span class="ident">util</span>;
 
 <span class="doccomment">/// A descriptor for a mapped memory region.</span>
+<span class="doccomment">///</span>
+<span class="doccomment">/// The region encompasses zero or more pages (e.g. OpenBSD can have null-sized</span>
+<span class="doccomment">/// virtual pages).</span>
 <span class="attribute">#[<span class="ident">derive</span>(<span class="ident">Debug</span>, <span class="ident">Clone</span>, <span class="ident">Copy</span>, <span class="ident">PartialEq</span>, <span class="ident">Eq</span>)]</span>
 <span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">Region</span> {
   <span class="doccomment">/// Base address of the region</span>
   <span class="ident">base</span>: <span class="kw-2">*</span><span class="kw">const</span> (),
-  <span class="doccomment">/// Whether the region is committed or not</span>
-  <span class="ident">committed</span>: <span class="ident">bool</span>,
+  <span class="doccomment">/// Whether the region is reserved or not</span>
+  <span class="ident">reserved</span>: <span class="ident">bool</span>,
   <span class="doccomment">/// Whether the region is guarded or not</span>
   <span class="ident">guarded</span>: <span class="ident">bool</span>,
   <span class="doccomment">/// Protection of the region</span>
@@ -462,6 +496,8 @@
 
 <span class="kw">impl</span> <span class="ident">Region</span> {
   <span class="doccomment">/// Returns a pointer to the region&#39;s base address.</span>
+  <span class="doccomment">///</span>
+  <span class="doccomment">/// The address is always aligned to the operating system&#39;s page size.</span>
   <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">as_ptr</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="kw-2">*</span><span class="kw">const</span> <span class="ident">T</span> {
     <span class="self">self</span>.<span class="ident">base</span> <span class="kw">as</span> <span class="kw-2">*</span><span class="kw">const</span> <span class="ident">T</span>
   }
@@ -484,10 +520,10 @@
 
   <span class="doccomment">/// Returns whether the region is committed or not.</span>
   <span class="doccomment">///</span>
-  <span class="doccomment">/// This is true for all memory regions, the exception being `MEM_RESERVE`</span>
-  <span class="doccomment">/// pages on Windows.</span>
+  <span class="doccomment">/// This is always true for all operating system&#39;s, the exception being</span>
+  <span class="doccomment">/// `MEM_RESERVE` pages on Windows.</span>
   <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">is_committed</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="ident">bool</span> {
-    <span class="self">self</span>.<span class="ident">committed</span>
+    <span class="op">!</span><span class="self">self</span>.<span class="ident">reserved</span>
   }
 
   <span class="doccomment">/// Returns whether the region is readable or not.</span>
@@ -516,6 +552,8 @@
   }
 
   <span class="doccomment">/// Returns the size of the region.</span>
+  <span class="doccomment">///</span>
+  <span class="doccomment">/// The size is always aligned to the operating system&#39;s page size.</span>
   <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">len</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="ident">usize</span> {
     <span class="self">self</span>.<span class="ident">size</span>
   }
@@ -535,7 +573,7 @@
   <span class="kw">fn</span> <span class="ident">default</span>() <span class="op">-</span><span class="op">&gt;</span> <span class="self">Self</span> {
     <span class="ident">Region</span> {
       <span class="ident">base</span>: <span class="ident">std</span>::<span class="ident">ptr</span>::<span class="ident">null</span>(),
-      <span class="ident">committed</span>: <span class="bool-val">true</span>,
+      <span class="ident">reserved</span>: <span class="bool-val">false</span>,
       <span class="ident">guarded</span>: <span class="bool-val">false</span>,
       <span class="ident">protection</span>: <span class="ident">Protection</span>::<span class="ident">NONE</span>,
       <span class="ident">shared</span>: <span class="bool-val">false</span>,

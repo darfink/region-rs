@@ -59,13 +59,55 @@
 <span id="56">56</span>
 <span id="57">57</span>
 <span id="58">58</span>
+<span id="59">59</span>
+<span id="60">60</span>
+<span id="61">61</span>
+<span id="62">62</span>
+<span id="63">63</span>
+<span id="64">64</span>
+<span id="65">65</span>
+<span id="66">66</span>
+<span id="67">67</span>
+<span id="68">68</span>
+<span id="69">69</span>
+<span id="70">70</span>
+<span id="71">71</span>
+<span id="72">72</span>
+<span id="73">73</span>
+<span id="74">74</span>
+<span id="75">75</span>
+<span id="76">76</span>
+<span id="77">77</span>
+<span id="78">78</span>
+<span id="79">79</span>
 </pre><div class="example-wrap"><pre class="rust ">
 <span class="kw">use</span> <span class="kw">crate</span>::{<span class="ident">Error</span>, <span class="ident">Protection</span>, <span class="prelude-ty">Result</span>};
+<span class="kw">use</span> <span class="ident">libc</span>::{<span class="ident">MAP_ANON</span>, <span class="ident">MAP_FAILED</span>, <span class="ident">MAP_FIXED</span>, <span class="ident">MAP_PRIVATE</span>};
 <span class="kw">use</span> <span class="ident">libc</span>::{<span class="ident">PROT_EXEC</span>, <span class="ident">PROT_NONE</span>, <span class="ident">PROT_READ</span>, <span class="ident">PROT_WRITE</span>};
 <span class="kw">use</span> <span class="ident">std</span>::<span class="ident">io</span>;
 
 <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">page_size</span>() <span class="op">-</span><span class="op">&gt;</span> <span class="ident">usize</span> {
   <span class="kw">unsafe</span> { <span class="ident">libc</span>::<span class="ident">sysconf</span>(<span class="ident">libc</span>::<span class="ident">_SC_PAGESIZE</span>) <span class="kw">as</span> <span class="ident">usize</span> }
+}
+
+<span class="kw">pub</span> <span class="kw">unsafe</span> <span class="kw">fn</span> <span class="ident">alloc</span>(<span class="ident">base</span>: <span class="kw-2">*</span><span class="kw">const</span> (), <span class="ident">size</span>: <span class="ident">usize</span>, <span class="ident">protection</span>: <span class="ident">Protection</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="kw-2">*</span><span class="kw">const</span> ()<span class="op">&gt;</span> {
+  <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">flags</span> <span class="op">=</span> <span class="ident">MAP_PRIVATE</span> <span class="op">|</span> <span class="ident">MAP_ANON</span>;
+
+  <span class="kw">if</span> <span class="op">!</span><span class="ident">base</span>.<span class="ident">is_null</span>() {
+    <span class="ident">flags</span> <span class="op">|</span><span class="op">=</span> <span class="ident">MAP_FIXED</span>;
+  }
+
+  <span class="kw">match</span> <span class="ident">libc</span>::<span class="ident">mmap</span>(<span class="ident">base</span> <span class="kw">as</span> <span class="kw-2">*</span><span class="kw-2">mut</span> <span class="kw">_</span>, <span class="ident">size</span>, <span class="ident">protection</span>.<span class="ident">to_native</span>(), <span class="ident">flags</span>, <span class="op">-</span><span class="number">1</span>, <span class="number">0</span>) {
+    <span class="ident">MAP_FAILED</span> <span class="op">=</span><span class="op">&gt;</span> <span class="prelude-val">Err</span>(<span class="ident">Error</span>::<span class="ident">SystemCall</span>(<span class="ident">io</span>::<span class="ident">Error</span>::<span class="ident">last_os_error</span>())),
+    <span class="ident">address</span> <span class="op">=</span><span class="op">&gt;</span> <span class="prelude-val">Ok</span>(<span class="ident">address</span> <span class="kw">as</span> <span class="kw-2">*</span><span class="kw">const</span> ()),
+  }
+}
+
+<span class="kw">pub</span> <span class="kw">unsafe</span> <span class="kw">fn</span> <span class="ident">free</span>(<span class="ident">base</span>: <span class="kw-2">*</span><span class="kw">const</span> (), <span class="ident">size</span>: <span class="ident">usize</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="prelude-ty">Result</span><span class="op">&lt;</span>()<span class="op">&gt;</span> {
+  <span class="kw">match</span> <span class="ident">libc</span>::<span class="ident">munmap</span>(<span class="ident">base</span> <span class="kw">as</span> <span class="kw-2">*</span><span class="kw-2">mut</span> <span class="kw">_</span>, <span class="ident">size</span>) {
+    <span class="number">0</span> <span class="op">=</span><span class="op">&gt;</span> <span class="prelude-val">Ok</span>(()),
+    <span class="kw">_</span> <span class="op">=</span><span class="op">&gt;</span> <span class="prelude-val">Err</span>(<span class="ident">Error</span>::<span class="ident">SystemCall</span>(<span class="ident">io</span>::<span class="ident">Error</span>::<span class="ident">last_os_error</span>())),
+  }
 }
 
 <span class="kw">pub</span> <span class="kw">unsafe</span> <span class="kw">fn</span> <span class="ident">protect</span>(<span class="ident">base</span>: <span class="kw-2">*</span><span class="kw">const</span> (), <span class="ident">size</span>: <span class="ident">usize</span>, <span class="ident">protection</span>: <span class="ident">Protection</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="prelude-ty">Result</span><span class="op">&lt;</span>()<span class="op">&gt;</span> {
