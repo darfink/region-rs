@@ -98,7 +98,7 @@ pub unsafe fn protect_with_handle<T>(
     region.size -= address as usize - region.as_range().start;
   }
 
-  if let Some(ref mut region) = regions.last_mut() {
+  if let Some(region) = regions.last_mut() {
     // Truncate the upper region to the smallest page boundary
     let protect_end = address as usize + size;
     region.size -= region.as_range().end - protect_end;
@@ -169,15 +169,16 @@ mod tests {
       Protection::READ,
     ]);
 
-    let base_exec = unsafe { map.as_ptr().add(pz) };
-    let straddle = unsafe { base_exec.add(pz - 1) };
+    let exec_page = unsafe { map.as_ptr().add(pz) };
+    let exec_page_end = unsafe { exec_page.add(pz - 1) };
 
     // Change the protection over two page boundaries
-    unsafe { protect(straddle, 2, Protection::NONE)? };
+    unsafe { protect(exec_page_end, 2, Protection::NONE)? };
 
-    // Query the two pages that reside within the outer two
-    let result = query_range(base_exec, pz * 2)?.collect::<Result<Vec<_>>>()?;
+    // Query the two inner pages
+    let result = query_range(exec_page, pz * 2)?.collect::<Result<Vec<_>>>()?;
 
+    // On some OSs the pages are merged into one region
     assert!(matches!(result.len(), 1 | 2));
     assert_eq!(result.iter().map(|r| r.len()).sum::<usize>(), pz * 2);
     assert_eq!(result[0].protection(), Protection::NONE);
@@ -196,8 +197,8 @@ mod tests {
     // Alter the protection of the second page
     let second_page = unsafe { map.as_ptr().add(page::size()) };
     unsafe {
-      let edge = second_page.offset(page::size() as isize - 1);
-      protect(edge, 1, Protection::NONE)?;
+      let second_page_end = second_page.offset(page::size() as isize - 1);
+      protect(second_page_end, 1, Protection::NONE)?;
     }
 
     let regions = query_range(map.as_ptr(), page::size() * 3)?.collect::<Result<Vec<_>>>()?;
@@ -234,13 +235,13 @@ mod tests {
   }
 
   #[test]
-  fn protect_with_handle_only_resets_protection_of_affected_pages() -> Result<()> {
+  fn protect_with_handle_only_alters_protection_of_affected_pages() -> Result<()> {
     let pages = [
-      Protection::READ,
+      Protection::READ_WRITE,
       Protection::READ,
       Protection::READ_WRITE,
       Protection::READ_EXECUTE,
-      Protection::READ_EXECUTE,
+      Protection::NONE,
     ];
     let map = alloc_pages(&pages);
 
@@ -257,9 +258,12 @@ mod tests {
 
     let regions =
       query_range(map.as_ptr(), page::size() * pages.len())?.collect::<Result<Vec<_>>>()?;
-    assert!(matches!(regions.len(), 3 | 4 | 5));
-    assert!(regions[0].as_ptr() <= map.as_ptr());
-    assert_eq!(regions[0].protection(), Protection::READ);
+
+    assert_eq!(regions.len(), 5);
+    assert_eq!(regions[0].as_ptr(), map.as_ptr());
+    for i in 0..pages.len() {
+      assert_eq!(regions[i].protection(), pages[i]);
+    }
 
     Ok(())
   }

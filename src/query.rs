@@ -159,8 +159,8 @@ mod tests {
   }
 
   #[test]
-  fn query_returns_correct_region_for_text_segment() -> Result<()> {
-    let region = query(query_returns_correct_region_for_text_segment as *const ())?;
+  fn query_returns_correct_descriptor_for_text_segment() -> Result<()> {
+    let region = query(query_returns_correct_descriptor_for_text_segment as *const ())?;
     assert_eq!(region.protection(), Protection::READ_EXECUTE);
     assert_eq!(region.is_shared(), cfg!(windows));
     assert!(!region.is_guarded());
@@ -168,16 +168,14 @@ mod tests {
   }
 
   #[test]
-  #[cfg(not(target_os = "openbsd"))]
-  fn query_returns_one_region_for_identical_adjacent_pages() -> Result<()> {
-    let pages = [Protection::READ_EXECUTE, Protection::READ_EXECUTE];
-    let map = alloc_pages(&pages);
-    let region = query(map.as_ptr())?;
+  fn query_returns_one_region_for_multiple_page_allocation() -> Result<()> {
+    let alloc = crate::alloc(page::size() + 1, Protection::READ_EXECUTE)?;
+    let region = query(alloc.as_ptr::<()>())?;
 
     assert_eq!(region.protection(), Protection::READ_EXECUTE);
+    assert_eq!(region.as_ptr::<()>(), alloc.as_ptr());
+    assert_eq!(region.len(), alloc.len());
     assert!(!region.is_guarded());
-    assert!(region.as_ptr() <= map.as_ptr());
-    assert!(region.len() >= page::size() * pages.len());
     Ok(())
   }
 
@@ -195,7 +193,7 @@ mod tests {
     let region = query(unsafe { page_mid.offset(-1) })?;
 
     assert_eq!(region.protection(), Protection::READ);
-    assert!(region.len() >= page::size());
+    assert_eq!(region.len(), page::size());
     Ok(())
   }
 
@@ -253,6 +251,25 @@ mod tests {
     assert!(regions.iter().any(|region| region.protection() == rw));
     assert!(regions.iter().any(|region| region.protection() == rx));
     assert!(regions.len() > 5);
+    Ok(())
+  }
+
+  #[test]
+  fn query_range_iterator_is_fused_after_exhaustion() -> Result<()> {
+    let pages = [Protection::READ, Protection::READ_WRITE];
+    let map = alloc_pages(&pages);
+    let mut iter = query_range(map.as_ptr(), page::size() + 1)?;
+
+    assert_eq!(
+      iter.next().transpose()?.map(|r| r.protection()),
+      Some(Protection::READ)
+    );
+    assert_eq!(
+      iter.next().transpose()?.map(|r| r.protection()),
+      Some(Protection::READ_WRITE)
+    );
+    assert_eq!(iter.next().transpose()?, None);
+    assert_eq!(iter.next().transpose()?, None);
     Ok(())
   }
 }
