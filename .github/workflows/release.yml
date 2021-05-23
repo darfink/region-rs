@@ -13,7 +13,8 @@ jobs:
       uses: actions/checkout@v2
 
     - name: Authenticate crates.io
-      env: { CRATES_IO_TOKEN: ${{ secrets.crates_io_token }} }
+      env:
+        CRATES_IO_TOKEN: ${{ secrets.crates_io_token }}
       run: cargo login $CRATES_IO_TOKEN
 
     - name: Publish crate
