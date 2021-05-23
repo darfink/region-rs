@@ -201,9 +201,9 @@
   <span class="doccomment">/// Returns two raw pointers spanning the allocation&#39;s address space.</span>
   <span class="doccomment">///</span>
   <span class="doccomment">/// The returned range is half-open, which means that the end pointer points</span>
-  <span class="doccomment">/// one past the last element of the region. This way, an empty region is</span>
-  <span class="doccomment">/// represented by two equal pointers, and the difference between the two</span>
-  <span class="doccomment">/// pointers represents the size of the region.</span>
+  <span class="doccomment">/// one past the last element of the allocation. This way, an empty allocation</span>
+  <span class="doccomment">/// is represented by two equal pointers, and the difference between the two</span>
+  <span class="doccomment">/// pointers represents the size of the allocation.</span>
   <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">as_ptr_range</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="ident">std</span>::<span class="ident">ops</span>::<span class="ident">Range</span><span class="op">&lt;</span><span class="kw-2">*</span><span class="kw">const</span> <span class="ident">T</span><span class="op">&gt;</span> {
     <span class="kw">let</span> <span class="ident">range</span> <span class="op">=</span> <span class="self">self</span>.<span class="ident">as_range</span>();
     (<span class="ident">range</span>.<span class="ident">start</span> <span class="kw">as</span> <span class="kw-2">*</span><span class="kw">const</span> <span class="ident">T</span>)..(<span class="ident">range</span>.<span class="ident">end</span> <span class="kw">as</span> <span class="kw-2">*</span><span class="kw">const</span> <span class="ident">T</span>)
@@ -211,7 +211,8 @@
 
   <span class="doccomment">/// Returns the size of the allocation in bytes.</span>
   <span class="doccomment">///</span>
-  <span class="doccomment">/// The size is always aligned to the operating system&#39;s page size.</span>
+  <span class="doccomment">/// The size is always aligned to a multiple of the operating system&#39;s page</span>
+  <span class="doccomment">/// size.</span>
   <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">len</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="ident">usize</span> {
     <span class="self">self</span>.<span class="ident">size</span>
   }
@@ -241,7 +242,6 @@
 <span class="doccomment">/// ```</span>
 <span class="doccomment">/// # fn main() -&gt; region::Result&lt;()&gt; {</span>
 <span class="doccomment">/// # if cfg!(any(target_arch = &quot;x86&quot;, target_arch = &quot;x86_64&quot;)) &amp;&amp; !cfg!(target_os = &quot;openbsd&quot;) {</span>
-<span class="doccomment">///</span>
 <span class="doccomment">/// use region::Protection;</span>
 <span class="doccomment">/// let ret5 = [0xB8, 0x05, 0x00, 0x00, 0x00, 0xC3u8];</span>
 <span class="doccomment">///</span>
