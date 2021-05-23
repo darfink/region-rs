@@ -26,9 +26,9 @@ impl Memory {
   /// Returns two raw pointers spanning the allocation's address space.
   ///
   /// The returned range is half-open, which means that the end pointer points
-  /// one past the last element of the region. This way, an empty region is
-  /// represented by two equal pointers, and the difference between the two
-  /// pointers represents the size of the region.
+  /// one past the last element of the allocation. This way, an empty allocation
+  /// is represented by two equal pointers, and the difference between the two
+  /// pointers represents the size of the allocation.
   pub fn as_ptr_range<T>(&self) -> std::ops::Range<*const T> {
     let range = self.as_range();
     (range.start as *const T)..(range.end as *const T)
@@ -36,7 +36,8 @@ impl Memory {
 
   /// Returns the size of the allocation in bytes.
   ///
-  /// The size is always aligned to the operating system's page size.
+  /// The size is always aligned to a multiple of the operating system's page
+  /// size.
   pub fn len(&self) -> usize {
     self.size
   }
@@ -66,7 +67,6 @@ impl Drop for Memory {
 /// ```
 /// # fn main() -> region::Result<()> {
 /// # if cfg!(any(target_arch = "x86", target_arch = "x86_64")) && !cfg!(target_os = "openbsd") {
-///
 /// use region::Protection;
 /// let ret5 = [0xB8, 0x05, 0x00, 0x00, 0x00, 0xC3u8];
 ///

@@ -11,10 +11,10 @@
 
  </div>
 
-This crate provides a cross-platform Rust API for querying and manipulating
-virtual memory. It is a thin abstraction, with the underlying interaction
-implemented using platform specific APIs (e.g `VirtualQuery`, `VirtualAlloc`,
-`VirtualLock`, `mprotect`, `mmap`, `mlock`).
+This crate provides a cross-platform Rust API for allocating, querying and
+manipulating virtual memory. It is a thin abstraction, with the underlying
+interaction implemented using platform specific APIs (e.g `VirtualQuery`,
+`VirtualAlloc`, `VirtualLock`, `mprotect`, `mmap`, `mlock`).
 
 ## Platforms
 
