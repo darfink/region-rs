@@ -276,6 +276,8 @@
 <span id="273">273</span>
 <span id="274">274</span>
 <span id="275">275</span>
+<span id="276">276</span>
+<span id="277">277</span>
 </pre><div class="example-wrap"><pre class="rust ">
 <span class="kw">use</span> <span class="kw">crate</span>::{<span class="ident">os</span>, <span class="ident">util</span>, <span class="ident">Error</span>, <span class="ident">Region</span>, <span class="prelude-ty">Result</span>};
 
@@ -338,6 +340,8 @@
     <span class="prelude-val">None</span>
   }
 }
+
+<span class="kw">impl</span> <span class="ident">std</span>::<span class="ident">iter</span>::<span class="ident">FusedIterator</span> <span class="kw">for</span> <span class="ident">QueryIter</span> {}
 
 <span class="kw">unsafe</span> <span class="kw">impl</span> <span class="ident">Send</span> <span class="kw">for</span> <span class="ident">QueryIter</span> {}
 <span class="kw">unsafe</span> <span class="kw">impl</span> <span class="ident">Sync</span> <span class="kw">for</span> <span class="ident">QueryIter</span> {}
