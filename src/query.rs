@@ -60,6 +60,8 @@ impl Iterator for QueryIter {
   }
 }
 
+impl std::iter::FusedIterator for QueryIter {}
+
 unsafe impl Send for QueryIter {}
 unsafe impl Sync for QueryIter {}
 
