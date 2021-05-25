@@ -272,12 +272,6 @@
 <span id="269">269</span>
 <span id="270">270</span>
 <span id="271">271</span>
-<span id="272">272</span>
-<span id="273">273</span>
-<span id="274">274</span>
-<span id="275">275</span>
-<span id="276">276</span>
-<span id="277">277</span>
 </pre><div class="example-wrap"><pre class="rust ">
 <span class="kw">use</span> <span class="kw">crate</span>::{<span class="ident">os</span>, <span class="ident">util</span>, <span class="ident">Error</span>, <span class="ident">Region</span>, <span class="prelude-ty">Result</span>};
 
@@ -356,12 +350,6 @@
 <span class="doccomment">///</span>
 <span class="doccomment">/// - The enclosing region can be of multiple page sizes.</span>
 <span class="doccomment">/// - The address is rounded down to the closest page boundary.</span>
-<span class="doccomment">///</span>
-<span class="doccomment">/// # Windows</span>
-<span class="doccomment">///</span>
-<span class="doccomment">/// On Windows, in contrast to other operating systems, a region does not include</span>
-<span class="doccomment">/// pages with the same properties that precede the provided `address`. This is</span>
-<span class="doccomment">/// due to the behavior of `VirtualQuery`.</span>
 <span class="doccomment">///</span>
 <span class="doccomment">/// # Examples</span>
 <span class="doccomment">///</span>

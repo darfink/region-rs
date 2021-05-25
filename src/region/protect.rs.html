@@ -271,6 +271,7 @@
 <span id="268">268</span>
 <span id="269">269</span>
 <span id="270">270</span>
+<span id="271">271</span>
 </pre><div class="example-wrap"><pre class="rust ">
 <span class="kw">use</span> <span class="kw">crate</span>::{<span class="ident">os</span>, <span class="ident">util</span>, <span class="ident">Protection</span>, <span class="ident">QueryIter</span>, <span class="ident">Region</span>, <span class="prelude-ty">Result</span>};
 
@@ -328,8 +329,9 @@
 <span class="doccomment">/// [std::mem::forget].</span>
 <span class="doccomment">///</span>
 <span class="doccomment">/// This function uses [query_range](crate::query_range) internally and is</span>
-<span class="doccomment">/// therefore less performant than [protect]. Use this function if you need to</span>
-<span class="doccomment">/// reapply the memory protection flags of one or more regions after operations.</span>
+<span class="doccomment">/// therefore less performant than [protect]. Use this function only if you need</span>
+<span class="doccomment">/// to reapply the memory protection flags of one or more regions after</span>
+<span class="doccomment">/// operations.</span>
 <span class="doccomment">///</span>
 <span class="doccomment">/// # Guard</span>
 <span class="doccomment">///</span>

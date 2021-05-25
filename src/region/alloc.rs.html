@@ -172,6 +172,10 @@
 <span id="169">169</span>
 <span id="170">170</span>
 <span id="171">171</span>
+<span id="172">172</span>
+<span id="173">173</span>
+<span id="174">174</span>
+<span id="175">175</span>
 </pre><div class="example-wrap"><pre class="rust ">
 <span class="kw">use</span> <span class="kw">crate</span>::{<span class="ident">os</span>, <span class="ident">page</span>, <span class="ident">util</span>, <span class="ident">Error</span>, <span class="ident">Protection</span>, <span class="prelude-ty">Result</span>};
 
@@ -228,9 +232,8 @@
 <span class="doccomment">/// Allocates one or more pages of memory, with a defined protection.</span>
 <span class="doccomment">///</span>
 <span class="doccomment">/// This function provides a very simple interface for allocating anonymous</span>
-<span class="doccomment">/// virtual pages. In case more elaborate functionality is required, such as</span>
-<span class="doccomment">/// memory mapped files, one of the many crates in the Rust ecosystem provides</span>
-<span class="doccomment">/// this feature.</span>
+<span class="doccomment">/// virtual pages. The allocation address will be decided by the operating</span>
+<span class="doccomment">/// system.</span>
 <span class="doccomment">///</span>
 <span class="doccomment">/// # Parameters</span>
 <span class="doccomment">///</span>
@@ -279,6 +282,11 @@
 <span class="doccomment">/// reserved memory, are aligned to the operating system&#39;s allocation</span>
 <span class="doccomment">/// granularity (most commonly 64KB).</span>
 <span class="doccomment">///</span>
+<span class="doccomment">/// # Implementation</span>
+<span class="doccomment">/// </span>
+<span class="doccomment">/// This function is implemented using `VirtualAlloc` on Windows, and `mmap`</span>
+<span class="doccomment">/// with `MAP_FIXED` on POSIX.</span>
+<span class="doccomment">/// </span>
 <span class="doccomment">/// # Parameters</span>
 <span class="doccomment">///</span>
 <span class="doccomment">/// - The address is rounded down to the closest page boundary.</span>
