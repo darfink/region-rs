@@ -54,8 +54,9 @@ pub unsafe fn protect<T>(address: *const T, size: usize, protection: Protection)
 /// [std::mem::forget].
 ///
 /// This function uses [query_range](crate::query_range) internally and is
-/// therefore less performant than [protect]. Use this function if you need to
-/// reapply the memory protection flags of one or more regions after operations.
+/// therefore less performant than [protect]. Use this function only if you need
+/// to reapply the memory protection flags of one or more regions after
+/// operations.
 ///
 /// # Guard
 ///

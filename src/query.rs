@@ -76,12 +76,6 @@ unsafe impl Sync for QueryIter {}
 /// - The enclosing region can be of multiple page sizes.
 /// - The address is rounded down to the closest page boundary.
 ///
-/// # Windows
-///
-/// On Windows, in contrast to other operating systems, a region does not include
-/// pages with the same properties that precede the provided `address`. This is
-/// due to the behavior of `VirtualQuery`.
-///
 /// # Examples
 ///
 /// ```

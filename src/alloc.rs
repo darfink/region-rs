@@ -53,9 +53,8 @@ impl Drop for Memory {
 /// Allocates one or more pages of memory, with a defined protection.
 ///
 /// This function provides a very simple interface for allocating anonymous
-/// virtual pages. In case more elaborate functionality is required, such as
-/// memory mapped files, one of the many crates in the Rust ecosystem provides
-/// this feature.
+/// virtual pages. The allocation address will be decided by the operating
+/// system.
 ///
 /// # Parameters
 ///
@@ -103,6 +102,11 @@ pub fn alloc(size: usize, protection: Protection) -> Result<Memory> {
 /// address. E.g. on Windows, new allocations that do not reside within already
 /// reserved memory, are aligned to the operating system's allocation
 /// granularity (most commonly 64KB).
+///
+/// # Implementation
+///
+/// This function is implemented using `VirtualAlloc` on Windows, and `mmap`
+/// with `MAP_FIXED` on POSIX.
 ///
 /// # Parameters
 ///
