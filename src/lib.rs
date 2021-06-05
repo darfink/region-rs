@@ -115,9 +115,9 @@ impl Region {
     self.base as *const T
   }
 
-  /// Returns a range spanning the region's address space.
-  pub fn as_range(&self) -> std::ops::Range<usize> {
-    (self.base as usize)..(self.base as usize).saturating_add(self.size)
+  /// Returns a mutable pointer to the region's base address.
+  pub fn as_mut_ptr<T>(&mut self) -> *mut T {
+    self.base as *mut T
   }
 
   /// Returns two raw pointers spanning the region's address space.
@@ -129,6 +129,17 @@ impl Region {
   pub fn as_ptr_range<T>(&self) -> std::ops::Range<*const T> {
     let range = self.as_range();
     (range.start as *const T)..(range.end as *const T)
+  }
+
+  /// Returns two mutable raw pointers spanning the region's address space.
+  pub fn as_mut_ptr_range<T>(&mut self) -> std::ops::Range<*mut T> {
+    let range = self.as_range();
+    (range.start as *mut T)..(range.end as *mut T)
+  }
+
+  /// Returns a range spanning the region's address space.
+  pub fn as_range(&self) -> std::ops::Range<usize> {
+    (self.base as usize)..(self.base as usize).saturating_add(self.size)
   }
 
   /// Returns whether the region is committed or not.
