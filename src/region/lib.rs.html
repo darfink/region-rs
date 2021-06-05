@@ -385,6 +385,17 @@
 <span id="382">382</span>
 <span id="383">383</span>
 <span id="384">384</span>
+<span id="385">385</span>
+<span id="386">386</span>
+<span id="387">387</span>
+<span id="388">388</span>
+<span id="389">389</span>
+<span id="390">390</span>
+<span id="391">391</span>
+<span id="392">392</span>
+<span id="393">393</span>
+<span id="394">394</span>
+<span id="395">395</span>
 </pre><div class="example-wrap"><pre class="rust ">
 <span class="attribute">#![<span class="ident">deny</span>(<span class="ident">missing_docs</span>)]</span>
 <span class="attribute">#![<span class="ident">cfg_attr</span>(<span class="ident">feature</span> <span class="op">=</span> <span class="string">&quot;cargo-clippy&quot;</span>, <span class="ident">warn</span>(<span class="ident">clippy</span>::<span class="ident">print_stdout</span>))]</span>
@@ -503,9 +514,9 @@
     <span class="self">self</span>.<span class="ident">base</span> <span class="kw">as</span> <span class="kw-2">*</span><span class="kw">const</span> <span class="ident">T</span>
   }
 
-  <span class="doccomment">/// Returns a range spanning the region&#39;s address space.</span>
-  <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">as_range</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="ident">std</span>::<span class="ident">ops</span>::<span class="ident">Range</span><span class="op">&lt;</span><span class="ident">usize</span><span class="op">&gt;</span> {
-    (<span class="self">self</span>.<span class="ident">base</span> <span class="kw">as</span> <span class="ident">usize</span>)..(<span class="self">self</span>.<span class="ident">base</span> <span class="kw">as</span> <span class="ident">usize</span>).<span class="ident">saturating_add</span>(<span class="self">self</span>.<span class="ident">size</span>)
+  <span class="doccomment">/// Returns a mutable pointer to the region&#39;s base address.</span>
+  <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">as_mut_ptr</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span>(<span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="self">self</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="kw-2">*</span><span class="kw-2">mut</span> <span class="ident">T</span> {
+    <span class="self">self</span>.<span class="ident">base</span> <span class="kw">as</span> <span class="kw-2">*</span><span class="kw-2">mut</span> <span class="ident">T</span>
   }
 
   <span class="doccomment">/// Returns two raw pointers spanning the region&#39;s address space.</span>
@@ -517,6 +528,17 @@
   <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">as_ptr_range</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="ident">std</span>::<span class="ident">ops</span>::<span class="ident">Range</span><span class="op">&lt;</span><span class="kw-2">*</span><span class="kw">const</span> <span class="ident">T</span><span class="op">&gt;</span> {
     <span class="kw">let</span> <span class="ident">range</span> <span class="op">=</span> <span class="self">self</span>.<span class="ident">as_range</span>();
     (<span class="ident">range</span>.<span class="ident">start</span> <span class="kw">as</span> <span class="kw-2">*</span><span class="kw">const</span> <span class="ident">T</span>)..(<span class="ident">range</span>.<span class="ident">end</span> <span class="kw">as</span> <span class="kw-2">*</span><span class="kw">const</span> <span class="ident">T</span>)
+  }
+
+  <span class="doccomment">/// Returns two mutable raw pointers spanning the region&#39;s address space.</span>
+  <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">as_mut_ptr_range</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span>(<span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="self">self</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="ident">std</span>::<span class="ident">ops</span>::<span class="ident">Range</span><span class="op">&lt;</span><span class="kw-2">*</span><span class="kw-2">mut</span> <span class="ident">T</span><span class="op">&gt;</span> {
+    <span class="kw">let</span> <span class="ident">range</span> <span class="op">=</span> <span class="self">self</span>.<span class="ident">as_range</span>();
+    (<span class="ident">range</span>.<span class="ident">start</span> <span class="kw">as</span> <span class="kw-2">*</span><span class="kw-2">mut</span> <span class="ident">T</span>)..(<span class="ident">range</span>.<span class="ident">end</span> <span class="kw">as</span> <span class="kw-2">*</span><span class="kw-2">mut</span> <span class="ident">T</span>)
+  }
+
+  <span class="doccomment">/// Returns a range spanning the region&#39;s address space.</span>
+  <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">as_range</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="ident">std</span>::<span class="ident">ops</span>::<span class="ident">Range</span><span class="op">&lt;</span><span class="ident">usize</span><span class="op">&gt;</span> {
+    (<span class="self">self</span>.<span class="ident">base</span> <span class="kw">as</span> <span class="ident">usize</span>)..(<span class="self">self</span>.<span class="ident">base</span> <span class="kw">as</span> <span class="ident">usize</span>).<span class="ident">saturating_add</span>(<span class="self">self</span>.<span class="ident">size</span>)
   }
 
   <span class="doccomment">/// Returns whether the region is committed or not.</span>
