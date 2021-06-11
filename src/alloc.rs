@@ -5,12 +5,12 @@ use crate::{os, page, util, Error, Protection, Result};
 /// This handle does not dereference to a slice, since the underlying memory may
 /// have been created with [Protection::NONE].
 #[allow(clippy::len_without_is_empty)]
-pub struct Memory {
+pub struct Allocation {
   base: *const (),
   size: usize,
 }
 
-impl Memory {
+impl Allocation {
   /// Returns a pointer to the allocation's base address.
   ///
   /// The address is always aligned to the operating system's page size.
@@ -54,7 +54,7 @@ impl Memory {
   }
 }
 
-impl Drop for Memory {
+impl Drop for Allocation {
   fn drop(&mut self) {
     let result = unsafe { os::free(self.base, self.size) };
     debug_assert!(result.is_ok(), "freeing region: {:?}", result);
@@ -93,7 +93,7 @@ impl Drop for Memory {
 /// # Ok(())
 /// # }
 /// ```
-pub fn alloc(size: usize, protection: Protection) -> Result<Memory> {
+pub fn alloc(size: usize, protection: Protection) -> Result<Allocation> {
   if size == 0 {
     return Err(Error::InvalidParameter("size"));
   }
@@ -102,7 +102,7 @@ pub fn alloc(size: usize, protection: Protection) -> Result<Memory> {
 
   unsafe {
     let base = os::alloc(std::ptr::null::<()>(), size, protection)?;
-    Ok(Memory { base, size })
+    Ok(Allocation { base, size })
   }
 }
 
@@ -125,12 +125,12 @@ pub fn alloc(size: usize, protection: Protection) -> Result<Memory> {
 /// - The size may not be zero.
 /// - The size is rounded up to the closest page boundary, relative to the
 ///   address.
-pub fn alloc_at<T>(address: *const T, size: usize, protection: Protection) -> Result<Memory> {
+pub fn alloc_at<T>(address: *const T, size: usize, protection: Protection) -> Result<Allocation> {
   let (address, size) = util::round_to_page_boundaries(address, size)?;
 
   unsafe {
     let base = os::alloc(address as *const (), size, protection)?;
-    Ok(Memory { base, size })
+    Ok(Allocation { base, size })
   }
 }
 
