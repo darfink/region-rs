@@ -195,12 +195,12 @@
 <span class="doccomment">/// This handle does not dereference to a slice, since the underlying memory may</span>
 <span class="doccomment">/// have been created with [Protection::NONE].</span>
 <span class="attribute">#[<span class="ident">allow</span>(<span class="ident">clippy</span>::<span class="ident">len_without_is_empty</span>)]</span>
-<span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">Memory</span> {
+<span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">Allocation</span> {
   <span class="ident">base</span>: <span class="kw-2">*</span><span class="kw">const</span> (),
   <span class="ident">size</span>: <span class="ident">usize</span>,
 }
 
-<span class="kw">impl</span> <span class="ident">Memory</span> {
+<span class="kw">impl</span> <span class="ident">Allocation</span> {
   <span class="doccomment">/// Returns a pointer to the allocation&#39;s base address.</span>
   <span class="doccomment">///</span>
   <span class="doccomment">/// The address is always aligned to the operating system&#39;s page size.</span>
@@ -244,7 +244,7 @@
   }
 }
 
-<span class="kw">impl</span> <span class="ident">Drop</span> <span class="kw">for</span> <span class="ident">Memory</span> {
+<span class="kw">impl</span> <span class="ident">Drop</span> <span class="kw">for</span> <span class="ident">Allocation</span> {
   <span class="kw">fn</span> <span class="ident">drop</span>(<span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="self">self</span>) {
     <span class="kw">let</span> <span class="ident">result</span> <span class="op">=</span> <span class="kw">unsafe</span> { <span class="ident">os</span>::<span class="ident">free</span>(<span class="self">self</span>.<span class="ident">base</span>, <span class="self">self</span>.<span class="ident">size</span>) };
     <span class="macro">debug_assert</span><span class="macro">!</span>(<span class="ident">result</span>.<span class="ident">is_ok</span>(), <span class="string">&quot;freeing region: {:?}&quot;</span>, <span class="ident">result</span>);
@@ -283,7 +283,7 @@
 <span class="doccomment">/// # Ok(())</span>
 <span class="doccomment">/// # }</span>
 <span class="doccomment">/// ```</span>
-<span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">alloc</span>(<span class="ident">size</span>: <span class="ident">usize</span>, <span class="ident">protection</span>: <span class="ident">Protection</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="ident">Memory</span><span class="op">&gt;</span> {
+<span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">alloc</span>(<span class="ident">size</span>: <span class="ident">usize</span>, <span class="ident">protection</span>: <span class="ident">Protection</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="ident">Allocation</span><span class="op">&gt;</span> {
   <span class="kw">if</span> <span class="ident">size</span> <span class="op">=</span><span class="op">=</span> <span class="number">0</span> {
     <span class="kw">return</span> <span class="prelude-val">Err</span>(<span class="ident">Error</span>::<span class="ident">InvalidParameter</span>(<span class="string">&quot;size&quot;</span>));
   }
@@ -292,7 +292,7 @@
 
   <span class="kw">unsafe</span> {
     <span class="kw">let</span> <span class="ident">base</span> <span class="op">=</span> <span class="ident">os</span>::<span class="ident">alloc</span>(<span class="ident">std</span>::<span class="ident">ptr</span>::<span class="ident">null</span>::<span class="op">&lt;</span>()<span class="op">&gt;</span>(), <span class="ident">size</span>, <span class="ident">protection</span>)<span class="question-mark">?</span>;
-    <span class="prelude-val">Ok</span>(<span class="ident">Memory</span> { <span class="ident">base</span>, <span class="ident">size</span> })
+    <span class="prelude-val">Ok</span>(<span class="ident">Allocation</span> { <span class="ident">base</span>, <span class="ident">size</span> })
   }
 }
 
@@ -315,12 +315,12 @@
 <span class="doccomment">/// - The size may not be zero.</span>
 <span class="doccomment">/// - The size is rounded up to the closest page boundary, relative to the</span>
 <span class="doccomment">///   address.</span>
-<span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">alloc_at</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span>(<span class="ident">address</span>: <span class="kw-2">*</span><span class="kw">const</span> <span class="ident">T</span>, <span class="ident">size</span>: <span class="ident">usize</span>, <span class="ident">protection</span>: <span class="ident">Protection</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="ident">Memory</span><span class="op">&gt;</span> {
+<span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">alloc_at</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span>(<span class="ident">address</span>: <span class="kw-2">*</span><span class="kw">const</span> <span class="ident">T</span>, <span class="ident">size</span>: <span class="ident">usize</span>, <span class="ident">protection</span>: <span class="ident">Protection</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="ident">Allocation</span><span class="op">&gt;</span> {
   <span class="kw">let</span> (<span class="ident">address</span>, <span class="ident">size</span>) <span class="op">=</span> <span class="ident">util</span>::<span class="ident">round_to_page_boundaries</span>(<span class="ident">address</span>, <span class="ident">size</span>)<span class="question-mark">?</span>;
 
   <span class="kw">unsafe</span> {
     <span class="kw">let</span> <span class="ident">base</span> <span class="op">=</span> <span class="ident">os</span>::<span class="ident">alloc</span>(<span class="ident">address</span> <span class="kw">as</span> <span class="kw-2">*</span><span class="kw">const</span> (), <span class="ident">size</span>, <span class="ident">protection</span>)<span class="question-mark">?</span>;
-    <span class="prelude-val">Ok</span>(<span class="ident">Memory</span> { <span class="ident">base</span>, <span class="ident">size</span> })
+    <span class="prelude-val">Ok</span>(<span class="ident">Allocation</span> { <span class="ident">base</span>, <span class="ident">size</span> })
   }
 }
 
