@@ -41,6 +41,7 @@
 <span id="38">38</span>
 <span id="39">39</span>
 <span id="40">40</span>
+<span id="41">41</span>
 </pre><div class="example-wrap"><pre class="rust ">
 <span class="doccomment">//! Error types and utilities.</span>
 
@@ -61,7 +62,7 @@
   <span class="ident">UnmappedRegion</span>,
   <span class="doccomment">/// A supplied parameter is invalid.</span>
   <span class="ident">InvalidParameter</span>(<span class="kw-2">&amp;</span><span class="lifetime">&#39;static</span> <span class="ident">str</span>),
-  <span class="doccomment">/// A procfs region failed to be parsed.</span>
+  <span class="doccomment">/// A procfs region could not be parsed.</span>
   <span class="ident">ProcfsInput</span>(<span class="ident">String</span>),
   <span class="doccomment">/// A system call failed.</span>
   <span class="ident">SystemCall</span>(<span class="ident">io</span>::<span class="ident">Error</span>),
@@ -70,6 +71,7 @@
 }
 
 <span class="kw">impl</span> <span class="ident">fmt</span>::<span class="ident">Display</span> <span class="kw">for</span> <span class="ident">Error</span> {
+  <span class="attribute">#[<span class="ident">inline</span>]</span>
   <span class="kw">fn</span> <span class="ident">fmt</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">f</span>: <span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="ident">fmt</span>::<span class="ident">Formatter</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="ident">fmt</span>::<span class="prelude-ty">Result</span> {
     <span class="kw">match</span> <span class="self">self</span> {
       <span class="ident">Error</span>::<span class="ident">UnmappedRegion</span> <span class="op">=</span><span class="op">&gt;</span> <span class="macro">write</span><span class="macro">!</span>(<span class="ident">f</span>, <span class="string">&quot;Queried memory is unmapped&quot;</span>),

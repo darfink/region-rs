@@ -272,6 +272,29 @@
 <span id="269">269</span>
 <span id="270">270</span>
 <span id="271">271</span>
+<span id="272">272</span>
+<span id="273">273</span>
+<span id="274">274</span>
+<span id="275">275</span>
+<span id="276">276</span>
+<span id="277">277</span>
+<span id="278">278</span>
+<span id="279">279</span>
+<span id="280">280</span>
+<span id="281">281</span>
+<span id="282">282</span>
+<span id="283">283</span>
+<span id="284">284</span>
+<span id="285">285</span>
+<span id="286">286</span>
+<span id="287">287</span>
+<span id="288">288</span>
+<span id="289">289</span>
+<span id="290">290</span>
+<span id="291">291</span>
+<span id="292">292</span>
+<span id="293">293</span>
+<span id="294">294</span>
 </pre><div class="example-wrap"><pre class="rust ">
 <span class="kw">use</span> <span class="kw">crate</span>::{<span class="ident">os</span>, <span class="ident">util</span>, <span class="ident">Protection</span>, <span class="ident">QueryIter</span>, <span class="ident">Region</span>, <span class="prelude-ty">Result</span>};
 
@@ -280,7 +303,7 @@
 <span class="doccomment">/// The address range may overlap one or more pages, and if so, all pages</span>
 <span class="doccomment">/// spanning the range will be modified. The previous protection flags are not</span>
 <span class="doccomment">/// preserved (if you desire to preserve the protection flags, use</span>
-<span class="doccomment">/// [protect_with_handle]).</span>
+<span class="doccomment">/// [`protect_with_handle`]).</span>
 <span class="doccomment">///</span>
 <span class="doccomment">/// # Parameters</span>
 <span class="doccomment">///</span>
@@ -289,6 +312,14 @@
 <span class="doccomment">/// - The size may not be zero.</span>
 <span class="doccomment">/// - The size is rounded up to the closest page boundary, relative to the</span>
 <span class="doccomment">///   address.</span>
+<span class="doccomment">///</span>
+<span class="doccomment">/// # Errors</span>
+<span class="doccomment">///</span>
+<span class="doccomment">/// - If an interaction with the underlying operating system fails, an error</span>
+<span class="doccomment">/// will be returned.</span>
+<span class="doccomment">/// - If size is zero,</span>
+<span class="doccomment">/// [`Error::InvalidParameter`](crate::Error::InvalidParameter) will be</span>
+<span class="doccomment">/// returned.</span>
 <span class="doccomment">///</span>
 <span class="doccomment">/// # Safety</span>
 <span class="doccomment">///</span>
@@ -316,9 +347,10 @@
 <span class="doccomment">/// # Ok(())</span>
 <span class="doccomment">/// # }</span>
 <span class="doccomment">/// ```</span>
+<span class="attribute">#[<span class="ident">inline</span>]</span>
 <span class="kw">pub</span> <span class="kw">unsafe</span> <span class="kw">fn</span> <span class="ident">protect</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span>(<span class="ident">address</span>: <span class="kw-2">*</span><span class="kw">const</span> <span class="ident">T</span>, <span class="ident">size</span>: <span class="ident">usize</span>, <span class="ident">protection</span>: <span class="ident">Protection</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="prelude-ty">Result</span><span class="op">&lt;</span>()<span class="op">&gt;</span> {
   <span class="kw">let</span> (<span class="ident">address</span>, <span class="ident">size</span>) <span class="op">=</span> <span class="ident">util</span>::<span class="ident">round_to_page_boundaries</span>(<span class="ident">address</span>, <span class="ident">size</span>)<span class="question-mark">?</span>;
-  <span class="ident">os</span>::<span class="ident">protect</span>(<span class="ident">address</span> <span class="kw">as</span> <span class="kw-2">*</span><span class="kw">const</span> <span class="kw">_</span>, <span class="ident">size</span>, <span class="ident">protection</span>)
+  <span class="ident">os</span>::<span class="ident">protect</span>(<span class="ident">address</span>.<span class="ident">cast</span>(), <span class="ident">size</span>, <span class="ident">protection</span>)
 }
 
 <span class="doccomment">/// Temporarily changes the memory protection of one or more pages.</span>
@@ -326,17 +358,17 @@
 <span class="doccomment">/// The address range may overlap one or more pages, and if so, all pages within</span>
 <span class="doccomment">/// the range will be modified. The protection flag for each page will be reset</span>
 <span class="doccomment">/// once the handle is dropped. To conditionally prevent a reset, use</span>
-<span class="doccomment">/// [std::mem::forget].</span>
+<span class="doccomment">/// [`std::mem::forget`].</span>
 <span class="doccomment">///</span>
-<span class="doccomment">/// This function uses [query_range](crate::query_range) internally and is</span>
-<span class="doccomment">/// therefore less performant than [protect]. Use this function only if you need</span>
-<span class="doccomment">/// to reapply the memory protection flags of one or more regions after</span>
+<span class="doccomment">/// This function uses [`query_range`](crate::query_range) internally and is</span>
+<span class="doccomment">/// therefore less performant than [`protect`]. Use this function only if you</span>
+<span class="doccomment">/// need to reapply the memory protection flags of one or more regions after</span>
 <span class="doccomment">/// operations.</span>
 <span class="doccomment">///</span>
 <span class="doccomment">/// # Guard</span>
 <span class="doccomment">///</span>
 <span class="doccomment">/// Remember not to conflate the *black hole* syntax with the ignored, but</span>
-<span class="doccomment">/// unused, variable syntax. Otherwise the [ProtectGuard] instantly resets the</span>
+<span class="doccomment">/// unused, variable syntax. Otherwise the [`ProtectGuard`] instantly resets the</span>
 <span class="doccomment">/// protection flags of all pages.</span>
 <span class="doccomment">///</span>
 <span class="doccomment">/// ```ignore</span>
@@ -352,9 +384,18 @@
 <span class="doccomment">/// - The size is rounded up to the closest page boundary, relative to the</span>
 <span class="doccomment">///   address.</span>
 <span class="doccomment">///</span>
+<span class="doccomment">/// # Errors</span>
+<span class="doccomment">///</span>
+<span class="doccomment">/// - If an interaction with the underlying operating system fails, an error</span>
+<span class="doccomment">/// will be returned.</span>
+<span class="doccomment">/// - If size is zero,</span>
+<span class="doccomment">/// [`Error::InvalidParameter`](crate::Error::InvalidParameter) will be</span>
+<span class="doccomment">/// returned.</span>
+<span class="doccomment">///</span>
 <span class="doccomment">/// # Safety</span>
 <span class="doccomment">///</span>
 <span class="doccomment">/// See [protect].</span>
+<span class="attribute">#[<span class="ident">allow</span>(<span class="ident">clippy</span>::<span class="ident">missing_inline_in_public_items</span>)]</span>
 <span class="kw">pub</span> <span class="kw">unsafe</span> <span class="kw">fn</span> <span class="ident">protect_with_handle</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span>(
   <span class="ident">address</span>: <span class="kw-2">*</span><span class="kw">const</span> <span class="ident">T</span>,
   <span class="ident">size</span>: <span class="ident">usize</span>,
@@ -370,7 +411,7 @@
 
   <span class="kw">if</span> <span class="kw">let</span> <span class="prelude-val">Some</span>(<span class="ident">region</span>) <span class="op">=</span> <span class="ident">regions</span>.<span class="ident">first_mut</span>() {
     <span class="comment">// Offset the lower region to the smallest page boundary</span>
-    <span class="ident">region</span>.<span class="ident">base</span> <span class="op">=</span> <span class="ident">address</span> <span class="kw">as</span> <span class="kw-2">*</span><span class="kw">const</span> <span class="kw">_</span>;
+    <span class="ident">region</span>.<span class="ident">base</span> <span class="op">=</span> <span class="ident">address</span>.<span class="ident">cast</span>();
     <span class="ident">region</span>.<span class="ident">size</span> <span class="op">-</span><span class="op">=</span> <span class="ident">address</span> <span class="kw">as</span> <span class="ident">usize</span> <span class="op">-</span> <span class="ident">region</span>.<span class="ident">as_range</span>().<span class="ident">start</span>;
   }
 
@@ -393,12 +434,14 @@
 }
 
 <span class="kw">impl</span> <span class="ident">ProtectGuard</span> {
+  <span class="attribute">#[<span class="ident">inline</span>(<span class="ident">always</span>)]</span>
   <span class="kw">fn</span> <span class="ident">new</span>(<span class="ident">regions</span>: <span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">Region</span><span class="op">&gt;</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="self">Self</span> {
-    <span class="ident">ProtectGuard</span> { <span class="ident">regions</span> }
+    <span class="self">Self</span> { <span class="ident">regions</span> }
   }
 }
 
 <span class="kw">impl</span> <span class="ident">Drop</span> <span class="kw">for</span> <span class="ident">ProtectGuard</span> {
+  <span class="attribute">#[<span class="ident">inline</span>]</span>
   <span class="kw">fn</span> <span class="ident">drop</span>(<span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="self">self</span>) {
     <span class="kw">let</span> <span class="ident">result</span> <span class="op">=</span> <span class="self">self</span>
       .<span class="ident">regions</span>
@@ -425,6 +468,7 @@
   <span class="attribute">#[<span class="ident">test</span>]</span>
   <span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">not</span>(<span class="ident">target_os</span> <span class="op">=</span> <span class="string">&quot;openbsd&quot;</span>))]</span>
   <span class="kw">fn</span> <span class="ident">protect_can_alter_text_segments</span>() {
+    <span class="attribute">#[<span class="ident">allow</span>(<span class="ident">clippy</span>::<span class="ident">ptr_as_ptr</span>)]</span>
     <span class="kw">let</span> <span class="ident">address</span> <span class="op">=</span> <span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="ident">protect_can_alter_text_segments</span> <span class="kw">as</span> <span class="kw-2">*</span><span class="kw-2">mut</span> <span class="kw">_</span> <span class="kw">as</span> <span class="kw-2">*</span><span class="kw-2">mut</span> <span class="ident">u8</span>;
     <span class="kw">unsafe</span> {
       <span class="ident">protect</span>(<span class="ident">address</span>, <span class="number">1</span>, <span class="ident">Protection</span>::<span class="ident">READ_WRITE_EXECUTE</span>).<span class="ident">unwrap</span>();
@@ -449,14 +493,16 @@
     <span class="kw">let</span> <span class="ident">exec_page_end</span> <span class="op">=</span> <span class="kw">unsafe</span> { <span class="ident">exec_page</span>.<span class="ident">add</span>(<span class="ident">pz</span> <span class="op">-</span> <span class="number">1</span>) };
 
     <span class="comment">// Change the protection over two page boundaries</span>
-    <span class="kw">unsafe</span> { <span class="ident">protect</span>(<span class="ident">exec_page_end</span>, <span class="number">2</span>, <span class="ident">Protection</span>::<span class="ident">NONE</span>)<span class="question-mark">?</span> };
+    <span class="kw">unsafe</span> {
+      <span class="ident">protect</span>(<span class="ident">exec_page_end</span>, <span class="number">2</span>, <span class="ident">Protection</span>::<span class="ident">NONE</span>)<span class="question-mark">?</span>;
+    }
 
     <span class="comment">// Query the two inner pages</span>
     <span class="kw">let</span> <span class="ident">result</span> <span class="op">=</span> <span class="ident">query_range</span>(<span class="ident">exec_page</span>, <span class="ident">pz</span> <span class="op">*</span> <span class="number">2</span>)<span class="question-mark">?</span>.<span class="ident">collect</span>::<span class="op">&lt;</span><span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="ident">Vec</span><span class="op">&lt;</span><span class="kw">_</span><span class="op">&gt;</span><span class="op">&gt;</span><span class="op">&gt;</span>()<span class="question-mark">?</span>;
 
     <span class="comment">// On some OSs the pages are merged into one region</span>
     <span class="macro">assert</span><span class="macro">!</span>(<span class="macro">matches</span><span class="macro">!</span>(<span class="ident">result</span>.<span class="ident">len</span>(), <span class="number">1</span> <span class="op">|</span> <span class="number">2</span>));
-    <span class="macro">assert_eq</span><span class="macro">!</span>(<span class="ident">result</span>.<span class="ident">iter</span>().<span class="ident">map</span>(<span class="op">|</span><span class="ident">r</span><span class="op">|</span> <span class="ident">r</span>.<span class="ident">len</span>()).<span class="ident">sum</span>::<span class="op">&lt;</span><span class="ident">usize</span><span class="op">&gt;</span>(), <span class="ident">pz</span> <span class="op">*</span> <span class="number">2</span>);
+    <span class="macro">assert_eq</span><span class="macro">!</span>(<span class="ident">result</span>.<span class="ident">iter</span>().<span class="ident">map</span>(<span class="ident">Region</span>::<span class="ident">len</span>).<span class="ident">sum</span>::<span class="op">&lt;</span><span class="ident">usize</span><span class="op">&gt;</span>(), <span class="ident">pz</span> <span class="op">*</span> <span class="number">2</span>);
     <span class="macro">assert_eq</span><span class="macro">!</span>(<span class="ident">result</span>[<span class="number">0</span>].<span class="ident">protection</span>(), <span class="ident">Protection</span>::<span class="ident">NONE</span>);
     <span class="prelude-val">Ok</span>(())
   }

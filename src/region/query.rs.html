@@ -272,22 +272,37 @@
 <span id="269">269</span>
 <span id="270">270</span>
 <span id="271">271</span>
+<span id="272">272</span>
+<span id="273">273</span>
+<span id="274">274</span>
+<span id="275">275</span>
+<span id="276">276</span>
+<span id="277">277</span>
+<span id="278">278</span>
+<span id="279">279</span>
+<span id="280">280</span>
+<span id="281">281</span>
+<span id="282">282</span>
+<span id="283">283</span>
+<span id="284">284</span>
+<span id="285">285</span>
+<span id="286">286</span>
 </pre><div class="example-wrap"><pre class="rust ">
 <span class="kw">use</span> <span class="kw">crate</span>::{<span class="ident">os</span>, <span class="ident">util</span>, <span class="ident">Error</span>, <span class="ident">Region</span>, <span class="prelude-ty">Result</span>};
 
-<span class="doccomment">/// An iterator over the [Region]s that encompass an address range.</span>
+<span class="doccomment">/// An iterator over the [`Region`]s that encompass an address range.</span>
 <span class="doccomment">///</span>
-<span class="doccomment">/// This `struct` is created by [query_range]. See its documentation for more.</span>
+<span class="doccomment">/// This `struct` is created by [`query_range`]. See its documentation for more.</span>
 <span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">QueryIter</span> {
   <span class="ident">iterator</span>: <span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="ident">os</span>::<span class="ident">QueryIter</span><span class="op">&gt;</span>,
   <span class="ident">origin</span>: <span class="kw-2">*</span><span class="kw">const</span> (),
 }
 
 <span class="kw">impl</span> <span class="ident">QueryIter</span> {
-  <span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">fn</span> <span class="ident">new</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span>(<span class="ident">origin</span>: <span class="kw-2">*</span><span class="kw">const</span> <span class="ident">T</span>, <span class="ident">size</span>: <span class="ident">usize</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="ident">QueryIter</span><span class="op">&gt;</span> {
-    <span class="kw">let</span> <span class="ident">origin</span> <span class="op">=</span> <span class="ident">origin</span> <span class="kw">as</span> <span class="kw-2">*</span><span class="kw">const</span> ();
+  <span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">fn</span> <span class="ident">new</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span>(<span class="ident">origin</span>: <span class="kw-2">*</span><span class="kw">const</span> <span class="ident">T</span>, <span class="ident">size</span>: <span class="ident">usize</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="self">Self</span><span class="op">&gt;</span> {
+    <span class="kw">let</span> <span class="ident">origin</span> <span class="op">=</span> <span class="ident">origin</span>.<span class="ident">cast</span>();
 
-    <span class="ident">os</span>::<span class="ident">QueryIter</span>::<span class="ident">new</span>(<span class="ident">origin</span>, <span class="ident">size</span>).<span class="ident">map</span>(<span class="op">|</span><span class="ident">iterator</span><span class="op">|</span> <span class="ident">QueryIter</span> {
+    <span class="ident">os</span>::<span class="ident">QueryIter</span>::<span class="ident">new</span>(<span class="ident">origin</span>, <span class="ident">size</span>).<span class="ident">map</span>(<span class="op">|</span><span class="ident">iterator</span><span class="op">|</span> <span class="self">Self</span> {
       <span class="ident">iterator</span>: <span class="prelude-val">Some</span>(<span class="ident">iterator</span>),
       <span class="ident">origin</span>,
     })
@@ -299,10 +314,11 @@
 
   <span class="doccomment">/// Advances the iterator and returns the next region.</span>
   <span class="doccomment">///</span>
-  <span class="doccomment">/// If the iterator has been exhausted (i.e. all [Region]s have been queried),</span>
-  <span class="doccomment">/// or if an error is encountered during iteration, all further invocations</span>
-  <span class="doccomment">/// will return [None] (in the case of an error, the error will be the last</span>
-  <span class="doccomment">/// item that is yielded before the iterator is fused).</span>
+  <span class="doccomment">/// If the iterator has been exhausted (i.e. all [`Region`]s have been</span>
+  <span class="doccomment">/// queried), or if an error is encountered during iteration, all further</span>
+  <span class="doccomment">/// invocations will return [`None`] (in the case of an error, the error will</span>
+  <span class="doccomment">/// be the last item that is yielded before the iterator is fused).</span>
+  <span class="attribute">#[<span class="ident">allow</span>(<span class="ident">clippy</span>::<span class="ident">missing_inline_in_public_items</span>)]</span>
   <span class="kw">fn</span> <span class="ident">next</span>(<span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="self">self</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="self">Self</span>::<span class="ident">Item</span><span class="op">&gt;</span> {
     <span class="kw">let</span> <span class="ident">regions</span> <span class="op">=</span> <span class="self">self</span>.<span class="ident">iterator</span>.<span class="ident">as_mut</span>()<span class="question-mark">?</span>;
 
@@ -344,12 +360,17 @@
 <span class="doccomment">///</span>
 <span class="doccomment">/// If the queried address does not reside within any mapped region, or if it&#39;s</span>
 <span class="doccomment">/// outside the process&#39; address space, the function will error with</span>
-<span class="doccomment">/// [Error::UnmappedRegion].</span>
+<span class="doccomment">/// [`Error::UnmappedRegion`].</span>
 <span class="doccomment">///</span>
 <span class="doccomment">/// # Parameters</span>
 <span class="doccomment">///</span>
 <span class="doccomment">/// - The enclosing region can be of multiple page sizes.</span>
 <span class="doccomment">/// - The address is rounded down to the closest page boundary.</span>
+<span class="doccomment">///</span>
+<span class="doccomment">/// # Errors</span>
+<span class="doccomment">///</span>
+<span class="doccomment">/// - If an interaction with the underlying operating system fails, an error</span>
+<span class="doccomment">/// will be returned.</span>
 <span class="doccomment">///</span>
 <span class="doccomment">/// # Examples</span>
 <span class="doccomment">///</span>
@@ -364,6 +385,7 @@
 <span class="doccomment">/// # Ok(())</span>
 <span class="doccomment">/// # }</span>
 <span class="doccomment">/// ```</span>
+<span class="attribute">#[<span class="ident">inline</span>]</span>
 <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">query</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span>(<span class="ident">address</span>: <span class="kw-2">*</span><span class="kw">const</span> <span class="ident">T</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="ident">Region</span><span class="op">&gt;</span> {
   <span class="comment">// For UNIX systems, the address must be aligned to the closest page boundary</span>
   <span class="kw">let</span> (<span class="ident">address</span>, <span class="ident">size</span>) <span class="op">=</span> <span class="ident">util</span>::<span class="ident">round_to_page_boundaries</span>(<span class="ident">address</span>, <span class="number">1</span>)<span class="question-mark">?</span>;
@@ -375,9 +397,10 @@
 
 <span class="doccomment">/// Queries the OS for mapped regions that overlap with the specified range.</span>
 <span class="doccomment">///</span>
-<span class="doccomment">/// The implementation clamps any input that exceeds the boundaries of a process&#39;</span>
-<span class="doccomment">/// address space. Therefore it&#39;s safe to, e.g., pass in [std::ptr::null] and</span>
-<span class="doccomment">/// [usize::max_value] to iterate the mapped memory pages of an entire process.</span>
+<span class="doccomment">/// The implementation clamps any input that exceeds the boundaries of a</span>
+<span class="doccomment">/// process&#39; address space. Therefore it&#39;s safe to, e.g., pass in</span>
+<span class="doccomment">/// [`std::ptr::null`] and [`usize::max_value`] to iterate the mapped memory</span>
+<span class="doccomment">/// pages of an entire process.</span>
 <span class="doccomment">///</span>
 <span class="doccomment">/// If an error is encountered during iteration, the error will be the last item</span>
 <span class="doccomment">/// that is yielded. Thereafter the iterator becomes fused.</span>
@@ -385,7 +408,7 @@
 <span class="doccomment">/// A 2-byte range straddling a page boundary, will return both pages (or one</span>
 <span class="doccomment">/// region, if the pages share the same properties).</span>
 <span class="doccomment">///</span>
-<span class="doccomment">/// In contrast to [query], this function only returns mapped regions. If</span>
+<span class="doccomment">/// In contrast to [`query`], this function only returns mapped regions. If</span>
 <span class="doccomment">/// required, unmapped regions can be manually identified by inspecting the</span>
 <span class="doccomment">/// potential gaps between two neighboring regions.</span>
 <span class="doccomment">///</span>
@@ -396,6 +419,12 @@
 <span class="doccomment">/// - The size may not be zero.</span>
 <span class="doccomment">/// - The size is rounded up to the closest page boundary, relative to the</span>
 <span class="doccomment">///   address.</span>
+<span class="doccomment">///</span>
+<span class="doccomment">/// # Errors</span>
+<span class="doccomment">///</span>
+<span class="doccomment">/// - If an interaction with the underlying operating system fails, an error</span>
+<span class="doccomment">/// will be returned.</span>
+<span class="doccomment">/// - If size is zero, [`Error::InvalidParameter`] will be returned.</span>
 <span class="doccomment">///</span>
 <span class="doccomment">/// # Examples</span>
 <span class="doccomment">///</span>
@@ -411,6 +440,7 @@
 <span class="doccomment">/// # Ok(())</span>
 <span class="doccomment">/// # }</span>
 <span class="doccomment">/// ```</span>
+<span class="attribute">#[<span class="ident">inline</span>]</span>
 <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">query_range</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span>(<span class="ident">address</span>: <span class="kw-2">*</span><span class="kw">const</span> <span class="ident">T</span>, <span class="ident">size</span>: <span class="ident">usize</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="ident">QueryIter</span><span class="op">&gt;</span> {
   <span class="kw">let</span> (<span class="ident">address</span>, <span class="ident">size</span>) <span class="op">=</span> <span class="ident">util</span>::<span class="ident">round_to_page_boundaries</span>(<span class="ident">address</span>, <span class="ident">size</span>)<span class="question-mark">?</span>;
   <span class="ident">QueryIter</span>::<span class="ident">new</span>(<span class="ident">address</span>, <span class="ident">size</span>)
