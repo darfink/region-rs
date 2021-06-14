@@ -8,12 +8,12 @@ pub struct QueryIter {
 }
 
 impl QueryIter {
-  pub fn new(origin: *const (), size: usize) -> Result<QueryIter> {
+  pub fn new(origin: *const (), size: usize) -> Result<Self> {
     // Do not use a buffered reader here to avoid multiple read(2) calls to the
     // proc file, ensuring a consistent snapshot of the virtual memory.
     let proc_maps = fs::read_to_string("/proc/self/maps").map_err(Error::SystemCall)?;
 
-    Ok(QueryIter {
+    Ok(Self {
       proc_maps,
       upper_bound: (origin as usize).saturating_add(size),
       offset: 0,
@@ -66,7 +66,7 @@ fn parse_procfs_line(input: &str) -> Option<Region> {
     protection,
     shared,
     size: upper - lower,
-    ..Default::default()
+    ..Region::default()
   })
 }
 
@@ -92,10 +92,10 @@ mod tests {
     let line = "00400000-00409000 r-xs 00000000 08:00 16088 /usr/bin/head";
     let region = parse_procfs_line(line).unwrap();
 
-    assert_eq!(region.as_ptr(), 0x400000 as *mut ());
+    assert_eq!(region.as_ptr(), 0x40_0000 as *mut ());
     assert_eq!(region.protection(), Protection::READ_EXECUTE);
-    assert_eq!(region.is_guarded(), false);
     assert_eq!(region.len(), 0x9000);
+    assert!(!region.is_guarded());
     assert!(region.is_shared());
   }
 }

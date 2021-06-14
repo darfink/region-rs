@@ -1,18 +1,18 @@
 use crate::{os, util, Error, Region, Result};
 
-/// An iterator over the [Region]s that encompass an address range.
+/// An iterator over the [`Region`]s that encompass an address range.
 ///
-/// This `struct` is created by [query_range]. See its documentation for more.
+/// This `struct` is created by [`query_range`]. See its documentation for more.
 pub struct QueryIter {
   iterator: Option<os::QueryIter>,
   origin: *const (),
 }
 
 impl QueryIter {
-  pub(crate) fn new<T>(origin: *const T, size: usize) -> Result<QueryIter> {
-    let origin = origin as *const ();
+  pub(crate) fn new<T>(origin: *const T, size: usize) -> Result<Self> {
+    let origin = origin.cast();
 
-    os::QueryIter::new(origin, size).map(|iterator| QueryIter {
+    os::QueryIter::new(origin, size).map(|iterator| Self {
       iterator: Some(iterator),
       origin,
     })
@@ -24,10 +24,11 @@ impl Iterator for QueryIter {
 
   /// Advances the iterator and returns the next region.
   ///
-  /// If the iterator has been exhausted (i.e. all [Region]s have been queried),
-  /// or if an error is encountered during iteration, all further invocations
-  /// will return [None] (in the case of an error, the error will be the last
-  /// item that is yielded before the iterator is fused).
+  /// If the iterator has been exhausted (i.e. all [`Region`]s have been
+  /// queried), or if an error is encountered during iteration, all further
+  /// invocations will return [`None`] (in the case of an error, the error will
+  /// be the last item that is yielded before the iterator is fused).
+  #[allow(clippy::missing_inline_in_public_items)]
   fn next(&mut self) -> Option<Self::Item> {
     let regions = self.iterator.as_mut()?;
 
@@ -69,12 +70,17 @@ unsafe impl Sync for QueryIter {}
 ///
 /// If the queried address does not reside within any mapped region, or if it's
 /// outside the process' address space, the function will error with
-/// [Error::UnmappedRegion].
+/// [`Error::UnmappedRegion`].
 ///
 /// # Parameters
 ///
 /// - The enclosing region can be of multiple page sizes.
 /// - The address is rounded down to the closest page boundary.
+///
+/// # Errors
+///
+/// - If an interaction with the underlying operating system fails, an error
+/// will be returned.
 ///
 /// # Examples
 ///
@@ -89,6 +95,7 @@ unsafe impl Sync for QueryIter {}
 /// # Ok(())
 /// # }
 /// ```
+#[inline]
 pub fn query<T>(address: *const T) -> Result<Region> {
   // For UNIX systems, the address must be aligned to the closest page boundary
   let (address, size) = util::round_to_page_boundaries(address, 1)?;
@@ -100,9 +107,10 @@ pub fn query<T>(address: *const T) -> Result<Region> {
 
 /// Queries the OS for mapped regions that overlap with the specified range.
 ///
-/// The implementation clamps any input that exceeds the boundaries of a process'
-/// address space. Therefore it's safe to, e.g., pass in [std::ptr::null] and
-/// [usize::max_value] to iterate the mapped memory pages of an entire process.
+/// The implementation clamps any input that exceeds the boundaries of a
+/// process' address space. Therefore it's safe to, e.g., pass in
+/// [`std::ptr::null`] and [`usize::max_value`] to iterate the mapped memory
+/// pages of an entire process.
 ///
 /// If an error is encountered during iteration, the error will be the last item
 /// that is yielded. Thereafter the iterator becomes fused.
@@ -110,7 +118,7 @@ pub fn query<T>(address: *const T) -> Result<Region> {
 /// A 2-byte range straddling a page boundary, will return both pages (or one
 /// region, if the pages share the same properties).
 ///
-/// In contrast to [query], this function only returns mapped regions. If
+/// In contrast to [`query`], this function only returns mapped regions. If
 /// required, unmapped regions can be manually identified by inspecting the
 /// potential gaps between two neighboring regions.
 ///
@@ -121,6 +129,12 @@ pub fn query<T>(address: *const T) -> Result<Region> {
 /// - The size may not be zero.
 /// - The size is rounded up to the closest page boundary, relative to the
 ///   address.
+///
+/// # Errors
+///
+/// - If an interaction with the underlying operating system fails, an error
+/// will be returned.
+/// - If size is zero, [`Error::InvalidParameter`] will be returned.
 ///
 /// # Examples
 ///
@@ -136,6 +150,7 @@ pub fn query<T>(address: *const T) -> Result<Region> {
 /// # Ok(())
 /// # }
 /// ```
+#[inline]
 pub fn query_range<T>(address: *const T, size: usize) -> Result<QueryIter> {
   let (address, size) = util::round_to_page_boundaries(address, size)?;
   QueryIter::new(address, size)

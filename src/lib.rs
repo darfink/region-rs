@@ -1,12 +1,20 @@
-#![deny(missing_docs)]
-#![cfg_attr(feature = "cargo-clippy", warn(clippy::print_stdout))]
+#![deny(
+  clippy::all,
+  clippy::missing_inline_in_public_items,
+  clippy::ptr_as_ptr,
+  clippy::print_stdout,
+  missing_docs,
+  nonstandard_style,
+  unused,
+  warnings
+)]
 //! Cross-platform virtual memory API.
 //!
 //! This crate provides a cross-platform Rust API for querying and manipulating
 //! virtual memory. It is a thin abstraction, with the underlying interaction
-//! implemented using platform specific APIs (e.g VirtualQuery, VirtualLock,
-//! mprotect, mlock). Albeit not all OS specific quirks are abstracted away; for
-//! instance, some OSs enforce memory pages to be readable, whilst other may
+//! implemented using platform specific APIs (e.g `VirtualQuery`, `VirtualLock`,
+//! `mprotect`, `mlock`). Albeit not all OS specific quirks are abstracted away;
+//! for instance, some OSs enforce memory pages to be readable, whilst other may
 //! prevent pages from becoming executable (i.e DEP).
 //!
 //! This implementation operates with memory pages, which are aligned to the
@@ -111,11 +119,13 @@ impl Region {
   /// Returns a pointer to the region's base address.
   ///
   /// The address is always aligned to the operating system's page size.
+  #[inline(always)]
   pub fn as_ptr<T>(&self) -> *const T {
-    self.base as *const T
+    self.base.cast()
   }
 
   /// Returns a mutable pointer to the region's base address.
+  #[inline(always)]
   pub fn as_mut_ptr<T>(&mut self) -> *mut T {
     self.base as *mut T
   }
@@ -126,18 +136,21 @@ impl Region {
   /// one past the last element of the region. This way, an empty region is
   /// represented by two equal pointers, and the difference between the two
   /// pointers represents the size of the region.
+  #[inline(always)]
   pub fn as_ptr_range<T>(&self) -> std::ops::Range<*const T> {
     let range = self.as_range();
     (range.start as *const T)..(range.end as *const T)
   }
 
   /// Returns two mutable raw pointers spanning the region's address space.
+  #[inline(always)]
   pub fn as_mut_ptr_range<T>(&mut self) -> std::ops::Range<*mut T> {
     let range = self.as_range();
     (range.start as *mut T)..(range.end as *mut T)
   }
 
   /// Returns a range spanning the region's address space.
+  #[inline(always)]
   pub fn as_range(&self) -> std::ops::Range<usize> {
     (self.base as usize)..(self.base as usize).saturating_add(self.size)
   }
@@ -146,31 +159,37 @@ impl Region {
   ///
   /// This is always true for all operating system's, the exception being
   /// `MEM_RESERVE` pages on Windows.
+  #[inline(always)]
   pub fn is_committed(&self) -> bool {
     !self.reserved
   }
 
   /// Returns whether the region is readable or not.
+  #[inline(always)]
   pub fn is_readable(&self) -> bool {
     self.protection & Protection::READ == Protection::READ
   }
 
   /// Returns whether the region is writable or not.
+  #[inline(always)]
   pub fn is_writable(&self) -> bool {
     self.protection & Protection::WRITE == Protection::WRITE
   }
 
   /// Returns whether the region is executable or not.
+  #[inline(always)]
   pub fn is_executable(&self) -> bool {
     self.protection & Protection::EXECUTE == Protection::EXECUTE
   }
 
   /// Returns whether the region is guarded or not.
+  #[inline(always)]
   pub fn is_guarded(&self) -> bool {
     self.guarded
   }
 
   /// Returns whether the region is shared between processes or not.
+  #[inline(always)]
   pub fn is_shared(&self) -> bool {
     self.shared
   }
@@ -179,24 +198,28 @@ impl Region {
   ///
   /// The size is always aligned to a multiple of the operating system's page
   /// size.
+  #[inline(always)]
   pub fn len(&self) -> usize {
     self.size
   }
 
   /// Returns whether region is empty or not.
+  #[inline(always)]
   pub fn is_empty(&self) -> bool {
     self.size == 0
   }
 
   /// Returns the protection attributes of the region.
+  #[inline(always)]
   pub fn protection(&self) -> Protection {
     self.protection
   }
 }
 
 impl Default for Region {
+  #[inline]
   fn default() -> Self {
-    Region {
+    Self {
       base: std::ptr::null(),
       reserved: false,
       guarded: false,
@@ -247,6 +270,7 @@ bitflags! {
 }
 
 impl std::fmt::Display for Protection {
+  #[inline]
   fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
     const MAPPINGS: &[(Protection, char)] = &[
       (Protection::READ, 'r'),
@@ -290,12 +314,11 @@ mod tests {
       type Target = [u8];
 
       fn deref(&self) -> &Self::Target {
-        unsafe {
-          std::slice::from_raw_parts(self.0[0].data() as *const _, self.0.len() * page::size())
-        }
+        unsafe { std::slice::from_raw_parts(self.0[0].data().cast(), self.0.len() * page::size()) }
       }
     }
 
+    #[allow(clippy::fallible_impl_from)]
     impl From<Protection> for &'static [MapOption] {
       fn from(protection: Protection) -> Self {
         match protection {
@@ -310,17 +333,18 @@ mod tests {
 
     /// Allocates one or more sequential pages for each protection flag.
     pub fn alloc_pages(pages: &[Protection]) -> impl Deref<Target = [u8]> {
-      // Find a region which fits all pages
+      // Find a region that fits all pages
       let region = MemoryMap::new(page::size() * pages.len(), &[]).expect("allocating pages");
       let mut page_address = region.data();
 
       // Drop the region to ensure it's free
       std::mem::forget(region);
 
-      // Allocate one page at a time with explicit page permissions. Since this
-      // introduces a race condition, it would normally be an issue, but only one
-      // thread is used during testing (after all, only one thread should ever be
-      // active when querying and/or manipulating memory regions).
+      // Allocate one page at a time, with explicit page permissions. This would
+      // normally introduce a race condition, but since only one thread is used
+      // during testing, it ensures each page remains available (in general,
+      // only one thread should ever be active when querying and/or manipulating
+      // memory regions).
       let allocated_pages = pages
         .iter()
         .map(|protection| {

@@ -5,7 +5,7 @@ use crate::{os, util, Protection, QueryIter, Region, Result};
 /// The address range may overlap one or more pages, and if so, all pages
 /// spanning the range will be modified. The previous protection flags are not
 /// preserved (if you desire to preserve the protection flags, use
-/// [protect_with_handle]).
+/// [`protect_with_handle`]).
 ///
 /// # Parameters
 ///
@@ -14,6 +14,14 @@ use crate::{os, util, Protection, QueryIter, Region, Result};
 /// - The size may not be zero.
 /// - The size is rounded up to the closest page boundary, relative to the
 ///   address.
+///
+/// # Errors
+///
+/// - If an interaction with the underlying operating system fails, an error
+/// will be returned.
+/// - If size is zero,
+/// [`Error::InvalidParameter`](crate::Error::InvalidParameter) will be
+/// returned.
 ///
 /// # Safety
 ///
@@ -41,9 +49,10 @@ use crate::{os, util, Protection, QueryIter, Region, Result};
 /// # Ok(())
 /// # }
 /// ```
+#[inline]
 pub unsafe fn protect<T>(address: *const T, size: usize, protection: Protection) -> Result<()> {
   let (address, size) = util::round_to_page_boundaries(address, size)?;
-  os::protect(address as *const _, size, protection)
+  os::protect(address.cast(), size, protection)
 }
 
 /// Temporarily changes the memory protection of one or more pages.
@@ -51,17 +60,17 @@ pub unsafe fn protect<T>(address: *const T, size: usize, protection: Protection)
 /// The address range may overlap one or more pages, and if so, all pages within
 /// the range will be modified. The protection flag for each page will be reset
 /// once the handle is dropped. To conditionally prevent a reset, use
-/// [std::mem::forget].
+/// [`std::mem::forget`].
 ///
-/// This function uses [query_range](crate::query_range) internally and is
-/// therefore less performant than [protect]. Use this function only if you need
-/// to reapply the memory protection flags of one or more regions after
+/// This function uses [`query_range`](crate::query_range) internally and is
+/// therefore less performant than [`protect`]. Use this function only if you
+/// need to reapply the memory protection flags of one or more regions after
 /// operations.
 ///
 /// # Guard
 ///
 /// Remember not to conflate the *black hole* syntax with the ignored, but
-/// unused, variable syntax. Otherwise the [ProtectGuard] instantly resets the
+/// unused, variable syntax. Otherwise the [`ProtectGuard`] instantly resets the
 /// protection flags of all pages.
 ///
 /// ```ignore
@@ -77,9 +86,18 @@ pub unsafe fn protect<T>(address: *const T, size: usize, protection: Protection)
 /// - The size is rounded up to the closest page boundary, relative to the
 ///   address.
 ///
+/// # Errors
+///
+/// - If an interaction with the underlying operating system fails, an error
+/// will be returned.
+/// - If size is zero,
+/// [`Error::InvalidParameter`](crate::Error::InvalidParameter) will be
+/// returned.
+///
 /// # Safety
 ///
 /// See [protect].
+#[allow(clippy::missing_inline_in_public_items)]
 pub unsafe fn protect_with_handle<T>(
   address: *const T,
   size: usize,
@@ -95,7 +113,7 @@ pub unsafe fn protect_with_handle<T>(
 
   if let Some(region) = regions.first_mut() {
     // Offset the lower region to the smallest page boundary
-    region.base = address as *const _;
+    region.base = address.cast();
     region.size -= address as usize - region.as_range().start;
   }
 
@@ -118,12 +136,14 @@ pub struct ProtectGuard {
 }
 
 impl ProtectGuard {
+  #[inline(always)]
   fn new(regions: Vec<Region>) -> Self {
-    ProtectGuard { regions }
+    Self { regions }
   }
 }
 
 impl Drop for ProtectGuard {
+  #[inline]
   fn drop(&mut self) {
     let result = self
       .regions
@@ -150,6 +170,7 @@ mod tests {
   #[test]
   #[cfg(not(target_os = "openbsd"))]
   fn protect_can_alter_text_segments() {
+    #[allow(clippy::ptr_as_ptr)]
     let address = &mut protect_can_alter_text_segments as *mut _ as *mut u8;
     unsafe {
       protect(address, 1, Protection::READ_WRITE_EXECUTE).unwrap();
@@ -174,14 +195,16 @@ mod tests {
     let exec_page_end = unsafe { exec_page.add(pz - 1) };
 
     // Change the protection over two page boundaries
-    unsafe { protect(exec_page_end, 2, Protection::NONE)? };
+    unsafe {
+      protect(exec_page_end, 2, Protection::NONE)?;
+    }
 
     // Query the two inner pages
     let result = query_range(exec_page, pz * 2)?.collect::<Result<Vec<_>>>()?;
 
     // On some OSs the pages are merged into one region
     assert!(matches!(result.len(), 1 | 2));
-    assert_eq!(result.iter().map(|r| r.len()).sum::<usize>(), pz * 2);
+    assert_eq!(result.iter().map(Region::len).sum::<usize>(), pz * 2);
     assert_eq!(result[0].protection(), Protection::NONE);
     Ok(())
   }

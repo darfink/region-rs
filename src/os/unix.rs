@@ -35,14 +35,14 @@ pub unsafe fn protect(base: *const (), size: usize, protection: Protection) -> R
 }
 
 pub fn lock(base: *const (), size: usize) -> Result<()> {
-  match unsafe { libc::mlock(base as *const libc::c_void, size) } {
+  match unsafe { libc::mlock(base.cast(), size) } {
     0 => Ok(()),
     _ => Err(Error::SystemCall(io::Error::last_os_error())),
   }
 }
 
 pub fn unlock(base: *const (), size: usize) -> Result<()> {
-  match unsafe { libc::munlock(base as *const libc::c_void, size) } {
+  match unsafe { libc::munlock(base.cast(), size) } {
     0 => Ok(()),
     _ => Err(Error::SystemCall(io::Error::last_os_error())),
   }

@@ -3,7 +3,7 @@ use crate::{os, page, util, Error, Protection, Result};
 /// A handle to an owned region of memory.
 ///
 /// This handle does not dereference to a slice, since the underlying memory may
-/// have been created with [Protection::NONE].
+/// have been created with [`Protection::NONE`].
 #[allow(clippy::len_without_is_empty)]
 pub struct Allocation {
   base: *const (),
@@ -14,11 +14,13 @@ impl Allocation {
   /// Returns a pointer to the allocation's base address.
   ///
   /// The address is always aligned to the operating system's page size.
+  #[inline(always)]
   pub fn as_ptr<T>(&self) -> *const T {
-    self.base as *const T
+    self.base.cast()
   }
 
   /// Returns a mutable pointer to the allocation's base address.
+  #[inline(always)]
   pub fn as_mut_ptr<T>(&mut self) -> *mut T {
     self.base as *mut T
   }
@@ -29,18 +31,21 @@ impl Allocation {
   /// one past the last element of the allocation. This way, an empty allocation
   /// is represented by two equal pointers, and the difference between the two
   /// pointers represents the size of the allocation.
+  #[inline(always)]
   pub fn as_ptr_range<T>(&self) -> std::ops::Range<*const T> {
     let range = self.as_range();
     (range.start as *const T)..(range.end as *const T)
   }
 
   /// Returns two mutable raw pointers spanning the allocation's address space.
+  #[inline(always)]
   pub fn as_mut_ptr_range<T>(&mut self) -> std::ops::Range<*mut T> {
     let range = self.as_range();
     (range.start as *mut T)..(range.end as *mut T)
   }
 
   /// Returns a range spanning the allocation's address space.
+  #[inline(always)]
   pub fn as_range(&self) -> std::ops::Range<usize> {
     (self.base as usize)..(self.base as usize).saturating_add(self.size)
   }
@@ -49,12 +54,14 @@ impl Allocation {
   ///
   /// The size is always aligned to a multiple of the operating system's page
   /// size.
+  #[inline(always)]
   pub fn len(&self) -> usize {
     self.size
   }
 }
 
 impl Drop for Allocation {
+  #[inline]
   fn drop(&mut self) {
     let result = unsafe { os::free(self.base, self.size) };
     debug_assert!(result.is_ok(), "freeing region: {:?}", result);
@@ -71,6 +78,12 @@ impl Drop for Allocation {
 ///
 /// - The size may not be zero.
 /// - The size is rounded up to the closest page boundary.
+///
+/// # Errors
+///
+/// - If an interaction with the underlying operating system fails, an error
+/// will be returned.
+/// - If size is zero, [`Error::InvalidParameter`] will be returned.
 ///
 /// # Examples
 ///
@@ -93,6 +106,7 @@ impl Drop for Allocation {
 /// # Ok(())
 /// # }
 /// ```
+#[inline]
 pub fn alloc(size: usize, protection: Protection) -> Result<Allocation> {
   if size == 0 {
     return Err(Error::InvalidParameter("size"));
@@ -125,11 +139,18 @@ pub fn alloc(size: usize, protection: Protection) -> Result<Allocation> {
 /// - The size may not be zero.
 /// - The size is rounded up to the closest page boundary, relative to the
 ///   address.
+///
+/// # Errors
+///
+/// - If an interaction with the underlying operating system fails, an error
+/// will be returned.
+/// - If size is zero, [`Error::InvalidParameter`] will be returned.
+#[inline]
 pub fn alloc_at<T>(address: *const T, size: usize, protection: Protection) -> Result<Allocation> {
   let (address, size) = util::round_to_page_boundaries(address, size)?;
 
   unsafe {
-    let base = os::alloc(address as *const (), size, protection)?;
+    let base = os::alloc(address.cast(), size, protection)?;
     Ok(Allocation { base, size })
   }
 }
@@ -146,12 +167,11 @@ mod tests {
   }
 
   #[test]
-  fn alloc_rejects_empty_allocation() -> Result<()> {
+  fn alloc_rejects_empty_allocation() {
     assert!(matches!(
       alloc(0, Protection::NONE),
       Err(Error::InvalidParameter(_))
     ));
-    Ok(())
   }
 
   #[test]

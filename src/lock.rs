@@ -2,9 +2,10 @@ use crate::{os, util, Result};
 
 /// Locks one or more memory regions to RAM.
 ///
-/// The memory pages within the address range is guaranteed to stay in RAM except
-/// for specials cases, such as hibernation and memory starvation. It returns a
-/// [LockGuard], which [unlock]s the affected regions once dropped.
+/// The memory pages within the address range is guaranteed to stay in RAM
+/// except for specials cases, such as hibernation and memory starvation. It
+/// returns a [`LockGuard`], which [`unlock`]s the affected regions once
+/// dropped.
 ///
 /// # Parameters
 ///
@@ -13,6 +14,14 @@ use crate::{os, util, Result};
 /// - The size may not be zero.
 /// - The size is rounded up to the closest page boundary, relative to the
 ///   address.
+///
+/// # Errors
+///
+/// - If an interaction with the underlying operating system fails, an error
+/// will be returned.
+/// - If size is zero,
+/// [`Error::InvalidParameter`](crate::Error::InvalidParameter) will be
+/// returned.
 ///
 /// # Examples
 ///
@@ -23,14 +32,15 @@ use crate::{os, util, Result};
 /// # Ok(())
 /// # }
 /// ```
+#[inline]
 pub fn lock<T>(address: *const T, size: usize) -> Result<LockGuard> {
   let (address, size) = util::round_to_page_boundaries(address, size)?;
-  os::lock(address as *const _, size).map(|_| LockGuard::new(address, size))
+  os::lock(address.cast(), size).map(|_| LockGuard::new(address, size))
 }
 
 /// Unlocks one or more memory regions from RAM.
 ///
-/// If possible, prefer to use [lock] combined with the [LockGuard].
+/// If possible, prefer to use [`lock`] combined with the [`LockGuard`].
 ///
 /// # Parameters
 ///
@@ -39,9 +49,18 @@ pub fn lock<T>(address: *const T, size: usize) -> Result<LockGuard> {
 /// - The size may not be zero.
 /// - The size is rounded up to the closest page boundary, relative to the
 ///   address.
+///
+/// # Errors
+///
+/// - If an interaction with the underlying operating system fails, an error
+/// will be returned.
+/// - If size is zero,
+/// [`Error::InvalidParameter`](crate::Error::InvalidParameter) will be
+/// returned.
+#[inline]
 pub fn unlock<T>(address: *const T, size: usize) -> Result<()> {
   let (address, size) = util::round_to_page_boundaries(address, size)?;
-  os::unlock(address as *const _, size)
+  os::unlock(address.cast(), size)
 }
 
 /// A RAII implementation of a scoped lock.
@@ -55,15 +74,17 @@ pub struct LockGuard {
 }
 
 impl LockGuard {
+  #[inline(always)]
   fn new<T>(address: *const T, size: usize) -> Self {
-    LockGuard {
-      address: address as *const (),
+    Self {
+      address: address.cast(),
       size,
     }
   }
 }
 
 impl Drop for LockGuard {
+  #[inline]
   fn drop(&mut self) {
     let result = os::unlock(self.address, self.size);
     debug_assert!(result.is_ok(), "unlocking region: {:?}", result);

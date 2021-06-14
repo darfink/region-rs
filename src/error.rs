@@ -17,7 +17,7 @@ pub enum Error {
   UnmappedRegion,
   /// A supplied parameter is invalid.
   InvalidParameter(&'static str),
-  /// A procfs region failed to be parsed.
+  /// A procfs region could not be parsed.
   ProcfsInput(String),
   /// A system call failed.
   SystemCall(io::Error),
@@ -26,6 +26,7 @@ pub enum Error {
 }
 
 impl fmt::Display for Error {
+  #[inline]
   fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
     match self {
       Error::UnmappedRegion => write!(f, "Queried memory is unmapped"),
