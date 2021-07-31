@@ -8,6 +8,11 @@ pub fn page_size() -> usize {
 }
 
 pub unsafe fn alloc(base: *const (), size: usize, protection: Protection) -> Result<*const ()> {
+  #[cfg(not(target_os = "netbsd"))]
+  let prot = protection.to_native();
+  // PROT_MPROTECT usage for avoiding problems with NetBSD pax
+  #[cfg(target_os = "netbsd")]
+  let prot = protection.to_native() | (PROT_READ | PROT_WRITE | PROT_EXEC) << 3;
   let mut flags = MAP_PRIVATE | MAP_ANON;
 
   if !base.is_null() {
