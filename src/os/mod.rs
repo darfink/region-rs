@@ -39,3 +39,9 @@ mod openbsd;
 
 #[cfg(target_os = "openbsd")]
 pub use self::openbsd::*;
+
+#[cfg(target_os = "netbsd")]
+mod netbsd;
+
+#[cfg(target_os = "netbsd")]
+pub use self::netbsd::*;
