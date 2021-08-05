@@ -118,9 +118,9 @@ pub fn query<T>(address: *const T) -> Result<Region> {
 /// A 2-byte range straddling a page boundary, will return both pages (or one
 /// region, if the pages share the same properties).
 ///
-/// In contrast to [`query`], this function only returns mapped regions. If
-/// required, unmapped regions can be manually identified by inspecting the
-/// potential gaps between two neighboring regions.
+/// This function only returns mapped regions. If required, unmapped regions can
+/// be manually identified by inspecting the potential gaps between two
+/// neighboring regions.
 ///
 /// # Parameters
 ///
