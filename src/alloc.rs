@@ -180,7 +180,7 @@ mod tests {
 
     let region = crate::query(memory.as_ptr::<()>())?;
     assert_eq!(region.protection(), Protection::READ_WRITE);
-    assert_eq!(region.len(), memory.len());
+    assert!(region.len() >= memory.len());
     assert!(!region.is_guarded());
     assert!(!region.is_shared());
     assert!(region.is_committed());
