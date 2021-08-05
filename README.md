@@ -53,7 +53,7 @@ Add this to your `Cargo.toml`:
 
 ```toml
 [dependencies]
-region = "2.2.0"
+region = "3.0.0"
 ```
 
 ## Example
