@@ -389,7 +389,7 @@
 
     <span class="kw">let</span> <span class="ident">region</span> <span class="op">=</span> <span class="kw">crate</span><span class="ident">::query</span>(<span class="ident">memory</span>.<span class="ident">as_ptr</span>::<span class="op">&lt;</span>()<span class="op">&gt;</span>())<span class="question-mark">?</span>;
     <span class="macro">assert_eq!</span>(<span class="ident">region</span>.<span class="ident">protection</span>(), <span class="ident">Protection::READ_WRITE</span>);
-    <span class="macro">assert_eq!</span>(<span class="ident">region</span>.<span class="ident">len</span>(), <span class="ident">memory</span>.<span class="ident">len</span>());
+    <span class="macro">assert!</span>(<span class="ident">region</span>.<span class="ident">len</span>() <span class="op">&gt;</span><span class="op">=</span> <span class="ident">memory</span>.<span class="ident">len</span>());
     <span class="macro">assert!</span>(<span class="op">!</span><span class="ident">region</span>.<span class="ident">is_guarded</span>());
     <span class="macro">assert!</span>(<span class="op">!</span><span class="ident">region</span>.<span class="ident">is_shared</span>());
     <span class="macro">assert!</span>(<span class="ident">region</span>.<span class="ident">is_committed</span>());
