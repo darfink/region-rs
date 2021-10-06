@@ -36,18 +36,19 @@ impl Iterator for QueryIter {
     }
 
     let mut region_size: mach::vm_types::mach_vm_size_t = 0;
-    let mut info: mach::vm_region::vm_region_extended_info = unsafe { std::mem::zeroed() };
 
+    let mut info: mach::vm_region::vm_region_submap_info_64 =
+      mach::vm_region::vm_region_submap_info_64::default();
+
+    let mut depth = u32::MAX;
     let result = unsafe {
-      // This returns the closest region that is at, or after, the address.
-      mach::vm::mach_vm_region(
+      mach::vm::mach_vm_region_recurse(
         mach::traps::mach_task_self(),
         &mut self.region_address,
         &mut region_size,
-        mach::vm_region::VM_REGION_EXTENDED_INFO,
-        (&mut info as *mut _) as mach::vm_region::vm_region_info_t,
-        &mut mach::vm_region::vm_region_extended_info::count(),
-        &mut 0,
+        &mut depth,
+        (&mut info as *mut _) as mach::vm_region::vm_region_recurse_info_t,
+        &mut mach::vm_region::vm_region_submap_info_64::count(),
       )
     };
 
@@ -64,6 +65,7 @@ impl Iterator for QueryIter {
           base: self.region_address as *const _,
           guarded: (info.user_tag == mach::vm_statistics::VM_MEMORY_GUARD),
           protection: Protection::from_native(info.protection),
+          max_protection: Protection::from_native(info.max_protection),
           shared: SHARE_MODES.contains(&info.share_mode),
           size: region_size as usize,
           ..Default::default()
