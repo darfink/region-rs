@@ -109,6 +109,8 @@ pub struct Region {
   guarded: bool,
   /// Protection of the region
   protection: Protection,
+  /// Maximum protection of the region
+  max_protection: Protection,
   /// Whether the region is shared or not
   shared: bool,
   /// Size of the region (multiple of page size)
@@ -224,6 +226,7 @@ impl Default for Region {
       reserved: false,
       guarded: false,
       protection: Protection::NONE,
+      max_protection: Protection::NONE,
       shared: false,
       size: 0,
     }
