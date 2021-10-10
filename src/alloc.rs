@@ -203,4 +203,11 @@ mod tests {
     assert_eq!(memory.as_ptr(), base);
     Ok(())
   }
+
+  #[test]
+  fn alloc_can_allocate_executable_region() -> Result<()> {
+    let memory = alloc(1, Protection::WRITE_EXECUTE)?;
+    assert_eq!(memory.len(), page::size());
+    Ok(())
+  }
 }
