@@ -168,7 +168,10 @@ mod tests {
   }
 
   #[test]
-  #[cfg(not(target_os = "openbsd"))]
+  #[cfg(not(any(
+    target_os = "openbsd",
+    all(target_vendor = "apple", target_arch = "aarch64")
+  )))]
   fn protect_can_alter_text_segments() {
     #[allow(clippy::ptr_as_ptr)]
     let address = &mut protect_can_alter_text_segments as *mut _ as *mut u8;

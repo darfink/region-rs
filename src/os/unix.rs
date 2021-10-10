@@ -14,6 +14,16 @@ pub unsafe fn alloc(base: *const (), size: usize, protection: Protection) -> Res
     flags |= MAP_FIXED;
   }
 
+  if cfg!(all(target_vendor = "apple", target_arch = "aarch64")) {
+    // On hardened context, MAP_JIT is necessary (on arm64) to allow W/X'ed regions.
+    let jit = match protection {
+      Protection::WRITE_EXECUTE | Protection::READ_WRITE_EXECUTE => libc::MAP_JIT,
+      _ => 0,
+    };
+
+    flags |= jit;
+  }
+
   match libc::mmap(base as *mut _, size, protection.to_native(), flags, -1, 0) {
     MAP_FAILED => Err(Error::SystemCall(io::Error::last_os_error())),
     address => Ok(address as *const ()),
