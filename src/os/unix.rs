@@ -14,14 +14,13 @@ pub unsafe fn alloc(base: *const (), size: usize, protection: Protection) -> Res
     flags |= MAP_FIXED;
   }
 
-  if cfg!(all(target_vendor = "apple", target_arch = "aarch64")) {
+  #[cfg(all(target_vendor = "apple", target_arch = "aarch64"))]
+  if matches!(
+    protection,
+    Protection::WRITE_EXECUTE | Protection::READ_WRITE_EXECUTE
+  ) {
     // On hardened context, MAP_JIT is necessary (on arm64) to allow W/X'ed regions.
-    let jit = match protection {
-      Protection::WRITE_EXECUTE | Protection::READ_WRITE_EXECUTE => libc::MAP_JIT,
-      _ => 0,
-    };
-
-    flags |= jit;
+    flags |= libc::MAP_JIT;
   }
 
   match libc::mmap(base as *mut _, size, protection.to_native(), flags, -1, 0) {
