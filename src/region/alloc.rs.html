@@ -213,6 +213,7 @@
 <span id="211">211</span>
 <span id="212">212</span>
 <span id="213">213</span>
+<span id="214">214</span>
 </pre><pre class="rust"><code><span class="kw">use</span> <span class="kw">crate</span>::{<span class="ident">os</span>, <span class="ident">page</span>, <span class="ident">util</span>, <span class="ident">Error</span>, <span class="ident">Protection</span>, <span class="prelude-ty">Result</span>};
 
 <span class="doccomment">/// A handle to an owned region of memory.</span>
@@ -420,6 +421,7 @@
   }
 
   <span class="attribute">#[<span class="ident">test</span>]</span>
+  <span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">not</span>(<span class="ident">target_os</span> <span class="op">=</span> <span class="string">&quot;openbsd&quot;</span>))]</span>
   <span class="kw">fn</span> <span class="ident">alloc_can_allocate_executable_region</span>() -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span>()<span class="op">&gt;</span> {
     <span class="kw">let</span> <span class="ident">memory</span> <span class="op">=</span> <span class="ident">alloc</span>(<span class="number">1</span>, <span class="ident">Protection::WRITE_EXECUTE</span>)<span class="question-mark">?</span>;
     <span class="macro">assert_eq!</span>(<span class="ident">memory</span>.<span class="ident">len</span>(), <span class="ident">page::size</span>());
