@@ -1,5 +1,8 @@
 use crate::{Error, Protection, Region, Result};
-use libc::{c_int, c_void, free, getpid, pid_t};
+use libc::{
+  c_int, c_void, free, getpid, kinfo_getvmmap, kinfo_vmentry, KVME_PROT_EXEC, KVME_PROT_READ,
+  KVME_PROT_WRITE, KVME_TYPE_DEFAULT,
+};
 use std::io;
 
 pub struct QueryIter {
@@ -74,33 +77,6 @@ impl Protection {
       .filter(|(flag, _)| protection & *flag == *flag)
       .fold(Protection::NONE, |acc, (_, prot)| acc | *prot)
   }
-}
-
-// These defintions come from <sys/user.h>, describing data returned by the
-// `kinfo_getvmmap` system call.
-#[repr(C)]
-struct kinfo_vmentry {
-  kve_structsize: c_int,
-  kve_type: c_int,
-  kve_start: u64,
-  kve_end: u64,
-  kve_offset: u64,
-  kve_vn_fileid: u64,
-  kve_vn_fsid_freebsd11: u32,
-  kve_flags: c_int,
-  kve_resident: c_int,
-  kve_private_resident: c_int,
-  kve_protection: c_int,
-}
-
-const KVME_TYPE_DEFAULT: c_int = 1;
-const KVME_PROT_READ: c_int = 1;
-const KVME_PROT_WRITE: c_int = 2;
-const KVME_PROT_EXEC: c_int = 4;
-
-#[link(name = "util")]
-extern "C" {
-  fn kinfo_getvmmap(pid: pid_t, cntp: *mut c_int) -> *mut kinfo_vmentry;
 }
 
 #[cfg(test)]
