@@ -1,5 +1,5 @@
 use crate::{Error, Protection, Region, Result};
-use libc::{c_int, c_uint, c_ulong, getpid, sysctl, CTL_KERN, KERN_PROC_VMMAP};
+use libc::{c_int, c_uint, getpid, kinfo_vmentry, sysctl, CTL_KERN, KERN_PROC_VMMAP};
 use std::io;
 
 pub struct QueryIter {
@@ -85,25 +85,6 @@ impl Protection {
       .filter(|(flag, _)| protection & *flag == *flag)
       .fold(Protection::NONE, |acc, (_, prot)| acc | *prot)
   }
-}
-
-// These defintions come from <sys/sysctl.h>, describing data returned by the
-// `KERN_PROC_VMMAP` system call.
-#[repr(C)]
-struct kinfo_vmentry {
-  kve_start: c_ulong,
-  kve_end: c_ulong,
-  kve_guard: c_ulong,
-  kve_fspace: c_ulong,
-  kve_fspace_augment: c_ulong,
-  kve_offset: u64,
-  kve_wired_count: c_int,
-  kve_etype: c_int,
-  kve_protection: c_int,
-  kve_max_protection: c_int,
-  kve_advice: c_int,
-  kve_inheritance: c_int,
-  kve_flags: u8,
 }
 
 const KVE_PROT_READ: c_int = 1;
