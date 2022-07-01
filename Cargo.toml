@@ -18,8 +18,14 @@ libc = "=0.2.107" # Locked for OpenBSD 6.9 compatibility
 [target."cfg(any(target_os = \"macos\", target_os = \"ios\"))".dependencies]
 mach = "0.3"
 
-[target."cfg(windows)".dependencies]
-winapi = { version = "0.3", features = ["basetsd", "minwindef", "sysinfoapi", "memoryapi", "winnt"] }
+[target.'cfg(windows)'.dependencies.windows-sys]
+version = "0.36.0"
+features = [
+    "Win32_Foundation",
+    "Win32_System_Memory",
+    "Win32_System_SystemInformation",
+    "Win32_System_Diagnostics_Debug",
+]
 
 [target."cfg(unix)".dev-dependencies]
 mmap = { package = "mmap-fixed", version = "0.1.5" }
