@@ -251,7 +251,8 @@ bitflags! {
   /// let combine = Protection::READ | Protection::WRITE;
   /// let shorthand = Protection::READ_WRITE;
   /// ```
-  #[derive(Default)]
+  #[repr(transparent)]
+  #[derive(Debug, Default, Clone, Copy, PartialEq, Eq, Hash)]
   pub struct Protection: usize {
     /// No access allowed at all.
     const NONE = 0;
@@ -262,13 +263,13 @@ bitflags! {
     /// Execute access; this may not be allowed depending on DEP.
     const EXECUTE = (1 << 3);
     /// Read and execute shorthand.
-    const READ_EXECUTE = (Self::READ.bits | Self::EXECUTE.bits);
+    const READ_EXECUTE = (Self::READ.bits() | Self::EXECUTE.bits());
     /// Read and write shorthand.
-    const READ_WRITE = (Self::READ.bits | Self::WRITE.bits);
+    const READ_WRITE = (Self::READ.bits() | Self::WRITE.bits());
     /// Read, write and execute shorthand.
-    const READ_WRITE_EXECUTE = (Self::READ.bits | Self::WRITE.bits | Self::EXECUTE.bits);
+    const READ_WRITE_EXECUTE = (Self::READ.bits() | Self::WRITE.bits() | Self::EXECUTE.bits());
     /// Write and execute shorthand.
-    const WRITE_EXECUTE = (Self::WRITE.bits | Self::EXECUTE.bits);
+    const WRITE_EXECUTE = (Self::WRITE.bits() | Self::EXECUTE.bits());
   }
 }
 
