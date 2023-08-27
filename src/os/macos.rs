@@ -42,12 +42,16 @@ impl Iterator for QueryIter {
 
     let mut depth = u32::MAX;
     let result = unsafe {
+      #[allow(clippy::ptr_as_ptr)]
+      let recurse_info =
+        (&mut info.protection as *mut _) as mach::vm_region::vm_region_recurse_info_t;
+
       mach::vm::mach_vm_region_recurse(
         mach::traps::mach_task_self(),
         &mut self.region_address,
         &mut region_size,
         &mut depth,
-        (&mut info as *mut _) as mach::vm_region::vm_region_recurse_info_t,
+        recurse_info,
         &mut mach::vm_region::vm_region_submap_info_64::count(),
       )
     };

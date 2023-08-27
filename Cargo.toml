@@ -12,7 +12,7 @@ repository = "https://github.com/darfink/region-rs"
 version = "3.0.0"
 
 [dependencies]
-bitflags = "1.0"
+bitflags = "2.4"
 libc = "=0.2.107" # Locked for OpenBSD 6.9 compatibility
 
 [target."cfg(any(target_os = \"macos\", target_os = \"ios\"))".dependencies]
