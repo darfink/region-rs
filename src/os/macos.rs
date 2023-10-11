@@ -1,8 +1,8 @@
 use crate::{Error, Protection, Region, Result};
-use mach::vm_prot::*;
+use mach2::vm_prot::*;
 
 pub struct QueryIter {
-  region_address: mach::vm_types::mach_vm_address_t,
+  region_address: mach2::vm_types::mach_vm_address_t,
   upper_bound: usize,
 }
 
@@ -25,9 +25,9 @@ impl Iterator for QueryIter {
   fn next(&mut self) -> Option<Self::Item> {
     // The possible memory share modes
     const SHARE_MODES: [u8; 3] = [
-      mach::vm_region::SM_SHARED,
-      mach::vm_region::SM_TRUESHARED,
-      mach::vm_region::SM_SHARED_ALIASED,
+      mach2::vm_region::SM_SHARED,
+      mach2::vm_region::SM_TRUESHARED,
+      mach2::vm_region::SM_SHARED_ALIASED,
     ];
 
     // Check if the search area has been passed
@@ -35,26 +35,26 @@ impl Iterator for QueryIter {
       return None;
     }
 
-    let mut region_size: mach::vm_types::mach_vm_size_t = 0;
-    let mut info: mach::vm_region::vm_region_extended_info = unsafe { std::mem::zeroed() };
+    let mut region_size: mach2::vm_types::mach_vm_size_t = 0;
+    let mut info: mach2::vm_region::vm_region_extended_info = unsafe { std::mem::zeroed() };
 
     let result = unsafe {
       // This returns the closest region that is at, or after, the address.
-      mach::vm::mach_vm_region(
-        mach::traps::mach_task_self(),
+      mach2::vm::mach_vm_region(
+        mach2::traps::mach_task_self(),
         &mut self.region_address,
         &mut region_size,
-        mach::vm_region::VM_REGION_EXTENDED_INFO,
-        (&mut info as *mut _) as mach::vm_region::vm_region_info_t,
-        &mut mach::vm_region::vm_region_extended_info::count(),
+        mach2::vm_region::VM_REGION_EXTENDED_INFO,
+        (&mut info as *mut _) as mach2::vm_region::vm_region_info_t,
+        &mut mach2::vm_region::vm_region_extended_info::count(),
         &mut 0,
       )
     };
 
     match result {
       // The end of the process' address space has been reached
-      mach::kern_return::KERN_INVALID_ADDRESS => None,
-      mach::kern_return::KERN_SUCCESS => {
+      mach2::kern_return::KERN_INVALID_ADDRESS => None,
+      mach2::kern_return::KERN_SUCCESS => {
         // The returned region may have a different address than the request
         if self.region_address as usize >= self.upper_bound {
           return None;
@@ -62,7 +62,7 @@ impl Iterator for QueryIter {
 
         let region = Region {
           base: self.region_address as *const _,
-          guarded: (info.user_tag == mach::vm_statistics::VM_MEMORY_GUARD),
+          guarded: (info.user_tag == mach2::vm_statistics::VM_MEMORY_GUARD),
           protection: Protection::from_native(info.protection),
           shared: SHARE_MODES.contains(&info.share_mode),
           size: region_size as usize,
