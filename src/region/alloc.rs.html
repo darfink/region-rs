@@ -1,4 +1,5 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `src/alloc.rs`."><title>alloc.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceSerif4-Regular-46f98efaafac5295.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/FiraSans-Regular-018c141bf0843ffd.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/FiraSans-Medium-8f9a781e4970d388.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2"><link rel="stylesheet" href="../../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../../static.files/rustdoc-9ee3a5e31a2afa3e.css"><meta name="rustdoc-vars" data-root-path="../../" data-static-root-path="../../static.files/" data-current-crate="region" data-themes="" data-resource-suffix="" data-rustdoc-version="1.75.0 (82e1608df 2023-12-21)" data-channel="1.75.0" data-search-js="search-8fbf244ebcf71464.js" data-settings-js="settings-74424d7eec62a23e.js" ><script src="../../static.files/storage-fec3eaa3851e447d.js"></script><script defer src="../../static.files/src-script-3280b574d94e47b4.js"></script><script defer src="../../src-files.js"></script><script defer src="../../static.files/main-9dd44ab47b99a0fb.js"></script><noscript><link rel="stylesheet" href="../../static.files/noscript-5d8b3c7633ad77ba.css"></noscript><link rel="alternate icon" type="image/png" href="../../static.files/favicon-16x16-8b506e7a72182f1c.png"><link rel="alternate icon" type="image/png" href="../../static.files/favicon-32x32-422f7d1d52889060.png"><link rel="icon" type="image/svg+xml" href="../../static.files/favicon-2c020d218678b618.svg"></head><body class="rustdoc src"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"></nav><main><nav class="sub"><form class="search-form"><span></span><input class="search-input" name="search" aria-label="Run search in the documentation" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><a href="../../help.html">?</a></div><div id="settings-menu" tabindex="-1"><a href="../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../static.files/wheel-7b819b6101059cd0.svg"></a></div></form></nav><section id="main-content" class="content"><div class="example-wrap"><div data-nosnippet><pre class="src-line-numbers"><a href="#1" id="1">1</a>
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `src/alloc.rs`."><title>alloc.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceSerif4-Regular-46f98efaafac5295.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/FiraSans-Regular-018c141bf0843ffd.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/FiraSans-Medium-8f9a781e4970d388.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2"><link rel="stylesheet" href="../../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../../static.files/rustdoc-ac92e1bbe349e143.css"><meta name="rustdoc-vars" data-root-path="../../" data-static-root-path="../../static.files/" data-current-crate="region" data-themes="" data-resource-suffix="" data-rustdoc-version="1.76.0 (07dca489a 2024-02-04)" data-channel="1.76.0" data-search-js="search-2b6ce74ff89ae146.js" data-settings-js="settings-4313503d2e1961c2.js" ><script src="../../static.files/storage-f2adc0d6ca4d09fb.js"></script><script defer src="../../static.files/src-script-39ed315d46fb705f.js"></script><script defer src="../../src-files.js"></script><script defer src="../../static.files/main-305769736d49e732.js"></script><noscript><link rel="stylesheet" href="../../static.files/noscript-feafe1bb7466e4bd.css"></noscript><link rel="alternate icon" type="image/png" href="../../static.files/favicon-16x16-8b506e7a72182f1c.png"><link rel="alternate icon" type="image/png" href="../../static.files/favicon-32x32-422f7d1d52889060.png"><link rel="icon" type="image/svg+xml" href="../../static.files/favicon-2c020d218678b618.svg"></head><body class="rustdoc src"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"></nav><div class="sidebar-resizer"></div>
+    <main><nav class="sub"><form class="search-form"><span></span><input class="search-input" name="search" aria-label="Run search in the documentation" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" tabindex="-1"><a href="../../help.html" title="help">?</a></div><div id="settings-menu" tabindex="-1"><a href="../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../static.files/wheel-7b819b6101059cd0.svg"></a></div></form></nav><section id="main-content" class="content"><div class="example-wrap"><div data-nosnippet><pre class="src-line-numbers"><a href="#1" id="1">1</a>
 <a href="#2" id="2">2</a>
 <a href="#3" id="3">3</a>
 <a href="#4" id="4">4</a>
@@ -225,21 +226,21 @@
 }
 
 <span class="kw">impl </span>Allocation {
-  <span class="doccomment">/// Returns a pointer to the allocation&#39;s base address.
+  <span class="doccomment">/// Returns a pointer to the allocation's base address.
   ///
-  /// The address is always aligned to the operating system&#39;s page size.
+  /// The address is always aligned to the operating system's page size.
   </span><span class="attr">#[inline(always)]
   </span><span class="kw">pub fn </span>as_ptr&lt;T&gt;(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="kw-2">*const </span>T {
     <span class="self">self</span>.base.cast()
   }
 
-  <span class="doccomment">/// Returns a mutable pointer to the allocation&#39;s base address.
+  <span class="doccomment">/// Returns a mutable pointer to the allocation's base address.
   </span><span class="attr">#[inline(always)]
   </span><span class="kw">pub fn </span>as_mut_ptr&lt;T&gt;(<span class="kw-2">&amp;mut </span><span class="self">self</span>) -&gt; <span class="kw-2">*mut </span>T {
     <span class="self">self</span>.base <span class="kw">as </span><span class="kw-2">*mut </span>T
   }
 
-  <span class="doccomment">/// Returns two raw pointers spanning the allocation&#39;s address space.
+  <span class="doccomment">/// Returns two raw pointers spanning the allocation's address space.
   ///
   /// The returned range is half-open, which means that the end pointer points
   /// one past the last element of the allocation. This way, an empty allocation
@@ -251,14 +252,14 @@
     (range.start <span class="kw">as </span><span class="kw-2">*const </span>T)..(range.end <span class="kw">as </span><span class="kw-2">*const </span>T)
   }
 
-  <span class="doccomment">/// Returns two mutable raw pointers spanning the allocation&#39;s address space.
+  <span class="doccomment">/// Returns two mutable raw pointers spanning the allocation's address space.
   </span><span class="attr">#[inline(always)]
   </span><span class="kw">pub fn </span>as_mut_ptr_range&lt;T&gt;(<span class="kw-2">&amp;mut </span><span class="self">self</span>) -&gt; std::ops::Range&lt;<span class="kw-2">*mut </span>T&gt; {
     <span class="kw">let </span>range = <span class="self">self</span>.as_range();
     (range.start <span class="kw">as </span><span class="kw-2">*mut </span>T)..(range.end <span class="kw">as </span><span class="kw-2">*mut </span>T)
   }
 
-  <span class="doccomment">/// Returns a range spanning the allocation&#39;s address space.
+  <span class="doccomment">/// Returns a range spanning the allocation's address space.
   </span><span class="attr">#[inline(always)]
   </span><span class="kw">pub fn </span>as_range(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; std::ops::Range&lt;usize&gt; {
     (<span class="self">self</span>.base <span class="kw">as </span>usize)..(<span class="self">self</span>.base <span class="kw">as </span>usize).saturating_add(<span class="self">self</span>.size)
@@ -266,7 +267,7 @@
 
   <span class="doccomment">/// Returns the size of the allocation in bytes.
   ///
-  /// The size is always aligned to a multiple of the operating system&#39;s page
+  /// The size is always aligned to a multiple of the operating system's page
   /// size.
   </span><span class="attr">#[inline(always)]
   </span><span class="kw">pub fn </span>len(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; usize {
@@ -278,7 +279,7 @@
   <span class="attr">#[inline]
   </span><span class="kw">fn </span>drop(<span class="kw-2">&amp;mut </span><span class="self">self</span>) {
     <span class="kw">let </span>result = <span class="kw">unsafe </span>{ os::free(<span class="self">self</span>.base, <span class="self">self</span>.size) };
-    <span class="macro">debug_assert!</span>(result.is_ok(), <span class="string">&quot;freeing region: {:?}&quot;</span>, result);
+    <span class="macro">debug_assert!</span>(result.is_ok(), <span class="string">"freeing region: {:?}"</span>, result);
   }
 }
 
@@ -303,7 +304,7 @@
 ///
 /// ```
 /// # fn main() -&gt; region::Result&lt;()&gt; {
-/// # if cfg!(any(target_arch = &quot;x86&quot;, target_arch = &quot;x86_64&quot;)) &amp;&amp; !cfg!(target_os = &quot;openbsd&quot;) {
+/// # if cfg!(any(target_arch = "x86", target_arch = "x86_64")) &amp;&amp; !cfg!(target_os = "openbsd") {
 /// use region::Protection;
 /// let ret5 = [0xB8, 0x05, 0x00, 0x00, 0x00, 0xC3u8];
 ///
@@ -313,7 +314,7 @@
 /// };
 ///
 /// slice[..6].copy_from_slice(&amp;ret5);
-/// let x: extern &quot;C&quot; fn() -&gt; i32 = unsafe { std::mem::transmute(slice.as_ptr()) };
+/// let x: extern "C" fn() -&gt; i32 = unsafe { std::mem::transmute(slice.as_ptr()) };
 ///
 /// assert_eq!(x(), 5);
 /// # }
@@ -323,7 +324,7 @@
 </span><span class="attr">#[inline]
 </span><span class="kw">pub fn </span>alloc(size: usize, protection: Protection) -&gt; <span class="prelude-ty">Result</span>&lt;Allocation&gt; {
   <span class="kw">if </span>size == <span class="number">0 </span>{
-    <span class="kw">return </span><span class="prelude-val">Err</span>(Error::InvalidParameter(<span class="string">&quot;size&quot;</span>));
+    <span class="kw">return </span><span class="prelude-val">Err</span>(Error::InvalidParameter(<span class="string">"size"</span>));
   }
 
   <span class="kw">let </span>size = page::ceil(size <span class="kw">as </span><span class="kw-2">*const </span>()) <span class="kw">as </span>usize;
@@ -339,7 +340,7 @@
 ///
 /// The returned memory allocation is not guaranteed to reside at the provided
 /// address. E.g. on Windows, new allocations that do not reside within already
-/// reserved memory, are aligned to the operating system&#39;s allocation
+/// reserved memory, are aligned to the operating system's allocation
 /// granularity (most commonly 64KB).
 ///
 /// # Implementation
@@ -419,7 +420,7 @@
   }
 
   <span class="attr">#[test]
-  #[cfg(not(target_os = <span class="string">&quot;openbsd&quot;</span>))]
+  #[cfg(not(target_os = <span class="string">"openbsd"</span>))]
   </span><span class="kw">fn </span>alloc_can_allocate_executable_region() -&gt; <span class="prelude-ty">Result</span>&lt;()&gt; {
     <span class="kw">let </span>memory = alloc(<span class="number">1</span>, Protection::WRITE_EXECUTE)<span class="question-mark">?</span>;
     <span class="macro">assert_eq!</span>(memory.len(), page::size());

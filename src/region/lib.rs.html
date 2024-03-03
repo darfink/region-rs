@@ -1,4 +1,5 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `src/lib.rs`."><title>lib.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceSerif4-Regular-46f98efaafac5295.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/FiraSans-Regular-018c141bf0843ffd.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/FiraSans-Medium-8f9a781e4970d388.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2"><link rel="stylesheet" href="../../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../../static.files/rustdoc-9ee3a5e31a2afa3e.css"><meta name="rustdoc-vars" data-root-path="../../" data-static-root-path="../../static.files/" data-current-crate="region" data-themes="" data-resource-suffix="" data-rustdoc-version="1.75.0 (82e1608df 2023-12-21)" data-channel="1.75.0" data-search-js="search-8fbf244ebcf71464.js" data-settings-js="settings-74424d7eec62a23e.js" ><script src="../../static.files/storage-fec3eaa3851e447d.js"></script><script defer src="../../static.files/src-script-3280b574d94e47b4.js"></script><script defer src="../../src-files.js"></script><script defer src="../../static.files/main-9dd44ab47b99a0fb.js"></script><noscript><link rel="stylesheet" href="../../static.files/noscript-5d8b3c7633ad77ba.css"></noscript><link rel="alternate icon" type="image/png" href="../../static.files/favicon-16x16-8b506e7a72182f1c.png"><link rel="alternate icon" type="image/png" href="../../static.files/favicon-32x32-422f7d1d52889060.png"><link rel="icon" type="image/svg+xml" href="../../static.files/favicon-2c020d218678b618.svg"></head><body class="rustdoc src"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"></nav><main><nav class="sub"><form class="search-form"><span></span><input class="search-input" name="search" aria-label="Run search in the documentation" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><a href="../../help.html">?</a></div><div id="settings-menu" tabindex="-1"><a href="../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../static.files/wheel-7b819b6101059cd0.svg"></a></div></form></nav><section id="main-content" class="content"><div class="example-wrap"><div data-nosnippet><pre class="src-line-numbers"><a href="#1" id="1">1</a>
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `src/lib.rs`."><title>lib.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceSerif4-Regular-46f98efaafac5295.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/FiraSans-Regular-018c141bf0843ffd.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/FiraSans-Medium-8f9a781e4970d388.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2"><link rel="stylesheet" href="../../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../../static.files/rustdoc-ac92e1bbe349e143.css"><meta name="rustdoc-vars" data-root-path="../../" data-static-root-path="../../static.files/" data-current-crate="region" data-themes="" data-resource-suffix="" data-rustdoc-version="1.76.0 (07dca489a 2024-02-04)" data-channel="1.76.0" data-search-js="search-2b6ce74ff89ae146.js" data-settings-js="settings-4313503d2e1961c2.js" ><script src="../../static.files/storage-f2adc0d6ca4d09fb.js"></script><script defer src="../../static.files/src-script-39ed315d46fb705f.js"></script><script defer src="../../src-files.js"></script><script defer src="../../static.files/main-305769736d49e732.js"></script><noscript><link rel="stylesheet" href="../../static.files/noscript-feafe1bb7466e4bd.css"></noscript><link rel="alternate icon" type="image/png" href="../../static.files/favicon-16x16-8b506e7a72182f1c.png"><link rel="alternate icon" type="image/png" href="../../static.files/favicon-32x32-422f7d1d52889060.png"><link rel="icon" type="image/svg+xml" href="../../static.files/favicon-2c020d218678b618.svg"></head><body class="rustdoc src"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"></nav><div class="sidebar-resizer"></div>
+    <main><nav class="sub"><form class="search-form"><span></span><input class="search-input" name="search" aria-label="Run search in the documentation" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" tabindex="-1"><a href="../../help.html" title="help">?</a></div><div id="settings-menu" tabindex="-1"><a href="../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../static.files/wheel-7b819b6101059cd0.svg"></a></div></form></nav><section id="main-content" class="content"><div class="example-wrap"><div data-nosnippet><pre class="src-line-numbers"><a href="#1" id="1">1</a>
 <a href="#2" id="2">2</a>
 <a href="#3" id="3">3</a>
 <a href="#4" id="4">4</a>
@@ -440,7 +441,7 @@
 //! prevent pages from becoming executable (i.e DEP).
 //!
 //! This implementation operates with memory pages, which are aligned to the
-//! operating system&#39;s page size. On some systems, but not all, the system calls
+//! operating system's page size. On some systems, but not all, the system calls
 //! for these operations require input to be aligned to a page boundary. To
 //! remedy this inconsistency, whenever applicable, input is aligned to its
 //! closest page boundary.
@@ -452,18 +453,18 @@
 //!
 //! The properties of virtual memory pages can change at any time, unless all
 //! threads that are unaccounted for in a process are stopped. Therefore to
-//! obtain, e.g., a true picture of a process&#39; virtual memory, all other threads
+//! obtain, e.g., a true picture of a process' virtual memory, all other threads
 //! must be halted. Otherwise, a region descriptor only represents a snapshot in
 //! time.
 //!
 //! # Installation
 //!
 //! This crate is [on crates.io](https://crates.io/crates/region) and can be
-//! used by adding `region` to your dependencies in your project&#39;s `Cargo.toml`.
+//! used by adding `region` to your dependencies in your project's `Cargo.toml`.
 //!
 //! ```toml
 //! [dependencies]
-//! region = &quot;3.0.0&quot;
+//! region = "3.0.0"
 //! ```
 //!
 //! # Examples
@@ -480,7 +481,7 @@
 //!   let pc = region::page::ceil(data.as_ptr());
 //!   let pf = region::page::floor(data.as_ptr());
 //!
-//!   // VirtualQuery | &#39;/proc/self/maps&#39;
+//!   // VirtualQuery | '/proc/self/maps'
 //!   let q  = region::query(data.as_ptr())?;
 //!   let qr = region::query_range(data.as_ptr(), data.len())?;
 //!
@@ -490,7 +491,7 @@
 //!   // VirtualProtect | mprotect
 //!   region::protect(data.as_ptr(), data.len(), Protection::READ_WRITE_EXECUTE)?;
 //!
-//!   // ... you can also temporarily change one or more pages&#39; protection
+//!   // ... you can also temporarily change one or more pages' protection
 //!   let handle = region::protect_with_handle(data.as_ptr(), data.len(), Protection::READ_WRITE_EXECUTE)?;
 //!
 //!   // VirtualLock | mlock
@@ -540,21 +541,21 @@
 }
 
 <span class="kw">impl </span>Region {
-  <span class="doccomment">/// Returns a pointer to the region&#39;s base address.
+  <span class="doccomment">/// Returns a pointer to the region's base address.
   ///
-  /// The address is always aligned to the operating system&#39;s page size.
+  /// The address is always aligned to the operating system's page size.
   </span><span class="attr">#[inline(always)]
   </span><span class="kw">pub fn </span>as_ptr&lt;T&gt;(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="kw-2">*const </span>T {
     <span class="self">self</span>.base.cast()
   }
 
-  <span class="doccomment">/// Returns a mutable pointer to the region&#39;s base address.
+  <span class="doccomment">/// Returns a mutable pointer to the region's base address.
   </span><span class="attr">#[inline(always)]
   </span><span class="kw">pub fn </span>as_mut_ptr&lt;T&gt;(<span class="kw-2">&amp;mut </span><span class="self">self</span>) -&gt; <span class="kw-2">*mut </span>T {
     <span class="self">self</span>.base <span class="kw">as </span><span class="kw-2">*mut </span>T
   }
 
-  <span class="doccomment">/// Returns two raw pointers spanning the region&#39;s address space.
+  <span class="doccomment">/// Returns two raw pointers spanning the region's address space.
   ///
   /// The returned range is half-open, which means that the end pointer points
   /// one past the last element of the region. This way, an empty region is
@@ -566,14 +567,14 @@
     (range.start <span class="kw">as </span><span class="kw-2">*const </span>T)..(range.end <span class="kw">as </span><span class="kw-2">*const </span>T)
   }
 
-  <span class="doccomment">/// Returns two mutable raw pointers spanning the region&#39;s address space.
+  <span class="doccomment">/// Returns two mutable raw pointers spanning the region's address space.
   </span><span class="attr">#[inline(always)]
   </span><span class="kw">pub fn </span>as_mut_ptr_range&lt;T&gt;(<span class="kw-2">&amp;mut </span><span class="self">self</span>) -&gt; std::ops::Range&lt;<span class="kw-2">*mut </span>T&gt; {
     <span class="kw">let </span>range = <span class="self">self</span>.as_range();
     (range.start <span class="kw">as </span><span class="kw-2">*mut </span>T)..(range.end <span class="kw">as </span><span class="kw-2">*mut </span>T)
   }
 
-  <span class="doccomment">/// Returns a range spanning the region&#39;s address space.
+  <span class="doccomment">/// Returns a range spanning the region's address space.
   </span><span class="attr">#[inline(always)]
   </span><span class="kw">pub fn </span>as_range(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; std::ops::Range&lt;usize&gt; {
     (<span class="self">self</span>.base <span class="kw">as </span>usize)..(<span class="self">self</span>.base <span class="kw">as </span>usize).saturating_add(<span class="self">self</span>.size)
@@ -581,7 +582,7 @@
 
   <span class="doccomment">/// Returns whether the region is committed or not.
   ///
-  /// This is always true for all operating system&#39;s, the exception being
+  /// This is always true for all operating system's, the exception being
   /// `MEM_RESERVE` pages on Windows.
   </span><span class="attr">#[inline(always)]
   </span><span class="kw">pub fn </span>is_committed(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; bool {
@@ -620,7 +621,7 @@
 
   <span class="doccomment">/// Returns the size of the region in bytes.
   ///
-  /// The size is always aligned to a multiple of the operating system&#39;s page
+  /// The size is always aligned to a multiple of the operating system's page
   /// size.
   </span><span class="attr">#[inline(always)]
   </span><span class="kw">pub fn </span>len(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; usize {
@@ -698,16 +699,16 @@
   <span class="attr">#[inline]
   </span><span class="kw">fn </span>fmt(<span class="kw-2">&amp;</span><span class="self">self</span>, f: <span class="kw-2">&amp;mut </span>std::fmt::Formatter) -&gt; std::fmt::Result {
     <span class="kw">const </span>MAPPINGS: <span class="kw-2">&amp;</span>[(Protection, char)] = <span class="kw-2">&amp;</span>[
-      (Protection::READ, <span class="string">&#39;r&#39;</span>),
-      (Protection::WRITE, <span class="string">&#39;w&#39;</span>),
-      (Protection::EXECUTE, <span class="string">&#39;x&#39;</span>),
+      (Protection::READ, <span class="string">'r'</span>),
+      (Protection::WRITE, <span class="string">'w'</span>),
+      (Protection::EXECUTE, <span class="string">'x'</span>),
     ];
 
     <span class="kw">for </span>(flag, symbol) <span class="kw">in </span>MAPPINGS {
       <span class="kw">if </span><span class="self">self</span>.contains(<span class="kw-2">*</span>flag) {
-        <span class="macro">write!</span>(f, <span class="string">&quot;{}&quot;</span>, symbol)<span class="question-mark">?</span>;
+        <span class="macro">write!</span>(f, <span class="string">"{}"</span>, symbol)<span class="question-mark">?</span>;
       } <span class="kw">else </span>{
-        <span class="macro">write!</span>(f, <span class="string">&quot;-&quot;</span>)<span class="question-mark">?</span>;
+        <span class="macro">write!</span>(f, <span class="string">"-"</span>)<span class="question-mark">?</span>;
       }
     }
 
@@ -721,10 +722,10 @@
 
   <span class="attr">#[test]
   </span><span class="kw">fn </span>protection_implements_display() {
-    <span class="macro">assert_eq!</span>(Protection::READ.to_string(), <span class="string">&quot;r--&quot;</span>);
-    <span class="macro">assert_eq!</span>(Protection::READ_WRITE.to_string(), <span class="string">&quot;rw-&quot;</span>);
-    <span class="macro">assert_eq!</span>(Protection::READ_WRITE_EXECUTE.to_string(), <span class="string">&quot;rwx&quot;</span>);
-    <span class="macro">assert_eq!</span>(Protection::WRITE.to_string(), <span class="string">&quot;-w-&quot;</span>);
+    <span class="macro">assert_eq!</span>(Protection::READ.to_string(), <span class="string">"r--"</span>);
+    <span class="macro">assert_eq!</span>(Protection::READ_WRITE.to_string(), <span class="string">"rw-"</span>);
+    <span class="macro">assert_eq!</span>(Protection::READ_WRITE_EXECUTE.to_string(), <span class="string">"rwx"</span>);
+    <span class="macro">assert_eq!</span>(Protection::WRITE.to_string(), <span class="string">"-w-"</span>);
   }
 
   <span class="attr">#[cfg(unix)]
@@ -744,14 +745,14 @@
     }
 
     <span class="attr">#[allow(clippy::fallible_impl_from)]
-    </span><span class="kw">impl </span>From&lt;Protection&gt; <span class="kw">for </span><span class="kw-2">&amp;</span><span class="lifetime">&#39;static </span>[MapOption] {
+    </span><span class="kw">impl </span>From&lt;Protection&gt; <span class="kw">for </span><span class="kw-2">&amp;</span><span class="lifetime">'static </span>[MapOption] {
       <span class="kw">fn </span>from(protection: Protection) -&gt; <span class="self">Self </span>{
         <span class="kw">match </span>protection {
           Protection::NONE =&gt; <span class="kw-2">&amp;</span>[],
           Protection::READ =&gt; <span class="kw-2">&amp;</span>[MapOption::MapReadable],
           Protection::READ_WRITE =&gt; <span class="kw-2">&amp;</span>[MapOption::MapReadable, MapOption::MapWritable],
           Protection::READ_EXECUTE =&gt; <span class="kw-2">&amp;</span>[MapOption::MapReadable, MapOption::MapExecutable],
-          <span class="kw">_ </span>=&gt; <span class="macro">panic!</span>(<span class="string">&quot;Unsupported protection {:?}&quot;</span>, protection),
+          <span class="kw">_ </span>=&gt; <span class="macro">panic!</span>(<span class="string">"Unsupported protection {:?}"</span>, protection),
         }
       }
     }
@@ -759,10 +760,10 @@
     <span class="doccomment">/// Allocates one or more sequential pages for each protection flag.
     </span><span class="kw">pub fn </span>alloc_pages(pages: <span class="kw-2">&amp;</span>[Protection]) -&gt; <span class="kw">impl </span>Deref&lt;Target = [u8]&gt; {
       <span class="comment">// Find a region that fits all pages
-      </span><span class="kw">let </span>region = MemoryMap::new(page::size() * pages.len(), <span class="kw-2">&amp;</span>[]).expect(<span class="string">&quot;allocating pages&quot;</span>);
+      </span><span class="kw">let </span>region = MemoryMap::new(page::size() * pages.len(), <span class="kw-2">&amp;</span>[]).expect(<span class="string">"allocating pages"</span>);
       <span class="kw">let </span><span class="kw-2">mut </span>page_address = region.data();
 
-      <span class="comment">// Drop the region to ensure it&#39;s free
+      <span class="comment">// Drop the region to ensure it's free
       </span>std::mem::forget(region);
 
       <span class="comment">// Allocate one page at a time, with explicit page permissions. This would
@@ -776,7 +777,7 @@
           <span class="kw">let </span><span class="kw-2">mut </span>options = <span class="macro">vec!</span>[MapOption::MapAddr(page_address)];
           options.extend_from_slice(Into::into(<span class="kw-2">*</span>protection));
 
-          <span class="kw">let </span>map = MemoryMap::new(page::size(), <span class="kw-2">&amp;</span>options).expect(<span class="string">&quot;allocating page&quot;</span>);
+          <span class="kw">let </span>map = MemoryMap::new(page::size(), <span class="kw-2">&amp;</span>options).expect(<span class="string">"allocating page"</span>);
           <span class="macro">assert_eq!</span>(map.data(), page_address);
           <span class="macro">assert_eq!</span>(map.len(), page::size());
 
