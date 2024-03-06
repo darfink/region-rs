@@ -296,6 +296,7 @@
 <a href="#295" id="295">295</a>
 <a href="#296" id="296">296</a>
 <a href="#297" id="297">297</a>
+<a href="#298" id="298">298</a>
 </pre></div><pre class="rust"><code><span class="kw">use crate</span>::{os, util, Protection, QueryIter, Region, <span class="prelude-ty">Result</span>};
 
 <span class="doccomment">/// Changes the memory protection of one or more pages.
@@ -468,6 +469,7 @@
   <span class="attr">#[test]
   #[cfg(not(any(
     target_os = <span class="string">"openbsd"</span>,
+    target_os = <span class="string">"netbsd"</span>,
     all(target_vendor = <span class="string">"apple"</span>, target_arch = <span class="string">"aarch64"</span>)
   )))]
   </span><span class="kw">fn </span>protect_can_alter_text_segments() {

@@ -333,12 +333,12 @@
         <span class="prelude-val">Ok</span>(region) =&gt; {
           <span class="kw">let </span>range = region.as_range();
 
-          <span class="comment">// Skip the region if it is prior to the queried range
+          <span class="comment">// Skip the region if it precedes the queried range
           </span><span class="kw">if </span>range.end &lt;= <span class="self">self</span>.origin <span class="kw">as </span>usize {
             <span class="kw">continue</span>;
           }
 
-          <span class="comment">// Stop iteration if the region is after the queried range
+          <span class="comment">// Stop iteration if the region is past the queried range
           </span><span class="kw">if </span>range.start &gt;= regions.upper_bound() {
             <span class="kw">break</span>;
           }

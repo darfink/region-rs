@@ -213,6 +213,20 @@
 <a href="#212" id="212">212</a>
 <a href="#213" id="213">213</a>
 <a href="#214" id="214">214</a>
+<a href="#215" id="215">215</a>
+<a href="#216" id="216">216</a>
+<a href="#217" id="217">217</a>
+<a href="#218" id="218">218</a>
+<a href="#219" id="219">219</a>
+<a href="#220" id="220">220</a>
+<a href="#221" id="221">221</a>
+<a href="#222" id="222">222</a>
+<a href="#223" id="223">223</a>
+<a href="#224" id="224">224</a>
+<a href="#225" id="225">225</a>
+<a href="#226" id="226">226</a>
+<a href="#227" id="227">227</a>
+<a href="#228" id="228">228</a>
 </pre></div><pre class="rust"><code><span class="kw">use crate</span>::{os, page, util, Error, Protection, <span class="prelude-ty">Result</span>};
 
 <span class="doccomment">/// A handle to an owned region of memory.
@@ -405,7 +419,21 @@
 
   <span class="attr">#[test]
   </span><span class="kw">fn </span>alloc_frees_memory_when_dropped() -&gt; <span class="prelude-ty">Result</span>&lt;()&gt; {
-    <span class="kw">let </span>base = alloc(<span class="number">1</span>, Protection::READ_WRITE)<span class="question-mark">?</span>.as_ptr::&lt;()&gt;();
+    <span class="comment">// Designing these tests can be quite tricky sometimes. When a page is
+    // allocated and then released, a subsequent `query` may allocate memory in
+    // the same location that has just been freed. For instance, NetBSD's
+    // kinfo_getvmmap uses `mmap` internally, which can lead to potentially
+    // confusing outcomes. To mitigate this, an additional buffer region is
+    // allocated to ensure that any memory allocated indirectly through `query`
+    // occupies a separate location in memory.
+    </span><span class="kw">let </span>(start, _buffer) = (
+      alloc(<span class="number">1</span>, Protection::READ_WRITE)<span class="question-mark">?</span>,
+      alloc(<span class="number">1</span>, Protection::READ_WRITE)<span class="question-mark">?</span>,
+    );
+
+    <span class="kw">let </span>base = start.as_ptr::&lt;()&gt;();
+    std::mem::drop(start);
+
     <span class="kw">let </span>query = <span class="kw">crate</span>::query(base);
     <span class="macro">assert!</span>(<span class="macro">matches!</span>(query, <span class="prelude-val">Err</span>(Error::UnmappedRegion)));
     <span class="prelude-val">Ok</span>(())
@@ -420,7 +448,7 @@
   }
 
   <span class="attr">#[test]
-  #[cfg(not(target_os = <span class="string">"openbsd"</span>))]
+  #[cfg(not(any(target_os = <span class="string">"openbsd"</span>, target_os = <span class="string">"netbsd"</span>)))]
   </span><span class="kw">fn </span>alloc_can_allocate_executable_region() -&gt; <span class="prelude-ty">Result</span>&lt;()&gt; {
     <span class="kw">let </span>memory = alloc(<span class="number">1</span>, Protection::WRITE_EXECUTE)<span class="question-mark">?</span>;
     <span class="macro">assert_eq!</span>(memory.len(), page::size());

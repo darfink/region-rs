@@ -93,6 +93,10 @@
 <a href="#92" id="92">92</a>
 <a href="#93" id="93">93</a>
 <a href="#94" id="94">94</a>
+<a href="#95" id="95">95</a>
+<a href="#96" id="96">96</a>
+<a href="#97" id="97">97</a>
+<a href="#98" id="98">98</a>
 </pre></div><pre class="rust"><code><span class="kw">use crate</span>::{Error, Protection, <span class="prelude-ty">Result</span>};
 <span class="kw">use </span>libc::{MAP_ANON, MAP_FAILED, MAP_FIXED, MAP_PRIVATE};
 <span class="kw">use </span>libc::{PROT_EXEC, PROT_NONE, PROT_READ, PROT_WRITE};
@@ -103,12 +107,16 @@
 }
 
 <span class="kw">pub unsafe fn </span>alloc(base: <span class="kw-2">*const </span>(), size: usize, protection: Protection) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="kw-2">*const </span>()&gt; {
-  <span class="attr">#[cfg(not(target_os = <span class="string">"netbsd"</span>))]
-  </span><span class="kw">let </span>prot = protection.to_native();
+  <span class="kw">let </span><span class="kw-2">mut </span>prot = protection.to_native();
 
-  <span class="comment">// PROT_MPROTECT usage for avoiding problems with NetBSD pax
-  </span><span class="attr">#[cfg(target_os = <span class="string">"netbsd"</span>)]
-  </span><span class="kw">let </span>prot = protection.to_native() | (PROT_READ | PROT_WRITE | PROT_EXEC) &lt;&lt; <span class="number">3</span>;
+  <span class="comment">// This adjustment ensures that the behavior of memory protection is
+  // orthogonal across all platforms by aligning NetBSD's protection flags
+  // and PaX behavior with those of other operating systems.
+  </span><span class="kw">if </span><span class="macro">cfg!</span>(target_os = <span class="string">"netbsd"</span>) {
+    <span class="kw">let </span>max_protection = (PROT_READ | PROT_WRITE | PROT_EXEC) &lt;&lt; <span class="number">3</span>;
+    prot |= max_protection;
+  }
+
   <span class="kw">let </span><span class="kw-2">mut </span>flags = MAP_PRIVATE | MAP_ANON;
 
   <span class="kw">if </span>!base.is_null() {
