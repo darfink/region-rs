@@ -110,7 +110,7 @@ jobs:
       if: steps.lookup-image.outputs.cache-hit != 'true'
       run: |
         wget -O - --progress=dot:mega "${{ matrix.image }}" \
-          | tee ~/image.qcow2.xz \
+          | tee ~/image.qcow2 \
           | md5sum -c <(echo "${{ matrix.md5 }} -")
 
     - name: Boot image
