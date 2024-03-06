@@ -421,6 +421,7 @@
 <a href="#420" id="420">420</a>
 <a href="#421" id="421">421</a>
 <a href="#422" id="422">422</a>
+<a href="#423" id="423">423</a>
 </pre></div><pre class="rust"><code><span class="attr">#![deny(
   clippy::all,
   clippy::missing_inline_in_public_items,
@@ -794,8 +795,9 @@
   </span><span class="kw">pub mod </span>util {
     <span class="kw">use crate</span>::{page, Protection};
     <span class="kw">use </span>std::ops::Deref;
-    <span class="kw">use </span>winapi::um::memoryapi::{VirtualAlloc, VirtualFree};
-    <span class="kw">use </span>winapi::um::winnt::{MEM_COMMIT, MEM_RELEASE, MEM_RESERVE, PAGE_NOACCESS};
+    <span class="kw">use </span>windows_sys::Win32::System::Memory::{
+      VirtualAlloc, VirtualFree, MEM_COMMIT, MEM_RELEASE, MEM_RESERVE, PAGE_NOACCESS,
+    };
 
     <span class="kw">struct </span>AllocatedPages(<span class="kw-2">*const </span>(), usize);
 
