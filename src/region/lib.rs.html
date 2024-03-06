@@ -422,6 +422,8 @@
 <a href="#421" id="421">421</a>
 <a href="#422" id="422">422</a>
 <a href="#423" id="423">423</a>
+<a href="#424" id="424">424</a>
+<a href="#425" id="425">425</a>
 </pre></div><pre class="rust"><code><span class="attr">#![deny(
   clippy::all,
   clippy::missing_inline_in_public_items,
@@ -432,6 +434,8 @@
   unused,
   warnings
 )]
+</span><span class="comment">// Temporarily allow these until bitflags deps is upgraded to 2.x
+</span><span class="attr">#![allow(clippy::bad_bit_mask)]
 </span><span class="doccomment">//! Cross-platform virtual memory API.
 //!
 //! This crate provides a cross-platform Rust API for querying and manipulating
