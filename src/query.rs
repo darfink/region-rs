@@ -162,6 +162,12 @@ mod tests {
   use crate::tests::util::alloc_pages;
   use crate::{page, Protection};
 
+  const TEXT_SEGMENT_PROT: Protection = if cfg!(target_os = "openbsd") {
+    Protection::EXECUTE
+  } else {
+    Protection::READ_EXECUTE
+  };
+
   #[test]
   fn query_returns_unmapped_for_oob_address() {
     let (min, max) = (std::ptr::null::<()>(), usize::max_value() as *const ());
@@ -172,7 +178,8 @@ mod tests {
   #[test]
   fn query_returns_correct_descriptor_for_text_segment() -> Result<()> {
     let region = query(query_returns_correct_descriptor_for_text_segment as *const ())?;
-    assert_eq!(region.protection(), Protection::READ_EXECUTE);
+
+    assert_eq!(region.protection(), TEXT_SEGMENT_PROT);
     assert_eq!(region.is_shared(), cfg!(windows));
     assert!(!region.is_guarded());
     Ok(())
@@ -251,16 +258,11 @@ mod tests {
   fn query_range_can_iterate_over_entire_process() -> Result<()> {
     let regions =
       query_range(std::ptr::null::<()>(), usize::max_value())?.collect::<Result<Vec<_>>>()?;
-    let (r, rw, rx) = (
-      Protection::READ,
-      Protection::READ_WRITE,
-      Protection::READ_EXECUTE,
-    );
 
     // This test is a bit rough around the edges
-    assert!(regions.iter().any(|region| region.protection() == r));
-    assert!(regions.iter().any(|region| region.protection() == rw));
-    assert!(regions.iter().any(|region| region.protection() == rx));
+    assert!(regions.iter().any(|region| region.protection() == Protection::READ));
+    assert!(regions.iter().any(|region| region.protection() == Protection::READ_WRITE));
+    assert!(regions.iter().any(|region| region.protection() == TEXT_SEGMENT_PROT));
     assert!(regions.len() > 5);
     Ok(())
   }

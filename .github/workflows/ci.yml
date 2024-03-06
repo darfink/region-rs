@@ -28,9 +28,11 @@ jobs:
             os: ubuntu-20.04
             use-cross: true
           - target: aarch64-linux-android
+            toolchain: '1.52.0' # See: https://github.com/rust-lang/rust/issues/110786
             os: ubuntu-20.04
             use-cross: true
           - target: mips-unknown-linux-gnu
+            toolchain: '1.52.0' # See: https://github.com/rust-lang/compiler-team/issues/648
             os: ubuntu-20.04
             use-cross: true
 
@@ -56,7 +58,7 @@ jobs:
     - name: Install toolchain
       uses: actions-rs/toolchain@v1
       with:
-        toolchain: stable
+        toolchain: ${{ matrix.toolchain || 'stable' }}
         profile: minimal
         target: ${{ matrix.target }}
         override: true
@@ -85,8 +87,8 @@ jobs:
             md5: 01ad7883c69476d90872eb38180085c0
             args: -net nic,model=virtio
           - target: x86_64-unknown-openbsd
-            image: https://www.dropbox.com/s/p4buykmmjd8hjgx/openbsd69.qcow2.xz?dl=1
-            md5: 37ff51c30e360429550debf87a39d801
+            image: https://gitlab.com/kit-ty-kate/qemu-base-images/-/raw/master/OpenBSD-7.4-amd64.qcow2?inline=false
+            md5: 1b7f3867c72f1dac3901b4a08257f580
             args: -net nic
       fail-fast: false
 
@@ -125,7 +127,7 @@ jobs:
         ssh-keygen -t rsa -N '' -f ~/.ssh/id_rsa
         cat > ~/.ssh/config <<EOF
           Host qemu
-            User miles
+            User root
             HostName localhost
             Port 1025
         EOF
@@ -140,7 +142,7 @@ jobs:
 
     - name: Install toolchain (pkg)
       if: ${{ contains(matrix.target, 'openbsd') }}
-      run: ssh qemu "sudo pkg_add -I rust"
+      run: ssh qemu "pkg_add rust"
 
     - name: Copy crate
       run: rsync -r . qemu:crate
