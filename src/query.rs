@@ -260,9 +260,15 @@ mod tests {
       query_range(std::ptr::null::<()>(), usize::max_value())?.collect::<Result<Vec<_>>>()?;
 
     // This test is a bit rough around the edges
-    assert!(regions.iter().any(|region| region.protection() == Protection::READ));
-    assert!(regions.iter().any(|region| region.protection() == Protection::READ_WRITE));
-    assert!(regions.iter().any(|region| region.protection() == TEXT_SEGMENT_PROT));
+    assert!(regions
+      .iter()
+      .any(|region| region.protection() == Protection::READ));
+    assert!(regions
+      .iter()
+      .any(|region| region.protection() == Protection::READ_WRITE));
+    assert!(regions
+      .iter()
+      .any(|region| region.protection() == TEXT_SEGMENT_PROT));
     assert!(regions.len() > 5);
     Ok(())
   }
