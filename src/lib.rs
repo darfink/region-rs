@@ -371,8 +371,9 @@ mod tests {
   pub mod util {
     use crate::{page, Protection};
     use std::ops::Deref;
-    use winapi::um::memoryapi::{VirtualAlloc, VirtualFree};
-    use winapi::um::winnt::{MEM_COMMIT, MEM_RELEASE, MEM_RESERVE, PAGE_NOACCESS};
+    use windows_sys::Win32::System::Memory::{
+      VirtualAlloc, VirtualFree, MEM_COMMIT, MEM_RELEASE, MEM_RESERVE, PAGE_NOACCESS,
+    };
 
     struct AllocatedPages(*const (), usize);
 

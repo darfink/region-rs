@@ -1,13 +1,16 @@
 use crate::{Error, Protection, Region, Result};
 use std::cmp::{max, min};
+use std::ffi::c_void;
 use std::io;
 use std::mem::{size_of, MaybeUninit};
 use std::sync::Once;
-use winapi::um::memoryapi::{
+use windows_sys::Win32::System::Memory::{
   VirtualAlloc, VirtualFree, VirtualLock, VirtualProtect, VirtualQuery, VirtualUnlock,
+  MEMORY_BASIC_INFORMATION, MEM_COMMIT, MEM_PRIVATE, MEM_RELEASE, MEM_RESERVE, PAGE_EXECUTE,
+  PAGE_EXECUTE_READ, PAGE_EXECUTE_READWRITE, PAGE_EXECUTE_WRITECOPY, PAGE_GUARD, PAGE_NOACCESS,
+  PAGE_NOCACHE, PAGE_READONLY, PAGE_READWRITE, PAGE_WRITECOMBINE, PAGE_WRITECOPY,
 };
-use winapi::um::sysinfoapi::{GetNativeSystemInfo, SYSTEM_INFO};
-use winapi::um::winnt::{MEMORY_BASIC_INFORMATION, MEM_COMMIT, MEM_RELEASE, MEM_RESERVE};
+use windows_sys::Win32::System::SystemInformation::{GetNativeSystemInfo, SYSTEM_INFO};
 
 pub struct QueryIter {
   region_address: usize,
@@ -41,9 +44,9 @@ impl Iterator for QueryIter {
     while self.region_address < self.upper_bound {
       let bytes = unsafe {
         VirtualQuery(
-          self.region_address as winapi::um::winnt::PVOID,
+          self.region_address as *mut c_void,
           &mut info,
-          size_of::<MEMORY_BASIC_INFORMATION>() as winapi::shared::basetsd::SIZE_T,
+          size_of::<MEMORY_BASIC_INFORMATION>(),
         )
       };
 
@@ -58,8 +61,8 @@ impl Iterator for QueryIter {
         let mut region = Region {
           base: info.BaseAddress as *const _,
           reserved: info.State != MEM_COMMIT,
-          guarded: (info.Protect & winapi::um::winnt::PAGE_GUARD) != 0,
-          shared: (info.Type & winapi::um::winnt::MEM_PRIVATE) == 0,
+          guarded: (info.Protect & PAGE_GUARD) != 0,
+          shared: (info.Type & MEM_PRIVATE) == 0,
           size: info.RegionSize as usize,
           ..Default::default()
         };
@@ -82,7 +85,7 @@ pub fn page_size() -> usize {
 
 pub unsafe fn alloc(base: *const (), size: usize, protection: Protection) -> Result<*const ()> {
   let allocation = VirtualAlloc(
-    base as winapi::um::winnt::PVOID,
+    base as *mut c_void,
     size,
     MEM_COMMIT | MEM_RESERVE,
     protection.to_native(),
@@ -96,21 +99,16 @@ pub unsafe fn alloc(base: *const (), size: usize, protection: Protection) -> Res
 }
 
 pub unsafe fn free(base: *const (), _size: usize) -> Result<()> {
-  match VirtualFree(base as winapi::um::winnt::PVOID, 0, MEM_RELEASE) {
-    winapi::shared::minwindef::FALSE => Err(Error::SystemCall(io::Error::last_os_error())),
+  match VirtualFree(base as *mut c_void, 0, MEM_RELEASE) {
+    0 => Err(Error::SystemCall(io::Error::last_os_error())),
     _ => Ok(()),
   }
 }
 
 pub unsafe fn protect(base: *const (), size: usize, protection: Protection) -> Result<()> {
-  let result = VirtualProtect(
-    base as winapi::um::winnt::PVOID,
-    size as winapi::shared::basetsd::SIZE_T,
-    protection.to_native(),
-    &mut 0,
-  );
+  let result = VirtualProtect(base as *mut c_void, size, protection.to_native(), &mut 0);
 
-  if result == winapi::shared::minwindef::FALSE {
+  if result == 0 {
     Err(Error::SystemCall(io::Error::last_os_error()))
   } else {
     Ok(())
@@ -118,14 +116,9 @@ pub unsafe fn protect(base: *const (), size: usize, protection: Protection) -> R
 }
 
 pub fn lock(base: *const (), size: usize) -> Result<()> {
-  let result = unsafe {
-    VirtualLock(
-      base as winapi::um::winnt::PVOID,
-      size as winapi::shared::basetsd::SIZE_T,
-    )
-  };
+  let result = unsafe { VirtualLock(base as *mut c_void, size) };
 
-  if result == winapi::shared::minwindef::FALSE {
+  if result == 0 {
     Err(Error::SystemCall(io::Error::last_os_error()))
   } else {
     Ok(())
@@ -133,14 +126,9 @@ pub fn lock(base: *const (), size: usize) -> Result<()> {
 }
 
 pub fn unlock(base: *const (), size: usize) -> Result<()> {
-  let result = unsafe {
-    VirtualUnlock(
-      base as winapi::um::winnt::PVOID,
-      size as winapi::shared::basetsd::SIZE_T,
-    )
-  };
+  let result = unsafe { VirtualUnlock(base as *mut c_void, size) };
 
-  if result == winapi::shared::minwindef::FALSE {
+  if result == 0 {
     Err(Error::SystemCall(io::Error::last_os_error()))
   } else {
     Ok(())
@@ -158,34 +146,32 @@ fn system_info() -> &'static SYSTEM_INFO {
 }
 
 impl Protection {
-  fn from_native(protection: winapi::shared::minwindef::DWORD) -> Self {
+  fn from_native(protection: u32) -> Self {
     // Ignore unsupported flags (TODO: Preserve this information?)
-    let ignored = winapi::um::winnt::PAGE_GUARD
-      | winapi::um::winnt::PAGE_NOCACHE
-      | winapi::um::winnt::PAGE_WRITECOMBINE;
+    let ignored = PAGE_GUARD | PAGE_NOCACHE | PAGE_WRITECOMBINE;
 
     match protection & !ignored {
-      winapi::um::winnt::PAGE_EXECUTE => Protection::EXECUTE,
-      winapi::um::winnt::PAGE_EXECUTE_READ => Protection::READ_EXECUTE,
-      winapi::um::winnt::PAGE_EXECUTE_READWRITE => Protection::READ_WRITE_EXECUTE,
-      winapi::um::winnt::PAGE_EXECUTE_WRITECOPY => Protection::READ_WRITE_EXECUTE,
-      winapi::um::winnt::PAGE_NOACCESS => Protection::NONE,
-      winapi::um::winnt::PAGE_READONLY => Protection::READ,
-      winapi::um::winnt::PAGE_READWRITE => Protection::READ_WRITE,
-      winapi::um::winnt::PAGE_WRITECOPY => Protection::READ_WRITE,
+      PAGE_EXECUTE => Protection::EXECUTE,
+      PAGE_EXECUTE_READ => Protection::READ_EXECUTE,
+      PAGE_EXECUTE_READWRITE => Protection::READ_WRITE_EXECUTE,
+      PAGE_EXECUTE_WRITECOPY => Protection::READ_WRITE_EXECUTE,
+      PAGE_NOACCESS => Protection::NONE,
+      PAGE_READONLY => Protection::READ,
+      PAGE_READWRITE => Protection::READ_WRITE,
+      PAGE_WRITECOPY => Protection::READ_WRITE,
       _ => unreachable!("Protection: 0x{:X}", protection),
     }
   }
 
-  pub(crate) fn to_native(self) -> winapi::shared::minwindef::DWORD {
+  pub(crate) fn to_native(self) -> u32 {
     match self {
-      Protection::NONE => winapi::um::winnt::PAGE_NOACCESS,
-      Protection::READ => winapi::um::winnt::PAGE_READONLY,
-      Protection::EXECUTE => winapi::um::winnt::PAGE_EXECUTE,
-      Protection::READ_EXECUTE => winapi::um::winnt::PAGE_EXECUTE_READ,
-      Protection::READ_WRITE => winapi::um::winnt::PAGE_READWRITE,
-      Protection::READ_WRITE_EXECUTE => winapi::um::winnt::PAGE_EXECUTE_READWRITE,
-      Protection::WRITE_EXECUTE => winapi::um::winnt::PAGE_EXECUTE_READWRITE,
+      Protection::NONE => PAGE_NOACCESS,
+      Protection::READ => PAGE_READONLY,
+      Protection::EXECUTE => PAGE_EXECUTE,
+      Protection::READ_EXECUTE => PAGE_EXECUTE_READ,
+      Protection::READ_WRITE => PAGE_READWRITE,
+      Protection::READ_WRITE_EXECUTE => PAGE_EXECUTE_READWRITE,
+      Protection::WRITE_EXECUTE => PAGE_EXECUTE_READWRITE,
       _ => unreachable!("Protection: {:?}", self),
     }
   }
