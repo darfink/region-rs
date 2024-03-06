@@ -83,9 +83,9 @@ jobs:
       matrix:
         include:
           - target: x86_64-unknown-freebsd
-            image: https://www.dropbox.com/s/j1xlddxkcpc510t/freebsd111.build-ready.qcow2.xz?dl=1
-            md5: 01ad7883c69476d90872eb38180085c0
-            args: -net nic,model=virtio
+            image: https://gitlab.com/kit-ty-kate/qemu-base-images/-/raw/master/FreeBSD-13.2-RELEASE-amd64.qcow2?inline=false
+            md5: 33b6bc89cdc675f5cbaf92e71ae648f8
+            args: -net nic
           - target: x86_64-unknown-openbsd
             image: https://gitlab.com/kit-ty-kate/qemu-base-images/-/raw/master/OpenBSD-7.4-amd64.qcow2?inline=false
             md5: 1b7f3867c72f1dac3901b4a08257f580
@@ -112,8 +112,6 @@ jobs:
         wget -O - --progress=dot:mega "${{ matrix.image }}" \
           | tee ~/image.qcow2.xz \
           | md5sum -c <(echo "${{ matrix.md5 }} -")
-        echo "Decompressing image..."
-        unxz ~/image.qcow2.xz
 
     - name: Boot image
       run: |
