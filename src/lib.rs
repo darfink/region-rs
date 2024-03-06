@@ -8,6 +8,8 @@
   unused,
   warnings
 )]
+// Temporarily allow these until bitflags deps is upgraded to 2.x
+#![allow(clippy::bad_bit_mask)]
 //! Cross-platform virtual memory API.
 //!
 //! This crate provides a cross-platform Rust API for querying and manipulating
