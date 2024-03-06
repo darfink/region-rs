@@ -83,7 +83,7 @@ let guard = region::lock(data.as_ptr(), data.len())?;
 ```
 
 <!-- Links -->
-[github-shield]: https://img.shields.io/github/workflow/status/darfink/region-rs/CI/master?label=actions&logo=github&style=for-the-badge
+[github-shield]: https://img.shields.io/github/actions/workflow/status/darfink/region-rs/ci.yml?branch=master&label=actions&logo=github&style=for-the-badge
 [github]: https://github.com/darfink/region-rs/actions/workflows/ci.yml?query=branch%3Amaster
 [crate-shield]: https://img.shields.io/crates/v/region.svg?style=for-the-badge
 [crate]: https://crates.io/crates/region
