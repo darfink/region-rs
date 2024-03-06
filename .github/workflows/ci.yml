@@ -116,7 +116,7 @@ jobs:
     - name: Boot image
       run: |
         qemu-system-x86_64 -m 2048 -display none -snapshot -daemonize \
-          -drive if=virtio,media=disk,file=$HOME/image.qcow2 \
+          -drive if=ide,media=disk,file=$HOME/image.qcow2 \
           -net user,hostfwd=tcp::1025-:22 \
           ${{ matrix.args }}
 
@@ -133,17 +133,20 @@ jobs:
         parallel -t --retries 20 --delay 5 ::: 'sshpass -e ssh-copy-id -o StrictHostKeyChecking=no qemu'
 
     - name: Install toolchain (rustup)
-      if: ${{ !contains(matrix.target, 'openbsd') }}
+      if: ${{ contains(matrix.target, 'freebsd') }}
       run: |
-        ssh qemu "curl https://sh.rustup.rs -sSf | sh -s -- -y --profile minimal"
-        ssh qemu "ln -s ~/.cargo/bin ~/bin"
+        ssh qemu <<'EOF'
+          pkg install -y curl
+          curl https://sh.rustup.rs -sSf | sh -s -- -y --profile minimal
+          ln -s ~/.cargo/bin ~/bin
+        EOF
 
     - name: Install toolchain (pkg)
       if: ${{ contains(matrix.target, 'openbsd') }}
       run: ssh qemu "pkg_add rust"
 
     - name: Copy crate
-      run: rsync -r . qemu:crate
+      run: scp -r $PWD qemu:crate
 
     # TODO: Respect RUST_TEST_THREADS
     - name: Run tests
