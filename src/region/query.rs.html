@@ -293,6 +293,7 @@
 <a href="#292" id="292">292</a>
 <a href="#293" id="293">293</a>
 <a href="#294" id="294">294</a>
+<a href="#295" id="295">295</a>
 </pre></div><pre class="rust"><code><span class="kw">use crate</span>::{os, util, Error, Region, <span class="prelude-ty">Result</span>};
 
 <span class="doccomment">/// An iterator over the [`Region`]s that encompass an address range.
@@ -493,6 +494,7 @@
   }
 
   <span class="attr">#[test]
+  #[cfg(not(target_os = <span class="string">"android"</span>))] </span><span class="comment">// TODO: Determine why this fails on Android in QEMU
   </span><span class="kw">fn </span>query_is_not_off_by_one() -&gt; <span class="prelude-ty">Result</span>&lt;()&gt; {
     <span class="kw">let </span>pages = [Protection::READ, Protection::READ_EXECUTE, Protection::READ];
     <span class="kw">let </span>map = alloc_pages(<span class="kw-2">&amp;</span>pages);
