@@ -15,23 +15,23 @@ jobs:
         include:
           # Linux
           - target: i686-unknown-linux-gnu
-            os: ubuntu-18.04
+            os: ubuntu-20.04
           - target: i686-unknown-linux-musl
-            os: ubuntu-18.04
+            os: ubuntu-20.04
           - target: x86_64-unknown-linux-gnu
-            os: ubuntu-18.04
+            os: ubuntu-20.04
           - target: x86_64-unknown-linux-musl
-            os: ubuntu-18.04
+            os: ubuntu-20.04
 
           # Cross
           - target: armv7-unknown-linux-gnueabihf
-            os: ubuntu-18.04
+            os: ubuntu-20.04
             use-cross: true
           - target: aarch64-linux-android
-            os: ubuntu-18.04
+            os: ubuntu-20.04
             use-cross: true
           - target: mips-unknown-linux-gnu
-            os: ubuntu-18.04
+            os: ubuntu-20.04
             use-cross: true
 
           # Windows
@@ -75,7 +75,7 @@ jobs:
 
   test-qemu:
     name: Test (${{ matrix.target }})
-    runs-on: ubuntu-18.04
+    runs-on: ubuntu-20.04
     env: { SSHPASS: 12345 }
     strategy:
       matrix:
