@@ -58,6 +58,7 @@ impl Iterator for QueryIter {
     let region = Region {
       base: self.vmentry.kve_start as *const _,
       protection: Protection::from_native(self.vmentry.kve_protection),
+      max_protection: Protection::from_native(self.vmentry.kve_max_protection),
       shared: (self.vmentry.kve_etype & KVE_ET_COPYONWRITE) == 0,
       size: (self.vmentry.kve_end - self.vmentry.kve_start) as _,
       ..Default::default()

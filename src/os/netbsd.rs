@@ -46,6 +46,7 @@ impl Iterator for QueryIter {
     Some(Ok(Region {
       base: entry.kve_start as *const _,
       protection: Protection::from_native(entry.kve_protection as i32),
+      max_protection: Protection::from_native(entry.kve_max_protection as i32),
       shared: (entry.kve_flags & KVME_FLAG_COW as u32) == 0,
       size: (entry.kve_end - entry.kve_start) as _,
       ..Default::default()
