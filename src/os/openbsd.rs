@@ -30,7 +30,7 @@ impl Iterator for QueryIter {
   fn next(&mut self) -> Option<Self::Item> {
     let mut len = std::mem::size_of::<kinfo_vmentry>();
 
-    // Albeit it would be preferred to query the information for all virtual
+    // Although it would be preferred to query the information for all virtual
     // pages at once, the system call does not seem to respond consistently. If
     // called once during a process' lifetime, it returns all pages, but if
     // called again, it returns an empty buffer. This may be caused due to an

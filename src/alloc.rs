@@ -190,7 +190,21 @@ mod tests {
 
   #[test]
   fn alloc_frees_memory_when_dropped() -> Result<()> {
-    let base = alloc(1, Protection::READ_WRITE)?.as_ptr::<()>();
+    // Designing these tests can be quite tricky sometimes. When a page is
+    // allocated and then released, a subsequent `query` may allocate memory in
+    // the same location that has just been freed. For instance, NetBSD's
+    // kinfo_getvmmap uses `mmap` internally, which can lead to potentially
+    // confusing outcomes. To mitigate this, an additional buffer region is
+    // allocated to ensure that any memory allocated indirectly through `query`
+    // occupies a separate location in memory.
+    let (start, _buffer) = (
+      alloc(1, Protection::READ_WRITE)?,
+      alloc(1, Protection::READ_WRITE)?,
+    );
+
+    let base = start.as_ptr::<()>();
+    std::mem::drop(start);
+
     let query = crate::query(base);
     assert!(matches!(query, Err(Error::UnmappedRegion)));
     Ok(())
@@ -205,7 +219,7 @@ mod tests {
   }
 
   #[test]
-  #[cfg(not(target_os = "openbsd"))]
+  #[cfg(not(any(target_os = "openbsd", target_os = "netbsd")))]
   fn alloc_can_allocate_executable_region() -> Result<()> {
     let memory = alloc(1, Protection::WRITE_EXECUTE)?;
     assert_eq!(memory.len(), page::size());

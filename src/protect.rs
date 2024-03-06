@@ -170,6 +170,7 @@ mod tests {
   #[test]
   #[cfg(not(any(
     target_os = "openbsd",
+    target_os = "netbsd",
     all(target_vendor = "apple", target_arch = "aarch64")
   )))]
   fn protect_can_alter_text_segments() {

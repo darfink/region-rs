@@ -37,12 +37,12 @@ impl Iterator for QueryIter {
         Ok(region) => {
           let range = region.as_range();
 
-          // Skip the region if it is prior to the queried range
+          // Skip the region if it precedes the queried range
           if range.end <= self.origin as usize {
             continue;
           }
 
-          // Stop iteration if the region is after the queried range
+          // Stop iteration if the region is past the queried range
           if range.start >= regions.upper_bound() {
             break;
           }

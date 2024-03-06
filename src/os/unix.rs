@@ -8,12 +8,16 @@ pub fn page_size() -> usize {
 }
 
 pub unsafe fn alloc(base: *const (), size: usize, protection: Protection) -> Result<*const ()> {
-  #[cfg(not(target_os = "netbsd"))]
-  let prot = protection.to_native();
+  let mut prot = protection.to_native();
 
-  // PROT_MPROTECT usage for avoiding problems with NetBSD pax
-  #[cfg(target_os = "netbsd")]
-  let prot = protection.to_native() | (PROT_READ | PROT_WRITE | PROT_EXEC) << 3;
+  // This adjustment ensures that the behavior of memory protection is
+  // orthogonal across all platforms by aligning NetBSD's protection flags
+  // and PaX behavior with those of other operating systems.
+  if cfg!(target_os = "netbsd") {
+    let max_protection = (PROT_READ | PROT_WRITE | PROT_EXEC) << 3;
+    prot |= max_protection;
+  }
+
   let mut flags = MAP_PRIVATE | MAP_ANON;
 
   if !base.is_null() {
