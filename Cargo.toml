@@ -28,4 +28,4 @@ features = [
 ]
 
 [target."cfg(unix)".dev-dependencies]
-mmap = { package = "mmap-fixed", version = "0.1.5" }
+mmap = { package = "mmap-fixed", version = "0.1.6" }
