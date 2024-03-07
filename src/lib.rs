@@ -258,11 +258,11 @@ bitflags! {
     /// No access allowed at all.
     const NONE = 0;
     /// Read access; writing and/or executing data will panic.
-    const READ = (1 << 1);
+    const READ = (1 << 0);
     /// Write access; this flag alone may not be supported on all OSs.
-    const WRITE = (1 << 2);
+    const WRITE = (1 << 1);
     /// Execute access; this may not be allowed depending on DEP.
-    const EXECUTE = (1 << 3);
+    const EXECUTE = (1 << 2);
     /// Read and execute shorthand.
     const READ_EXECUTE = (Self::READ.bits | Self::EXECUTE.bits);
     /// Read and write shorthand.

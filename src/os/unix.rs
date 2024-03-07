@@ -1,6 +1,6 @@
 use crate::{Error, Protection, Result};
 use libc::{MAP_ANON, MAP_FAILED, MAP_FIXED, MAP_PRIVATE};
-use libc::{PROT_EXEC, PROT_NONE, PROT_READ, PROT_WRITE};
+use libc::{PROT_EXEC, PROT_READ, PROT_WRITE};
 use std::io;
 
 pub fn page_size() -> usize {
@@ -8,14 +8,14 @@ pub fn page_size() -> usize {
 }
 
 pub unsafe fn alloc(base: *const (), size: usize, protection: Protection) -> Result<*const ()> {
-  let mut prot = protection.to_native();
+  let mut native_prot = protection.to_native();
 
-  // This adjustment ensures that the behavior of memory protection is
-  // orthogonal across all platforms by aligning NetBSD's protection flags
-  // and PaX behavior with those of other operating systems.
+  // This adjustment ensures that the behavior of memory allocation is
+  // orthogonal across all platforms by aligning NetBSD's protection flags and
+  // PaX behavior with those of other operating systems.
   if cfg!(target_os = "netbsd") {
     let max_protection = (PROT_READ | PROT_WRITE | PROT_EXEC) << 3;
-    prot |= max_protection;
+    native_prot |= max_protection;
   }
 
   let mut flags = MAP_PRIVATE | MAP_ANON;
@@ -33,7 +33,7 @@ pub unsafe fn alloc(base: *const (), size: usize, protection: Protection) -> Res
     flags |= libc::MAP_JIT;
   }
 
-  match libc::mmap(base as *mut _, size, prot, flags, -1, 0) {
+  match libc::mmap(base as *mut _, size, native_prot, flags, -1, 0) {
     MAP_FAILED => Err(Error::SystemCall(io::Error::last_os_error())),
     address => Ok(address as *const ()),
   }
@@ -69,22 +69,23 @@ pub fn unlock(base: *const (), size: usize) -> Result<()> {
 
 impl Protection {
   fn to_native(self) -> libc::c_int {
-    const MAPPINGS: &[(Protection, libc::c_int)] = &[
-      (Protection::READ, PROT_READ),
-      (Protection::WRITE, PROT_WRITE),
-      (Protection::EXECUTE, PROT_EXEC),
-    ];
-
-    MAPPINGS
-      .iter()
-      .filter(|(flag, _)| self & *flag == *flag)
-      .fold(PROT_NONE, |acc, (_, prot)| acc | *prot)
+    // This is directly mapped to its native counterpart to allow users to
+    // include non-standard flags with `Protection::from_bits_unchecked`.
+    self.bits as libc::c_int
   }
 }
 
 #[cfg(test)]
 mod tests {
   use super::*;
+  use libc::PROT_NONE;
+
+  #[test]
+  fn protection_flags_match_unix_constants() {
+    assert_eq!(Protection::NONE.bits, PROT_NONE as usize);
+    assert_eq!(Protection::READ.bits, PROT_READ as usize);
+    assert_eq!(Protection::WRITE.bits, PROT_WRITE as usize);
+  }
 
   #[test]
   fn protection_flags_are_mapped_to_native() {
