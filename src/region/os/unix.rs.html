@@ -97,9 +97,10 @@
 <a href="#96" id="96">96</a>
 <a href="#97" id="97">97</a>
 <a href="#98" id="98">98</a>
+<a href="#99" id="99">99</a>
 </pre></div><pre class="rust"><code><span class="kw">use crate</span>::{Error, Protection, <span class="prelude-ty">Result</span>};
 <span class="kw">use </span>libc::{MAP_ANON, MAP_FAILED, MAP_FIXED, MAP_PRIVATE};
-<span class="kw">use </span>libc::{PROT_EXEC, PROT_NONE, PROT_READ, PROT_WRITE};
+<span class="kw">use </span>libc::{PROT_EXEC, PROT_READ, PROT_WRITE};
 <span class="kw">use </span>std::io;
 
 <span class="kw">pub fn </span>page_size() -&gt; usize {
@@ -107,14 +108,14 @@
 }
 
 <span class="kw">pub unsafe fn </span>alloc(base: <span class="kw-2">*const </span>(), size: usize, protection: Protection) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="kw-2">*const </span>()&gt; {
-  <span class="kw">let </span><span class="kw-2">mut </span>prot = protection.to_native();
+  <span class="kw">let </span><span class="kw-2">mut </span>native_prot = protection.to_native();
 
-  <span class="comment">// This adjustment ensures that the behavior of memory protection is
-  // orthogonal across all platforms by aligning NetBSD's protection flags
-  // and PaX behavior with those of other operating systems.
+  <span class="comment">// This adjustment ensures that the behavior of memory allocation is
+  // orthogonal across all platforms by aligning NetBSD's protection flags and
+  // PaX behavior with those of other operating systems.
   </span><span class="kw">if </span><span class="macro">cfg!</span>(target_os = <span class="string">"netbsd"</span>) {
     <span class="kw">let </span>max_protection = (PROT_READ | PROT_WRITE | PROT_EXEC) &lt;&lt; <span class="number">3</span>;
-    prot |= max_protection;
+    native_prot |= max_protection;
   }
 
   <span class="kw">let </span><span class="kw-2">mut </span>flags = MAP_PRIVATE | MAP_ANON;
@@ -132,7 +133,7 @@
     </span>flags |= libc::MAP_JIT;
   }
 
-  <span class="kw">match </span>libc::mmap(base <span class="kw">as </span><span class="kw-2">*mut </span><span class="kw">_</span>, size, prot, flags, -<span class="number">1</span>, <span class="number">0</span>) {
+  <span class="kw">match </span>libc::mmap(base <span class="kw">as </span><span class="kw-2">*mut </span><span class="kw">_</span>, size, native_prot, flags, -<span class="number">1</span>, <span class="number">0</span>) {
     MAP_FAILED =&gt; <span class="prelude-val">Err</span>(Error::SystemCall(io::Error::last_os_error())),
     address =&gt; <span class="prelude-val">Ok</span>(address <span class="kw">as </span><span class="kw-2">*const </span>()),
   }
@@ -168,22 +169,23 @@
 
 <span class="kw">impl </span>Protection {
   <span class="kw">fn </span>to_native(<span class="self">self</span>) -&gt; libc::c_int {
-    <span class="kw">const </span>MAPPINGS: <span class="kw-2">&amp;</span>[(Protection, libc::c_int)] = <span class="kw-2">&amp;</span>[
-      (Protection::READ, PROT_READ),
-      (Protection::WRITE, PROT_WRITE),
-      (Protection::EXECUTE, PROT_EXEC),
-    ];
-
-    MAPPINGS
-      .iter()
-      .filter(|(flag, <span class="kw">_</span>)| <span class="self">self </span>&amp; <span class="kw-2">*</span>flag == <span class="kw-2">*</span>flag)
-      .fold(PROT_NONE, |acc, (<span class="kw">_</span>, prot)| acc | <span class="kw-2">*</span>prot)
+    <span class="comment">// This is directly mapped to its native counterpart to allow users to
+    // include non-standard flags with `Protection::from_bits_unchecked`.
+    </span><span class="self">self</span>.bits <span class="kw">as </span>libc::c_int
   }
 }
 
 <span class="attr">#[cfg(test)]
 </span><span class="kw">mod </span>tests {
   <span class="kw">use super</span>::<span class="kw-2">*</span>;
+  <span class="kw">use </span>libc::PROT_NONE;
+
+  <span class="attr">#[test]
+  </span><span class="kw">fn </span>protection_flags_match_unix_constants() {
+    <span class="macro">assert_eq!</span>(Protection::NONE.bits, PROT_NONE <span class="kw">as </span>usize);
+    <span class="macro">assert_eq!</span>(Protection::READ.bits, PROT_READ <span class="kw">as </span>usize);
+    <span class="macro">assert_eq!</span>(Protection::WRITE.bits, PROT_WRITE <span class="kw">as </span>usize);
+  }
 
   <span class="attr">#[test]
   </span><span class="kw">fn </span>protection_flags_are_mapped_to_native() {

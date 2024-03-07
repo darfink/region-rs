@@ -684,11 +684,11 @@
     <span class="doccomment">/// No access allowed at all.
     </span><span class="kw">const </span>NONE = <span class="number">0</span>;
     <span class="doccomment">/// Read access; writing and/or executing data will panic.
-    </span><span class="kw">const </span>READ = (<span class="number">1 </span>&lt;&lt; <span class="number">1</span>);
+    </span><span class="kw">const </span>READ = (<span class="number">1 </span>&lt;&lt; <span class="number">0</span>);
     <span class="doccomment">/// Write access; this flag alone may not be supported on all OSs.
-    </span><span class="kw">const </span>WRITE = (<span class="number">1 </span>&lt;&lt; <span class="number">2</span>);
+    </span><span class="kw">const </span>WRITE = (<span class="number">1 </span>&lt;&lt; <span class="number">1</span>);
     <span class="doccomment">/// Execute access; this may not be allowed depending on DEP.
-    </span><span class="kw">const </span>EXECUTE = (<span class="number">1 </span>&lt;&lt; <span class="number">3</span>);
+    </span><span class="kw">const </span>EXECUTE = (<span class="number">1 </span>&lt;&lt; <span class="number">2</span>);
     <span class="doccomment">/// Read and execute shorthand.
     </span><span class="kw">const </span>READ_EXECUTE = (<span class="self">Self</span>::READ.bits | <span class="self">Self</span>::EXECUTE.bits);
     <span class="doccomment">/// Read and write shorthand.
