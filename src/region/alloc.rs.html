@@ -227,6 +227,12 @@
 <a href="#226" id="226">226</a>
 <a href="#227" id="227">227</a>
 <a href="#228" id="228">228</a>
+<a href="#229" id="229">229</a>
+<a href="#230" id="230">230</a>
+<a href="#231" id="231">231</a>
+<a href="#232" id="232">232</a>
+<a href="#233" id="233">233</a>
+<a href="#234" id="234">234</a>
 </pre></div><pre class="rust"><code><span class="kw">use crate</span>::{os, page, util, Error, Protection, <span class="prelude-ty">Result</span>};
 
 <span class="doccomment">/// A handle to an owned region of memory.
@@ -314,11 +320,17 @@
 /// will be returned.
 /// - If size is zero, [`Error::InvalidParameter`] will be returned.
 ///
+/// # OS-Specific Behavior
+/// 
+/// On NetBSD pages will be allocated without PaX memory protection restrictions
+/// (i.e. pages will be allowed to be modified to any combination of `RWX`).
+/// 
 /// # Examples
 ///
 /// ```
 /// # fn main() -&gt; region::Result&lt;()&gt; {
-/// # if cfg!(any(target_arch = "x86", target_arch = "x86_64")) &amp;&amp; !cfg!(target_os = "openbsd") {
+/// # if cfg!(any(target_arch = "x86", target_arch = "x86_64"))
+/// #   &amp;&amp; !cfg!(any(target_os = "openbsd", target_os = "netbsd")) {
 /// use region::Protection;
 /// let ret5 = [0xB8, 0x05, 0x00, 0x00, 0x00, 0xC3u8];
 ///

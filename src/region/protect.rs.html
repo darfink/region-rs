@@ -297,6 +297,7 @@
 <a href="#296" id="296">296</a>
 <a href="#297" id="297">297</a>
 <a href="#298" id="298">298</a>
+<a href="#299" id="299">299</a>
 </pre></div><pre class="rust"><code><span class="kw">use crate</span>::{os, util, Protection, QueryIter, Region, <span class="prelude-ty">Result</span>};
 
 <span class="doccomment">/// Changes the memory protection of one or more pages.
@@ -334,7 +335,8 @@
 ///
 /// ```
 /// # fn main() -&gt; region::Result&lt;()&gt; {
-/// # if cfg!(any(target_arch = "x86", target_arch = "x86_64")) &amp;&amp; !cfg!(target_os = "openbsd") {
+/// # if cfg!(any(target_arch = "x86", target_arch = "x86_64"))
+/// #   &amp;&amp; !cfg!(any(target_os = "openbsd", target_os = "netbsd")) {
 /// use region::Protection;
 /// let ret5 = [0xB8, 0x05, 0x00, 0x00, 0x00, 0xC3u8];
 ///
