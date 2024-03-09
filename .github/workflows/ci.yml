@@ -53,7 +53,7 @@ jobs:
 
     steps:
     - name: Checkout
-      uses: actions/checkout@v2
+      uses: actions/checkout@v4
 
     - name: Install toolchain
       uses: actions-rs/toolchain@v1
@@ -77,80 +77,41 @@ jobs:
 
   test-qemu:
     name: Test (${{ matrix.target }})
-    runs-on: ubuntu-20.04
-    env: { SSHPASS: 12345 }
+    runs-on: ubuntu-latest
     strategy:
       matrix:
         include:
           - target: x86_64-unknown-freebsd
-            image: https://gitlab.com/kit-ty-kate/qemu-base-images/-/raw/master/FreeBSD-13.2-RELEASE-amd64.qcow2?inline=false
-            md5: 33b6bc89cdc675f5cbaf92e71ae648f8
-            args: -net nic
+            os: freebsd
+            os-version: '14.0'
           - target: x86_64-unknown-openbsd
-            image: https://gitlab.com/kit-ty-kate/qemu-base-images/-/raw/master/OpenBSD-7.4-amd64.qcow2?inline=false
-            md5: 1b7f3867c72f1dac3901b4a08257f580
-            args: -net nic
+            os: openbsd
+            os-version: '7.4'
+            install: sudo pkg_add rust
+          - target: x86_64-unknown-netbsd
+            os: netbsd
+            os-version: '9.3'
+            prepare:
+              sudo pkgin -y install mozilla-rootcerts-openssl
       fail-fast: false
 
     steps:
     - name: Checkout
-      uses: actions/checkout@v2
+      uses: actions/checkout@v4
 
-    - name: Install QEMU
-      run: sudo apt-get update && sudo apt-get install -y qemu-system-x86
-
-    - name: Lookup image
-      id: lookup-image
-      uses: actions/cache@v2
+    - name: Run tests (cargo)
+      uses: cross-platform-actions/action@v0.23.0
       with:
-        path: ~/image.qcow2
-        key: ${{ matrix.target }}-image
-
-    - name: Download image
-      if: steps.lookup-image.outputs.cache-hit != 'true'
-      run: |
-        wget -O - --progress=dot:mega "${{ matrix.image }}" \
-          | tee ~/image.qcow2 \
-          | md5sum -c <(echo "${{ matrix.md5 }} -")
-
-    - name: Boot image
-      run: |
-        qemu-system-x86_64 -m 2048 -display none -snapshot -daemonize \
-          -drive if=ide,media=disk,file=$HOME/image.qcow2 \
-          -net user,hostfwd=tcp::1025-:22 \
-          ${{ matrix.args }}
-
-    - name: Configure SSH
-      run: |
-        ssh-keygen -t rsa -N '' -f ~/.ssh/id_rsa
-        cat > ~/.ssh/config <<EOF
-          Host qemu
-            User root
-            HostName localhost
-            Port 1025
-        EOF
-        chmod og-rw ~
-        parallel -t --retries 20 --delay 5 ::: 'sshpass -e ssh-copy-id -o StrictHostKeyChecking=no qemu'
-
-    - name: Install toolchain (rustup)
-      if: ${{ contains(matrix.target, 'freebsd') }}
-      run: |
-        ssh qemu <<'EOF'
-          pkg install -y curl
-          curl https://sh.rustup.rs -sSf | sh -s -- -y --profile minimal
-          ln -s ~/.cargo/bin ~/bin
-        EOF
-
-    - name: Install toolchain (pkg)
-      if: ${{ contains(matrix.target, 'openbsd') }}
-      run: ssh qemu "pkg_add rust"
-
-    - name: Copy crate
-      run: scp -r $PWD qemu:crate
-
-    # TODO: Respect RUST_TEST_THREADS
-    - name: Run tests
-      run: ssh qemu "cd crate && cargo test"
+        operating_system: ${{ matrix.os }}
+        architecture: ${{ matrix.architecture || 'x86-64' }}
+        version: ${{ matrix.os-version }}
+        run: |
+          ${{ matrix.prepare }}
+          ${{ matrix.install || format('
+            curl https://sh.rustup.rs -sSf | sh -s -- -q -y --profile minimal --target {0}
+            export PATH="$HOME/.cargo/bin:$PATH"
+          ', matrix.target)}}
+          cargo test
 
   check:
     name: Check (${{ matrix.target }})

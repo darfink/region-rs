@@ -85,11 +85,17 @@ impl Drop for Allocation {
 /// will be returned.
 /// - If size is zero, [`Error::InvalidParameter`] will be returned.
 ///
+/// # OS-Specific Behavior
+///
+/// On NetBSD pages will be allocated without PaX memory protection restrictions
+/// (i.e. pages will be allowed to be modified to any combination of `RWX`).
+///
 /// # Examples
 ///
 /// ```
 /// # fn main() -> region::Result<()> {
-/// # if cfg!(any(target_arch = "x86", target_arch = "x86_64")) && !cfg!(target_os = "openbsd") {
+/// # if cfg!(any(target_arch = "x86", target_arch = "x86_64"))
+/// #   && !cfg!(any(target_os = "openbsd", target_os = "netbsd")) {
 /// use region::Protection;
 /// let ret5 = [0xB8, 0x05, 0x00, 0x00, 0x00, 0xC3u8];
 ///
