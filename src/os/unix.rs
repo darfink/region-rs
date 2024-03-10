@@ -85,6 +85,10 @@ mod tests {
     assert_eq!(Protection::NONE.bits, PROT_NONE as usize);
     assert_eq!(Protection::READ.bits, PROT_READ as usize);
     assert_eq!(Protection::WRITE.bits, PROT_WRITE as usize);
+    assert_eq!(
+      Protection::READ_WRITE_EXECUTE,
+      Protection::from_bits_truncate((PROT_READ | PROT_WRITE | PROT_EXEC) as usize)
+    );
   }
 
   #[test]
