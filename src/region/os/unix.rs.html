@@ -98,6 +98,10 @@
 <a href="#97" id="97">97</a>
 <a href="#98" id="98">98</a>
 <a href="#99" id="99">99</a>
+<a href="#100" id="100">100</a>
+<a href="#101" id="101">101</a>
+<a href="#102" id="102">102</a>
+<a href="#103" id="103">103</a>
 </pre></div><pre class="rust"><code><span class="kw">use crate</span>::{Error, Protection, <span class="prelude-ty">Result</span>};
 <span class="kw">use </span>libc::{MAP_ANON, MAP_FAILED, MAP_FIXED, MAP_PRIVATE};
 <span class="kw">use </span>libc::{PROT_EXEC, PROT_READ, PROT_WRITE};
@@ -185,6 +189,10 @@
     <span class="macro">assert_eq!</span>(Protection::NONE.bits, PROT_NONE <span class="kw">as </span>usize);
     <span class="macro">assert_eq!</span>(Protection::READ.bits, PROT_READ <span class="kw">as </span>usize);
     <span class="macro">assert_eq!</span>(Protection::WRITE.bits, PROT_WRITE <span class="kw">as </span>usize);
+    <span class="macro">assert_eq!</span>(
+      Protection::READ_WRITE_EXECUTE,
+      Protection::from_bits_truncate((PROT_READ | PROT_WRITE | PROT_EXEC) <span class="kw">as </span>usize)
+    );
   }
 
   <span class="attr">#[test]
