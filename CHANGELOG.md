@@ -4,6 +4,23 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [3.0.1] - 2024-03-06
+
+### Added
+
+- Added support for NetBSD.
+- Added support for non-standard UNIX flags w/ `Protection::from_bits_*`.
+
+### Changed
+
+- Replaced deprecated `winapi` with `windows-sys`.
+- Replaced deprecated `mach` with `mach2`.
+
+### Fixed
+
+- Fixed `query` to recursively query pages on macOS.
+- Fixed `MAP_JIT` to be set when allocating (R)WX pages on macOS (aarch64).
+
 ## [3.0.0] - 2021-08-05
 
 ### Added 
@@ -26,5 +43,6 @@ All notable changes to this project will be documented in this file.
 - Removed `page::size_from_range`.
 - Removed deprecated functionality.
 
-[unreleased]: https://github.com/darfink/region-rs/compare/v3.0.0...HEAD
+[unreleased]: https://github.com/darfink/region-rs/compare/v3.0.1...HEAD
+[3.0.1]: https://github.com/darfink/region-rs/compare/v3.0.0...v3.0.1
 [3.0.0]: https://github.com/darfink/region-rs/compare/v2.2.0...v3.0.0

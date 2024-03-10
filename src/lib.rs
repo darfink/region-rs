@@ -43,7 +43,7 @@
 //!
 //! ```toml
 //! [dependencies]
-//! region = "3.0.0"
+//! region = "3.0.1"
 //! ```
 //!
 //! # Examples
@@ -244,6 +244,11 @@ bitflags! {
   /// Determines the access rights for a specific page and/or region. Some
   /// combination of flags may not be applicable, depending on the OS (e.g macOS
   /// enforces executable pages to be readable, OpenBSD requires W^X).
+  ///
+  /// # OS-Specific Behavior
+  ///
+  /// On Unix `Protection::from_bits_unchecked` can be used to apply
+  /// non-standard flags (e.g. `PROT_BTI`).
   ///
   /// # Examples
   ///
