@@ -34,6 +34,8 @@ This library is continuously tested against these targets:
   * `x86_64-pc-windows-msvc`
 - macOS
   * `x86_64-apple-darwin`
+- NetBSD
+  * `x86_64-unknown-netbsd`
 - FreeBSD
   * `x86_64-unknown-freebsd`
 - OpenBSD
