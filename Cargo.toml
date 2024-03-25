@@ -9,7 +9,7 @@ license = "MIT"
 name = "region"
 readme = "README.md"
 repository = "https://github.com/darfink/region-rs"
-version = "3.0.1"
+version = "3.0.2"
 
 [dependencies]
 bitflags = "1.0"

@@ -4,6 +4,16 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [3.0.2] - 2024-03-25
+
+### Removed
+
+- Removed explicit support for OpenBSD < 7.x (req libc locking)
+
+### Fixed
+
+- Dropped explicit versioning of `libc` version.
+
 ## [3.0.1] - 2024-03-06
 
 ### Added
@@ -43,6 +53,7 @@ All notable changes to this project will be documented in this file.
 - Removed `page::size_from_range`.
 - Removed deprecated functionality.
 
-[unreleased]: https://github.com/darfink/region-rs/compare/v3.0.1...HEAD
+[unreleased]: https://github.com/darfink/region-rs/compare/v3.0.2...HEAD
+[3.0.2]: https://github.com/darfink/region-rs/compare/v3.0.1...v3.0.2
 [3.0.1]: https://github.com/darfink/region-rs/compare/v3.0.0...v3.0.1
 [3.0.0]: https://github.com/darfink/region-rs/compare/v2.2.0...v3.0.0
