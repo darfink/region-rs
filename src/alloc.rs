@@ -1,3 +1,5 @@
+use std::mem::ManuallyDrop;
+
 use crate::{os, page, util, Error, Protection, Result};
 
 /// A handle to an owned region of memory.
@@ -57,6 +59,36 @@ impl Allocation {
   #[inline(always)]
   pub fn len(&self) -> usize {
     self.size
+  }
+
+  /// Decomposes an `Allocation` into its raw components: `(pointer, length)`.
+  ///
+  /// After calling this function, the caller is responsible for the previously
+  /// managed allocation.
+  ///
+  /// For creating an `Allocation` from raw components, see [`Self::from_raw_parts`].
+  #[inline]
+  pub fn into_raw_parts<T>(self) -> (*mut T, usize) {
+    let mut this = ManuallyDrop::new(self);
+    (this.as_mut_ptr(), this.len())
+  }
+
+  /// Creates a `Allocation` directly from a pointer, and a length.
+  ///
+  /// For decomposing an `Allocation` into raw components, see
+  /// [`Self::into_raw_parts`].
+  ///
+  /// # Safety
+  ///
+  /// This is highly unsafe because given `ptr` and `length` could not
+  /// be checked as valid allocation, and the caller should guarantee
+  /// that they are valid parts.
+  #[inline(always)]
+  pub unsafe fn from_raw_parts<T>(ptr: *mut T, length: usize) -> Self {
+    Self {
+      base: ptr as *const (),
+      size: length,
+    }
   }
 }
 
