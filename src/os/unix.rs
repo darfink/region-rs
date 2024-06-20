@@ -35,7 +35,10 @@ pub unsafe fn alloc(base: *const (), size: usize, protection: Protection) -> Res
 
   match libc::mmap(base as *mut _, size, native_prot, flags, -1, 0) {
     MAP_FAILED => Err(Error::SystemCall(io::Error::last_os_error())),
-    address => Ok(address as *const ()),
+    address => {
+      anon_id(address, size);
+      Ok(address as *const ())
+    }
   }
 }
 
@@ -64,6 +67,34 @@ pub fn unlock(base: *const (), size: usize) -> Result<()> {
   match unsafe { libc::munlock(base.cast(), size) } {
     0 => Ok(()),
     _ => Err(Error::SystemCall(io::Error::last_os_error())),
+  }
+}
+
+fn anon_id(address: *mut libc::c_void, size: usize) {
+  const ID: &str = "region-rs";
+  if cfg!(any(target_os = "linux", target_os = "android")) {
+    // Present on more recent libc releases, can be removed
+    // once the openbsd 6.9 constraint is no longer needed
+    const PR_SET_VMA: libc::c_int = 0;
+    const PR_SET_VMA_ANON_NAME: libc::c_int = 0x53564d41;
+    extern "C" {
+      fn prctl(
+        option: libc::c_int,
+        arg2: libc::c_ulong,
+        arg3: libc::c_ulong,
+        arg4: libc::c_ulong,
+        arg5: libc::c_ulong,
+      ) -> libc::c_int;
+    }
+    unsafe {
+      prctl(
+        PR_SET_VMA,
+        PR_SET_VMA_ANON_NAME as libc::c_ulong,
+        address as libc::c_ulong,
+        size as libc::c_ulong,
+        ID.as_bytes().as_ptr() as libc::c_ulong,
+      )
+    };
   }
 }
 
