@@ -18,10 +18,10 @@ use crate::{os, util, Protection, QueryIter, Region, Result};
 /// # Errors
 ///
 /// - If an interaction with the underlying operating system fails, an error
-/// will be returned.
+///   will be returned.
 /// - If size is zero,
-/// [`Error::InvalidParameter`](crate::Error::InvalidParameter) will be
-/// returned.
+///   [`Error::InvalidParameter`](crate::Error::InvalidParameter) will be
+///   returned.
 ///
 /// # Safety
 ///
@@ -90,10 +90,10 @@ pub unsafe fn protect<T>(address: *const T, size: usize, protection: Protection)
 /// # Errors
 ///
 /// - If an interaction with the underlying operating system fails, an error
-/// will be returned.
+///   will be returned.
 /// - If size is zero,
-/// [`Error::InvalidParameter`](crate::Error::InvalidParameter) will be
-/// returned.
+///   [`Error::InvalidParameter`](crate::Error::InvalidParameter) will be
+///   returned.
 ///
 /// # Safety
 ///

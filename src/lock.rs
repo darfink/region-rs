@@ -18,10 +18,10 @@ use crate::{os, util, Result};
 /// # Errors
 ///
 /// - If an interaction with the underlying operating system fails, an error
-/// will be returned.
+///   will be returned.
 /// - If size is zero,
-/// [`Error::InvalidParameter`](crate::Error::InvalidParameter) will be
-/// returned.
+///   [`Error::InvalidParameter`](crate::Error::InvalidParameter) will be
+///   returned.
 ///
 /// # Examples
 ///
@@ -53,10 +53,10 @@ pub fn lock<T>(address: *const T, size: usize) -> Result<LockGuard> {
 /// # Errors
 ///
 /// - If an interaction with the underlying operating system fails, an error
-/// will be returned.
+///   will be returned.
 /// - If size is zero,
-/// [`Error::InvalidParameter`](crate::Error::InvalidParameter) will be
-/// returned.
+///   [`Error::InvalidParameter`](crate::Error::InvalidParameter) will be
+///   returned.
 #[inline]
 pub fn unlock<T>(address: *const T, size: usize) -> Result<()> {
   let (address, size) = util::round_to_page_boundaries(address, size)?;
