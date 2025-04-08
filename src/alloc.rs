@@ -263,4 +263,15 @@ mod tests {
     assert_eq!(memory.len(), page::size());
     Ok(())
   }
+
+  #[test]
+  #[cfg(target_pointer_width = "64")]
+  fn alloc_can_reserve_large_parts_of_address_space() -> Result<()> {
+    // Request 1 TB of address space
+    let base = alloc(1 << 40, Protection::NONE)?.as_ptr::<()>();
+    // We should be able to partially commit these pages
+    let memory = alloc_at(base, 1, Protection::READ_WRITE)?;
+    assert_eq!(memory.as_ptr(), base);
+    Ok(())
+  }
 }

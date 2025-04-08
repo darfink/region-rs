@@ -87,7 +87,11 @@ pub unsafe fn alloc(base: *const (), size: usize, protection: Protection) -> Res
   let allocation = VirtualAlloc(
     base as *mut c_void,
     size,
-    MEM_COMMIT | MEM_RESERVE,
+    if protection != Protection::NONE {
+      MEM_COMMIT | MEM_RESERVE
+    } else {
+      MEM_RESERVE
+    },
     protection.to_native(),
   );
 
