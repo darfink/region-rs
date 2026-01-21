@@ -157,6 +157,7 @@ impl Drop for ProtectGuard {
 unsafe impl Send for ProtectGuard {}
 unsafe impl Sync for ProtectGuard {}
 
+#[allow(invalid_reference_casting)]
 #[cfg(test)]
 mod tests {
   use super::*;
