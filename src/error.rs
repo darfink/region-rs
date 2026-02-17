@@ -22,6 +22,7 @@ pub enum Error {
   /// A system call failed.
   SystemCall(io::Error),
   /// A macOS kernel call failed
+  #[cfg(target_os = "macos")]
   MachCall(libc::c_int),
 }
 
@@ -33,6 +34,7 @@ impl fmt::Display for Error {
       Error::InvalidParameter(param) => write!(f, "Invalid parameter value: {}", param),
       Error::ProcfsInput(ref input) => write!(f, "Invalid procfs input: {}", input),
       Error::SystemCall(ref error) => write!(f, "System call failed: {}", error),
+      #[cfg(target_os = "macos")]
       Error::MachCall(code) => write!(f, "macOS kernel call failed: {}", code),
     }
   }

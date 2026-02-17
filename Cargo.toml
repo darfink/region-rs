@@ -29,3 +29,6 @@ features = [
 
 [target."cfg(unix)".dev-dependencies]
 mmap = { package = "mmap-fixed", version = "0.1.6" }
+
+[target."cfg(target_os=\"uefi\")".dependencies]
+r-efi = "6.0.0"

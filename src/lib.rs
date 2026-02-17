@@ -79,21 +79,32 @@
 //!   # }
 //!   ```
 
+#![cfg_attr(target_os = "uefi", feature(uefi_std))]
+
 #[macro_use]
 extern crate bitflags;
 
 pub use alloc::{alloc, alloc_at, Allocation};
+
 pub use error::{Error, Result};
+
+#[cfg(not(target_os = "uefi"))]
 pub use lock::{lock, unlock, LockGuard};
+
 pub use protect::{protect, protect_with_handle, ProtectGuard};
 pub use query::{query, query_range, QueryIter};
 
 mod alloc;
 mod error;
+
+#[cfg(not(target_os = "uefi"))]
 mod lock;
+
 mod os;
 pub mod page;
+
 mod protect;
+
 mod query;
 mod util;
 

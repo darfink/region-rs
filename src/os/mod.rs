@@ -45,3 +45,9 @@ mod netbsd;
 
 #[cfg(target_os = "netbsd")]
 pub use self::netbsd::*;
+
+#[cfg(target_os = "uefi")]
+mod uefi;
+
+#[cfg(target_os = "uefi")]
+pub use self::uefi::*;
