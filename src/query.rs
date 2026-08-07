@@ -80,7 +80,7 @@ unsafe impl Sync for QueryIter {}
 /// # Errors
 ///
 /// - If an interaction with the underlying operating system fails, an error
-/// will be returned.
+///   will be returned.
 ///
 /// # Examples
 ///
@@ -133,7 +133,7 @@ pub fn query<T>(address: *const T) -> Result<Region> {
 /// # Errors
 ///
 /// - If an interaction with the underlying operating system fails, an error
-/// will be returned.
+///   will be returned.
 /// - If size is zero, [`Error::InvalidParameter`] will be returned.
 ///
 /// # Examples

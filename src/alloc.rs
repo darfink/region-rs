@@ -114,7 +114,7 @@ impl Drop for Allocation {
 /// # Errors
 ///
 /// - If an interaction with the underlying operating system fails, an error
-/// will be returned.
+///   will be returned.
 /// - If size is zero, [`Error::InvalidParameter`] will be returned.
 ///
 /// # OS-Specific Behavior
@@ -181,7 +181,7 @@ pub fn alloc(size: usize, protection: Protection) -> Result<Allocation> {
 /// # Errors
 ///
 /// - If an interaction with the underlying operating system fails, an error
-/// will be returned.
+///   will be returned.
 /// - If size is zero, [`Error::InvalidParameter`] will be returned.
 #[inline]
 pub fn alloc_at<T>(address: *const T, size: usize, protection: Protection) -> Result<Allocation> {
