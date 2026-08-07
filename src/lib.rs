@@ -247,7 +247,7 @@ bitflags! {
   ///
   /// # OS-Specific Behavior
   ///
-  /// On Unix `Protection::from_bits_unchecked` can be used to apply
+  /// On Unix `Protection::from_bits_retain` can be used to apply
   /// non-standard flags (e.g. `PROT_BTI`).
   ///
   /// # Examples
@@ -258,7 +258,7 @@ bitflags! {
   /// let combine = Protection::READ | Protection::WRITE;
   /// let shorthand = Protection::READ_WRITE;
   /// ```
-  #[derive(Default)]
+  #[derive(Default, PartialEq, Eq, PartialOrd, Ord, Hash, Debug, Clone, Copy)]
   pub struct Protection: usize {
     /// No access allowed at all.
     const NONE = 0;
@@ -269,13 +269,22 @@ bitflags! {
     /// Execute access; this may not be allowed depending on DEP.
     const EXECUTE = (1 << 2);
     /// Read and execute shorthand.
-    const READ_EXECUTE = (Self::READ.bits | Self::EXECUTE.bits);
+    const READ_EXECUTE = (Self::READ.bits() | Self::EXECUTE.bits());
     /// Read and write shorthand.
-    const READ_WRITE = (Self::READ.bits | Self::WRITE.bits);
+    const READ_WRITE = (Self::READ.bits() | Self::WRITE.bits());
     /// Read, write and execute shorthand.
-    const READ_WRITE_EXECUTE = (Self::READ.bits | Self::WRITE.bits | Self::EXECUTE.bits);
+    const READ_WRITE_EXECUTE = (Self::READ.bits() | Self::WRITE.bits() | Self::EXECUTE.bits());
     /// Write and execute shorthand.
-    const WRITE_EXECUTE = (Self::WRITE.bits | Self::EXECUTE.bits);
+    const WRITE_EXECUTE = (Self::WRITE.bits() | Self::EXECUTE.bits());
+  }
+}
+
+impl Protection {
+  /// Convert from underlying bit representation, preserving all bits
+  /// (even those not corresponding to a defined flag).
+  #[deprecated = "use the safe `from_bits_retain` method instead"]
+  pub const unsafe fn from_bits_unchecked(bits: usize) -> Self {
+    Self::from_bits_retain(bits)
   }
 }
 
