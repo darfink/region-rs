@@ -1,3 +1,9 @@
-(function() {var implementors = {
-"region":[["impl <a class=\"trait\" href=\"https://doc.rust-lang.org/1.78.0/core/marker/trait.StructuralPartialEq.html\" title=\"trait core::marker::StructuralPartialEq\">StructuralPartialEq</a> for <a class=\"struct\" href=\"region/struct.Protection.html\" title=\"struct region::Protection\">Protection</a>"],["impl <a class=\"trait\" href=\"https://doc.rust-lang.org/1.78.0/core/marker/trait.StructuralPartialEq.html\" title=\"trait core::marker::StructuralPartialEq\">StructuralPartialEq</a> for <a class=\"struct\" href=\"region/struct.Region.html\" title=\"struct region::Region\">Region</a>"]]
-};if (window.register_implementors) {window.register_implementors(implementors);} else {window.pending_implementors = implementors;}})()
+(function() {
+    const implementors = Object.fromEntries([["region",[["impl <a class=\"trait\" href=\"https://doc.rust-lang.org/1.97.1/core/marker/trait.StructuralPartialEq.html\" title=\"trait core::marker::StructuralPartialEq\">StructuralPartialEq</a> for <a class=\"struct\" href=\"region/struct.Protection.html\" title=\"struct region::Protection\">Protection</a>",0],["impl <a class=\"trait\" href=\"https://doc.rust-lang.org/1.97.1/core/marker/trait.StructuralPartialEq.html\" title=\"trait core::marker::StructuralPartialEq\">StructuralPartialEq</a> for <a class=\"struct\" href=\"region/struct.Region.html\" title=\"struct region::Region\">Region</a>",0]]]]);
+    if (window.register_implementors) {
+        window.register_implementors(implementors);
+    } else {
+        window.pending_implementors = implementors;
+    }
+})()
+//{"start":59,"fragment_lengths":[606]}
