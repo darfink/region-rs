@@ -1,7 +1,7 @@
 //! Page related functions.
 
 use crate::os;
-use std::sync::Once;
+use core::sync::atomic::{AtomicUsize, Ordering};
 
 /// Returns the operating system's page size.
 ///
@@ -16,12 +16,15 @@ use std::sync::Once;
 /// ```
 #[inline]
 pub fn size() -> usize {
-  static INIT: Once = Once::new();
-  static mut PAGE_SIZE: usize = 0;
+  static PAGE_SIZE: AtomicUsize = AtomicUsize::new(0);
 
-  unsafe {
-    INIT.call_once(|| PAGE_SIZE = os::page_size());
-    PAGE_SIZE
+  match PAGE_SIZE.load(Ordering::Relaxed) {
+    0 => {
+      let size = os::page_size();
+      PAGE_SIZE.store(size, Ordering::Relaxed);
+      size
+    }
+    size => size,
   }
 }
 
@@ -37,7 +40,8 @@ pub fn size() -> usize {
 /// ```
 #[inline]
 pub fn floor<T>(address: *const T) -> *const T {
-  (address as usize & !(size() - 1)) as *const T
+  let address = address.addr() & !(size() - 1);
+  core::ptr::with_exposed_provenance(address)
 }
 
 /// Rounds an address up to its closest page boundary.
@@ -52,8 +56,11 @@ pub fn floor<T>(address: *const T) -> *const T {
 /// ```
 #[inline]
 pub fn ceil<T>(address: *const T) -> *const T {
-  match (address as usize).checked_add(size()) {
-    Some(offset) => ((offset - 1) & !(size() - 1)) as *const T,
+  match address.addr().checked_add(size()) {
+    Some(offset) => {
+      let address = (offset - 1) & !(size() - 1);
+      core::ptr::with_exposed_provenance(address)
+    }
     None => floor(address),
   }
 }
@@ -74,14 +81,20 @@ mod tests {
   #[test]
   fn page_rounding_works() {
     let pz = size();
-    let point = 1 as *const ();
+    let point = core::ptr::without_provenance::<()>(1);
 
-    assert_eq!(floor(point) as usize, 0);
-    assert_eq!(floor(pz as *const ()) as usize, pz);
-    assert_eq!(floor(usize::max_value() as *const ()) as usize % pz, 0);
+    assert_eq!(floor(point).addr(), 0);
+    assert_eq!(floor(core::ptr::without_provenance::<()>(pz)).addr(), pz);
+    assert_eq!(
+      floor(core::ptr::without_provenance::<()>(usize::MAX)).addr() % pz,
+      0
+    );
 
-    assert_eq!(ceil(point) as usize, pz);
-    assert_eq!(ceil(pz as *const ()) as usize, pz);
-    assert_eq!(ceil(usize::max_value() as *const ()) as usize % pz, 0);
+    assert_eq!(ceil(point).addr(), pz);
+    assert_eq!(ceil(core::ptr::without_provenance::<()>(pz)).addr(), pz);
+    assert_eq!(
+      ceil(core::ptr::without_provenance::<()>(usize::MAX)).addr() % pz,
+      0
+    );
   }
 }

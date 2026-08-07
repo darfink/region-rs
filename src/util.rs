@@ -1,4 +1,5 @@
-use crate::{page, Error, Result};
+use crate::{Error, Result, page};
+use core::ptr;
 
 /// Validates & rounds an address-size pair to their respective page boundary.
 pub fn round_to_page_boundaries<T>(address: *const T, size: usize) -> Result<(*const T, usize)> {
@@ -6,8 +7,8 @@ pub fn round_to_page_boundaries<T>(address: *const T, size: usize) -> Result<(*c
     return Err(Error::InvalidParameter("size"));
   }
 
-  let size = (address as usize % page::size()).saturating_add(size);
-  let size = page::ceil(size as *const T) as usize;
+  let size = address.addr() % page::size() + size;
+  let size = page::ceil(ptr::with_exposed_provenance::<T>(size)).addr();
   Ok((page::floor(address), size))
 }
 
@@ -28,8 +29,17 @@ mod tests {
     ];
 
     for ((before_address, before_size), (after_address, after_size)) in values {
-      let (address, size) = round_to_page_boundaries(*before_address as *const (), *before_size)?;
-      assert_eq!((address, size), (*after_address as *const (), *after_size));
+      let (address, size) = round_to_page_boundaries(
+        ptr::with_exposed_provenance::<()>(*before_address),
+        *before_size,
+      )?;
+      assert_eq!(
+        (address, size),
+        (
+          ptr::with_exposed_provenance::<()>(*after_address),
+          *after_size
+        )
+      );
     }
     Ok(())
   }

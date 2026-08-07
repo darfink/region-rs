@@ -1,4 +1,4 @@
-use crate::{os, util, Error, Region, Result};
+use crate::{Error, Region, Result, os, util};
 
 /// An iterator over the [`Region`]s that encompass an address range.
 ///
@@ -38,7 +38,7 @@ impl Iterator for QueryIter {
           let range = region.as_range();
 
           // Skip the region if it precedes the queried range
-          if range.end <= self.origin as usize {
+          if range.end <= self.origin.addr() {
             continue;
           }
 
@@ -61,7 +61,7 @@ impl Iterator for QueryIter {
   }
 }
 
-impl std::iter::FusedIterator for QueryIter {}
+impl core::iter::FusedIterator for QueryIter {}
 
 unsafe impl Send for QueryIter {}
 unsafe impl Sync for QueryIter {}
@@ -109,8 +109,8 @@ pub fn query<T>(address: *const T) -> Result<Region> {
 ///
 /// The implementation clamps any input that exceeds the boundaries of a
 /// process' address space. Therefore it's safe to, e.g., pass in
-/// [`std::ptr::null`] and [`usize::max_value`] to iterate the mapped memory
-/// pages of an entire process.
+/// [`core::ptr::null`] and [`usize::MAX`] to iterate the mapped memory pages of
+/// an entire process.
 ///
 /// If an error is encountered during iteration, the error will be the last item
 /// that is yielded. Thereafter the iterator becomes fused.
@@ -160,7 +160,7 @@ pub fn query_range<T>(address: *const T, size: usize) -> Result<QueryIter> {
 mod tests {
   use super::*;
   use crate::tests::util::alloc_pages;
-  use crate::{page, Protection};
+  use crate::{Protection, page};
 
   const TEXT_SEGMENT_PROT: Protection = if cfg!(target_os = "openbsd") {
     Protection::EXECUTE
@@ -170,7 +170,10 @@ mod tests {
 
   #[test]
   fn query_returns_unmapped_for_oob_address() {
-    let (min, max) = (std::ptr::null::<()>(), usize::max_value() as *const ());
+    let (min, max) = (
+      core::ptr::null::<()>(),
+      core::ptr::without_provenance::<()>(usize::MAX),
+    );
     assert!(matches!(query(min), Err(Error::UnmappedRegion)));
     assert!(matches!(query(max), Err(Error::UnmappedRegion)));
   }
@@ -218,7 +221,8 @@ mod tests {
 
   #[test]
   fn query_range_does_not_return_unmapped_regions() -> Result<()> {
-    let regions = query_range(std::ptr::null::<()>(), 1)?.collect::<Result<Vec<_>>>()?;
+    let regions =
+      query_range(core::ptr::null::<()>(), 1)?.collect::<Result<alloc::vec::Vec<_>>>()?;
     assert!(regions.is_empty());
     Ok(())
   }
@@ -230,11 +234,11 @@ mod tests {
 
     // Query an area that overlaps both pages
     let address = unsafe { map.as_ptr().offset(page::size() as isize - 1) };
-    let regions = query_range(address, 2)?.collect::<Result<Vec<_>>>()?;
+    let regions = query_range(address, 2)?.collect::<Result<alloc::vec::Vec<_>>>()?;
 
     assert_eq!(regions.len(), pages.len());
     for (page, region) in pages.iter().zip(regions.iter()) {
-      assert_eq!(*page, region.protection);
+      assert_eq!(*page, region.protection());
     }
     Ok(())
   }
@@ -244,11 +248,13 @@ mod tests {
     let pages = [Protection::READ, Protection::READ_WRITE, Protection::READ];
     let map = alloc_pages(&pages);
 
-    let regions = query_range(map.as_ptr(), page::size())?.collect::<Result<Vec<_>>>()?;
+    let regions =
+      query_range(map.as_ptr(), page::size())?.collect::<Result<alloc::vec::Vec<_>>>()?;
     assert_eq!(regions.len(), 1);
     assert_eq!(regions[0].protection(), Protection::READ);
 
-    let regions = query_range(map.as_ptr(), page::size() + 1)?.collect::<Result<Vec<_>>>()?;
+    let regions =
+      query_range(map.as_ptr(), page::size() + 1)?.collect::<Result<alloc::vec::Vec<_>>>()?;
     assert_eq!(regions.len(), 2);
     assert_eq!(regions[0].protection(), Protection::READ);
     assert_eq!(regions[1].protection(), Protection::READ_WRITE);
@@ -258,18 +264,24 @@ mod tests {
   #[test]
   fn query_range_can_iterate_over_entire_process() -> Result<()> {
     let regions =
-      query_range(std::ptr::null::<()>(), usize::max_value())?.collect::<Result<Vec<_>>>()?;
+      query_range(core::ptr::null::<()>(), usize::MAX)?.collect::<Result<alloc::vec::Vec<_>>>()?;
 
     // This test is a bit rough around the edges
-    assert!(regions
-      .iter()
-      .any(|region| region.protection() == Protection::READ));
-    assert!(regions
-      .iter()
-      .any(|region| region.protection() == Protection::READ_WRITE));
-    assert!(regions
-      .iter()
-      .any(|region| region.protection() == TEXT_SEGMENT_PROT));
+    assert!(
+      regions
+        .iter()
+        .any(|region| region.protection() == Protection::READ)
+    );
+    assert!(
+      regions
+        .iter()
+        .any(|region| region.protection() == Protection::READ_WRITE)
+    );
+    assert!(
+      regions
+        .iter()
+        .any(|region| region.protection() == TEXT_SEGMENT_PROT)
+    );
     assert!(regions.len() > 5);
     Ok(())
   }

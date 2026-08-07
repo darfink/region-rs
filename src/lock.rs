@@ -1,4 +1,4 @@
-use crate::{os, util, Result};
+use crate::{Result, os, util};
 
 /// Locks one or more memory regions to RAM.
 ///
@@ -40,7 +40,9 @@ pub fn lock<T>(address: *const T, size: usize) -> Result<LockGuard> {
 
 /// Unlocks one or more memory regions from RAM.
 ///
-/// If possible, prefer to use [`lock`] combined with the [`LockGuard`].
+/// Prefer [`lock`] with [`LockGuard`] when possible. This function is marked
+/// `unsafe` because unlocking arbitrary pages can reverse another caller's
+/// intentional locking and introduce paging hazards for critical data.
 ///
 /// # Parameters
 ///
@@ -57,8 +59,14 @@ pub fn lock<T>(address: *const T, size: usize) -> Result<LockGuard> {
 /// - If size is zero,
 ///   [`Error::InvalidParameter`](crate::Error::InvalidParameter) will be
 ///   returned.
+///
+/// # Safety
+///
+/// The caller must ensure the range is intentionally unlockable. On many
+/// platforms, locking is tracked per page rather than per allocation, so
+/// unlocking one mapping may unlock another mapping that shares the same page.
 #[inline]
-pub fn unlock<T>(address: *const T, size: usize) -> Result<()> {
+pub unsafe fn unlock<T>(address: *const T, size: usize) -> Result<()> {
   let (address, size) = util::round_to_page_boundaries(address, size)?;
   os::unlock(address.cast(), size)
 }
@@ -98,7 +106,8 @@ unsafe impl Sync for LockGuard {}
 mod tests {
   use super::*;
   use crate::tests::util::alloc_pages;
-  use crate::{page, Protection};
+  use crate::{Protection, page};
+  use core::mem;
 
   #[test]
   fn lock_mapped_pages_succeeds() -> Result<()> {
@@ -110,7 +119,7 @@ mod tests {
   #[test]
   fn unlock_mapped_pages_succeeds() -> Result<()> {
     let map = alloc_pages(&[Protection::READ_WRITE]);
-    std::mem::forget(lock(map.as_ptr(), page::size())?);
-    unlock(map.as_ptr(), page::size())
+    mem::forget(lock(map.as_ptr(), page::size())?);
+    unsafe { unlock(map.as_ptr(), page::size()) }
   }
 }

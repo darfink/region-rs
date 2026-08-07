@@ -1,31 +1,56 @@
 [package]
 authors = ["Elliott Linder <elliott.darfink@gmail.com>"]
+categories = ["api-bindings", "memory-management", "no-std", "os"]
 description = "Cross-platform virtual memory API"
 documentation = "https://docs.rs/region"
-edition = "2018"
+edition = "2024"
 homepage = "https://github.com/darfink/region-rs"
 keywords = ["region", "page", "lock", "protect", "maps"]
 license = "MIT"
 name = "region"
 readme = "README.md"
 repository = "https://github.com/darfink/region-rs"
-version = "3.0.2"
+rust-version = "1.85"
+version = "4.0.0"
+
+[features]
+default = ["std"]
+# Enables the standard library (`std::error::Error` integration).
+# The crate itself is `no_std` and always uses the `alloc` crate.
+std = ["bitflags/std"]
 
 [dependencies]
-bitflags = "2.0"
-libc = "0.2.153"
+bitflags = { version = "2.6", default-features = false }
+libc = "0.2.172"
 
 [target."cfg(any(target_os = \"macos\", target_os = \"ios\"))".dependencies]
-mach2 = "0.4"
+mach2 = "0.4.2"
 
 [target.'cfg(windows)'.dependencies.windows-sys]
-version = ">= 0.52, <= 0.61"
+# Accept a range so dependents can unify on a single windows-sys version.
+version = ">=0.52, <=0.61"
 features = [
-    "Win32_Foundation",
-    "Win32_System_Memory",
-    "Win32_System_SystemInformation",
-    "Win32_System_Diagnostics_Debug",
+  "Win32_Foundation",
+  "Win32_System_Memory",
+  "Win32_System_SystemInformation",
+  "Win32_System_Diagnostics_Debug",
 ]
 
 [target."cfg(unix)".dev-dependencies]
 mmap = { package = "mmap-fixed", version = "0.1.6" }
+
+[lints.rust]
+missing_docs = "deny"
+nonstandard_style = "deny"
+unused = "deny"
+warnings = "deny"
+
+[lints.clippy]
+all = { level = "deny", priority = -1 }
+missing_inline_in_public_items = "deny"
+ptr_as_ptr = "deny"
+print_stdout = "deny"
+
+[package.metadata.docs.rs]
+all-features = true
+rustdoc-args = ["--cfg", "docsrs"]

@@ -1,15 +1,3 @@
-#![deny(
-  clippy::all,
-  clippy::missing_inline_in_public_items,
-  clippy::ptr_as_ptr,
-  clippy::print_stdout,
-  missing_docs,
-  nonstandard_style,
-  unused,
-  warnings
-)]
-// Temporarily allow these until bitflags deps is upgraded to 2.x
-#![allow(clippy::bad_bit_mask)]
 //! Cross-platform virtual memory API.
 //!
 //! This crate provides a cross-platform Rust API for querying and manipulating
@@ -43,8 +31,20 @@
 //!
 //! ```toml
 //! [dependencies]
-//! region = "3.0.2"
+//! region = "4.0.0"
 //! ```
+//!
+//! # Features
+//!
+//! By default this crate enables the `std` feature. Disable default features to
+//! use it as `#![no_std]` with the `alloc` crate:
+//!
+//! ```toml
+//! [dependencies]
+//! region = { version = "4.0.0", default-features = false }
+//! ```
+//!
+//! With `std` enabled, [`Error`] implements [`std::error::Error`].
 //!
 //! # Examples
 //!
@@ -79,16 +79,20 @@
 //!   # }
 //!   ```
 
-#[macro_use]
-extern crate bitflags;
+#![no_std]
 
-pub use alloc::{alloc, alloc_at, Allocation};
+extern crate alloc;
+
+#[cfg(feature = "std")]
+extern crate std;
+
+pub use allocation::{Allocation, alloc, alloc_at};
 pub use error::{Error, Result};
-pub use lock::{lock, unlock, LockGuard};
-pub use protect::{protect, protect_with_handle, ProtectGuard};
-pub use query::{query, query_range, QueryIter};
+pub use lock::{LockGuard, lock, unlock};
+pub use protect::{ProtectGuard, protect, protect_with_handle};
+pub use query::{QueryIter, query, query_range};
 
-mod alloc;
+mod allocation;
 mod error;
 mod lock;
 mod os;
@@ -131,7 +135,7 @@ impl Region {
   /// Returns a mutable pointer to the region's base address.
   #[inline(always)]
   pub fn as_mut_ptr<T>(&mut self) -> *mut T {
-    self.base as *mut T
+    self.base.cast_mut().cast()
   }
 
   /// Returns two raw pointers spanning the region's address space.
@@ -141,22 +145,25 @@ impl Region {
   /// represented by two equal pointers, and the difference between the two
   /// pointers represents the size of the region.
   #[inline(always)]
-  pub fn as_ptr_range<T>(&self) -> std::ops::Range<*const T> {
+  pub fn as_ptr_range<T>(&self) -> core::ops::Range<*const T> {
     let range = self.as_range();
-    (range.start as *const T)..(range.end as *const T)
+    core::ptr::with_exposed_provenance::<T>(range.start)
+      ..core::ptr::with_exposed_provenance::<T>(range.end)
   }
 
   /// Returns two mutable raw pointers spanning the region's address space.
   #[inline(always)]
-  pub fn as_mut_ptr_range<T>(&mut self) -> std::ops::Range<*mut T> {
+  pub fn as_mut_ptr_range<T>(&mut self) -> core::ops::Range<*mut T> {
     let range = self.as_range();
-    (range.start as *mut T)..(range.end as *mut T)
+    core::ptr::with_exposed_provenance_mut::<T>(range.start)
+      ..core::ptr::with_exposed_provenance_mut::<T>(range.end)
   }
 
   /// Returns a range spanning the region's address space.
   #[inline(always)]
-  pub fn as_range(&self) -> std::ops::Range<usize> {
-    (self.base as usize)..(self.base as usize).saturating_add(self.size)
+  pub fn as_range(&self) -> core::ops::Range<usize> {
+    let start = self.base.addr();
+    start..start.saturating_add(self.size)
   }
 
   /// Returns whether the region is committed or not.
@@ -171,19 +178,19 @@ impl Region {
   /// Returns whether the region is readable or not.
   #[inline(always)]
   pub fn is_readable(&self) -> bool {
-    self.protection & Protection::READ == Protection::READ
+    self.protection.contains(Protection::READ)
   }
 
   /// Returns whether the region is writable or not.
   #[inline(always)]
   pub fn is_writable(&self) -> bool {
-    self.protection & Protection::WRITE == Protection::WRITE
+    self.protection.contains(Protection::WRITE)
   }
 
   /// Returns whether the region is executable or not.
   #[inline(always)]
   pub fn is_executable(&self) -> bool {
-    self.protection & Protection::EXECUTE == Protection::EXECUTE
+    self.protection.contains(Protection::EXECUTE)
   }
 
   /// Returns whether the region is guarded or not.
@@ -218,13 +225,22 @@ impl Region {
   pub fn protection(&self) -> Protection {
     self.protection
   }
+
+  /// Returns the maximum protection attributes of the region.
+  ///
+  /// On platforms that do not expose this information, this matches
+  /// [`Self::protection`].
+  #[inline(always)]
+  pub fn max_protection(&self) -> Protection {
+    self.max_protection
+  }
 }
 
 impl Default for Region {
   #[inline]
   fn default() -> Self {
     Self {
-      base: std::ptr::null(),
+      base: core::ptr::null(),
       reserved: false,
       guarded: false,
       protection: Protection::NONE,
@@ -238,7 +254,7 @@ impl Default for Region {
 unsafe impl Send for Region {}
 unsafe impl Sync for Region {}
 
-bitflags! {
+bitflags::bitflags! {
   /// A bitflag of zero or more protection attributes.
   ///
   /// Determines the access rights for a specific page and/or region. Some
@@ -247,8 +263,8 @@ bitflags! {
   ///
   /// # OS-Specific Behavior
   ///
-  /// On Unix `Protection::from_bits_retain` can be used to apply
-  /// non-standard flags (e.g. `PROT_BTI`).
+  /// On Unix [`Protection::from_bits_retain`] can be used to apply non-standard
+  /// flags (e.g. `PROT_BTI`).
   ///
   /// # Examples
   ///
@@ -263,34 +279,42 @@ bitflags! {
     /// No access allowed at all.
     const NONE = 0;
     /// Read access; writing and/or executing data will panic.
-    const READ = (1 << 0);
+    const READ = 1 << 0;
     /// Write access; this flag alone may not be supported on all OSs.
-    const WRITE = (1 << 1);
+    const WRITE = 1 << 1;
     /// Execute access; this may not be allowed depending on DEP.
-    const EXECUTE = (1 << 2);
+    const EXECUTE = 1 << 2;
     /// Read and execute shorthand.
-    const READ_EXECUTE = (Self::READ.bits() | Self::EXECUTE.bits());
+    const READ_EXECUTE = Self::READ.bits() | Self::EXECUTE.bits();
     /// Read and write shorthand.
-    const READ_WRITE = (Self::READ.bits() | Self::WRITE.bits());
+    const READ_WRITE = Self::READ.bits() | Self::WRITE.bits();
     /// Read, write and execute shorthand.
-    const READ_WRITE_EXECUTE = (Self::READ.bits() | Self::WRITE.bits() | Self::EXECUTE.bits());
+    const READ_WRITE_EXECUTE = Self::READ.bits() | Self::WRITE.bits() | Self::EXECUTE.bits();
     /// Write and execute shorthand.
-    const WRITE_EXECUTE = (Self::WRITE.bits() | Self::EXECUTE.bits());
+    const WRITE_EXECUTE = Self::WRITE.bits() | Self::EXECUTE.bits();
   }
 }
 
 impl Protection {
-  /// Convert from underlying bit representation, preserving all bits
-  /// (even those not corresponding to a defined flag).
+  /// Convert from underlying bit representation, preserving all bits (even
+  /// those not corresponding to a defined flag).
+  /// Convert from underlying bit representation, preserving all bits (even
+  /// those not corresponding to a defined flag).
+  ///
+  /// # Safety
+  ///
+  /// This method is identical to the safe [`Self::from_bits_retain`] and exists
+  /// only for compatibility with older callers. Prefer the safe method.
   #[deprecated = "use the safe `from_bits_retain` method instead"]
+  #[inline(always)]
   pub const unsafe fn from_bits_unchecked(bits: usize) -> Self {
     Self::from_bits_retain(bits)
   }
 }
 
-impl std::fmt::Display for Protection {
+impl core::fmt::Display for Protection {
   #[inline]
-  fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+  fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
     const MAPPINGS: &[(Protection, char)] = &[
       (Protection::READ, 'r'),
       (Protection::WRITE, 'w'),
@@ -299,7 +323,7 @@ impl std::fmt::Display for Protection {
 
     for (flag, symbol) in MAPPINGS {
       if self.contains(*flag) {
-        write!(f, "{}", symbol)?;
+        write!(f, "{symbol}")?;
       } else {
         write!(f, "-")?;
       }
@@ -312,6 +336,7 @@ impl std::fmt::Display for Protection {
 #[cfg(test)]
 mod tests {
   use super::*;
+  use alloc::string::ToString;
 
   #[test]
   fn protection_implements_display() {
@@ -323,22 +348,26 @@ mod tests {
 
   #[cfg(unix)]
   pub mod util {
-    use crate::{page, Protection};
+    use crate::{Protection, page};
+    use alloc::vec;
+    use alloc::vec::Vec;
+    use core::ops::Deref;
     use mmap::{MapOption, MemoryMap};
-    use std::ops::Deref;
 
     struct AllocatedPages(Vec<MemoryMap>);
 
     impl Deref for AllocatedPages {
       type Target = [u8];
 
+      #[inline]
       fn deref(&self) -> &Self::Target {
-        unsafe { std::slice::from_raw_parts(self.0[0].data().cast(), self.0.len() * page::size()) }
+        unsafe { core::slice::from_raw_parts(self.0[0].data().cast(), self.0.len() * page::size()) }
       }
     }
 
     #[allow(clippy::fallible_impl_from)]
     impl From<Protection> for &'static [MapOption] {
+      #[inline]
       fn from(protection: Protection) -> Self {
         match protection {
           Protection::NONE => &[],
@@ -357,7 +386,7 @@ mod tests {
       let mut page_address = region.data();
 
       // Drop the region to ensure it's free
-      std::mem::forget(region);
+      core::mem::forget(region);
 
       // Allocate one page at a time, with explicit page permissions. This would
       // normally introduce a race condition, but since only one thread is used
@@ -374,7 +403,7 @@ mod tests {
           assert_eq!(map.data(), page_address);
           assert_eq!(map.len(), page::size());
 
-          page_address = (page_address as usize + page::size()) as *mut _;
+          page_address = unsafe { page_address.add(page::size()) };
           map
         })
         .collect::<Vec<_>>();
@@ -385,10 +414,10 @@ mod tests {
 
   #[cfg(windows)]
   pub mod util {
-    use crate::{page, Protection};
-    use std::ops::Deref;
+    use crate::{Protection, page};
+    use core::ops::Deref;
     use windows_sys::Win32::System::Memory::{
-      VirtualAlloc, VirtualFree, MEM_COMMIT, MEM_RELEASE, MEM_RESERVE, PAGE_NOACCESS,
+      MEM_COMMIT, MEM_RELEASE, MEM_RESERVE, PAGE_NOACCESS, VirtualAlloc, VirtualFree,
     };
 
     struct AllocatedPages(*const (), usize);
@@ -396,12 +425,14 @@ mod tests {
     impl Deref for AllocatedPages {
       type Target = [u8];
 
+      #[inline]
       fn deref(&self) -> &Self::Target {
-        unsafe { std::slice::from_raw_parts(self.0 as *const _, self.1) }
+        unsafe { core::slice::from_raw_parts(self.0.cast(), self.1) }
       }
     }
 
     impl Drop for AllocatedPages {
+      #[inline]
       fn drop(&mut self) {
         unsafe {
           assert_ne!(VirtualFree(self.0 as *mut _, 0, MEM_RELEASE), 0);
@@ -413,9 +444,15 @@ mod tests {
     pub fn alloc_pages(pages: &[Protection]) -> impl Deref<Target = [u8]> {
       // Reserve enough memory to fit each page
       let total_size = page::size() * pages.len();
-      let allocation_base =
-        unsafe { VirtualAlloc(std::ptr::null_mut(), total_size, MEM_RESERVE, PAGE_NOACCESS) };
-      assert_ne!(allocation_base, std::ptr::null_mut());
+      let allocation_base = unsafe {
+        VirtualAlloc(
+          core::ptr::null_mut(),
+          total_size,
+          MEM_RESERVE,
+          PAGE_NOACCESS,
+        )
+      };
+      assert_ne!(allocation_base, core::ptr::null_mut());
 
       let mut page_address = allocation_base;
 
@@ -430,10 +467,10 @@ mod tests {
           )
         };
         assert_eq!(address, page_address);
-        page_address = (address as usize + page::size()) as *mut _;
+        page_address = unsafe { (address as *mut u8).add(page::size()) }.cast();
       }
 
-      AllocatedPages(allocation_base as *const _, total_size)
+      AllocatedPages(allocation_base.cast(), total_size)
     }
   }
 }
