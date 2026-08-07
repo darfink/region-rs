@@ -3,7 +3,7 @@ use std::cmp::{max, min};
 use std::ffi::c_void;
 use std::io;
 use std::mem::{size_of, MaybeUninit};
-use std::sync::Once;
+use std::sync::OnceLock;
 use windows_sys::Win32::System::Memory::{
   VirtualAlloc, VirtualFree, VirtualLock, VirtualProtect, VirtualQuery, VirtualUnlock,
   MEMORY_BASIC_INFORMATION, MEM_COMMIT, MEM_PRIVATE, MEM_RELEASE, MEM_RESERVE, PAGE_EXECUTE,
@@ -135,14 +135,25 @@ pub fn unlock(base: *const (), size: usize) -> Result<()> {
   }
 }
 
-fn system_info() -> &'static SYSTEM_INFO {
-  static INIT: Once = Once::new();
-  static mut INFO: MaybeUninit<SYSTEM_INFO> = MaybeUninit::uninit();
+// `SYSTEM_INFO` contains two `*mut c_void` pointers, but they are only used as numerical values
+// and never dereferenced. Hence, it's safe to pass the structure between threads.
+struct SystemInfoSendSync(SYSTEM_INFO);
+unsafe impl Send for SystemInfoSendSync {}
+unsafe impl Sync for SystemInfoSendSync {}
 
-  unsafe {
-    INIT.call_once(|| GetNativeSystemInfo(INFO.as_mut_ptr()));
-    &*INFO.as_ptr()
-  }
+fn system_info() -> &'static SYSTEM_INFO {
+  static INFO: OnceLock<SystemInfoSendSync> = OnceLock::new();
+
+  &INFO
+    .get_or_init(|| {
+      let mut info = MaybeUninit::<SYSTEM_INFO>::uninit();
+
+      unsafe {
+        GetNativeSystemInfo(info.as_mut_ptr());
+        SystemInfoSendSync(info.assume_init())
+      }
+    })
+    .0
 }
 
 impl Protection {
