@@ -1,7 +1,14 @@
 name: Release
 
 on:
-  push: { tags: ['v*'] }
+  push:
+    tags: ['v*']
+
+permissions:
+  contents: read
+
+env:
+  CARGO_TERM_COLOR: always
 
 jobs:
   publish:
@@ -9,13 +16,13 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-    - name: Checkout
-      uses: actions/checkout@v2
+      - name: Checkout
+        uses: actions/checkout@v4
 
-    - name: Authenticate crates.io
-      env:
-        CRATES_IO_TOKEN: ${{ secrets.crates_io_token }}
-      run: cargo login $CRATES_IO_TOKEN
+      - name: Install toolchain
+        uses: dtolnay/rust-toolchain@stable
 
-    - name: Publish crate
-      run: cargo publish
+      - name: Publish crate
+        env:
+          CARGO_REGISTRY_TOKEN: ${{ secrets.crates_io_token }}
+        run: cargo publish
