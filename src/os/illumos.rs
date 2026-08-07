@@ -1,6 +1,8 @@
 use crate::{Error, Protection, Region, Result};
-use std::fs::File;
-use std::io::Read;
+use alloc::format;
+use alloc::vec::Vec;
+use core::mem::size_of;
+use core::ptr;
 
 pub struct QueryIter {
   vmmap: Vec<u8>,
@@ -12,10 +14,10 @@ impl QueryIter {
   pub fn new(origin: *const (), size: usize) -> Result<QueryIter> {
     // Do not use a buffered reader here to avoid multiple read(2) calls to the
     // proc file, ensuring a consistent snapshot of the virtual memory.
-    let mut file = File::open("/proc/self/map").map_err(Error::SystemCall)?;
-    let mut vmmap: Vec<u8> = Vec::with_capacity(8 * PRMAP_SIZE);
+    let mut file = File::open("/proc/self/map")?;
+    let mut vmmap = Vec::with_capacity(8 * PRMAP_SIZE);
 
-    let bytes_read = file.read_to_end(&mut vmmap).map_err(Error::SystemCall)?;
+    let bytes_read = file.read_to_end(&mut vmmap)?;
 
     if bytes_read % PRMAP_SIZE != 0 {
       return Err(Error::ProcfsInput(format!(
@@ -95,13 +97,63 @@ struct PrMap {
   _pr_filler: [i32; 1],
 }
 
-const PRMAP_SIZE: usize = std::mem::size_of::<PrMap>();
+const PRMAP_SIZE: usize = size_of::<PrMap>();
 
 // These come from <sys/procfs.h>, describing bits in the pr_mflags member:
 const MA_EXEC: i32 = 0x1;
 const MA_WRITE: i32 = 0x2;
 const MA_READ: i32 = 0x4;
 const MA_SHARED: i32 = 0x8;
+
+struct File {
+  fd: libc::c_int,
+}
+
+impl File {
+  fn open(path: &str) -> Result<Self> {
+    let mut path_buf = Vec::with_capacity(path.len() + 1);
+    path_buf.extend_from_slice(path.as_bytes());
+    path_buf.push(0);
+
+    let fd = unsafe { libc::open(path_buf.as_ptr().cast(), libc::O_RDONLY) };
+    if fd < 0 {
+      return Err(Error::last_os_error());
+    }
+
+    Ok(Self { fd })
+  }
+
+  fn read_to_end(&mut self, buf: &mut Vec<u8>) -> Result<usize> {
+    let mut total = 0;
+
+    loop {
+      let mut chunk = [0u8; 4096];
+      let bytes_read = unsafe { libc::read(self.fd, chunk.as_mut_ptr().cast(), chunk.len()) };
+
+      if bytes_read < 0 {
+        return Err(Error::last_os_error());
+      }
+
+      if bytes_read == 0 {
+        break;
+      }
+
+      let bytes_read = bytes_read as usize;
+      buf.extend_from_slice(&chunk[..bytes_read]);
+      total += bytes_read;
+    }
+
+    Ok(total)
+  }
+}
+
+impl Drop for File {
+  fn drop(&mut self) {
+    unsafe {
+      libc::close(self.fd);
+    }
+  }
+}
 
 #[cfg(test)]
 mod tests {

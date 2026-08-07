@@ -1,7 +1,6 @@
 use crate::{Error, Protection, Result};
 use libc::{MAP_ANON, MAP_FAILED, MAP_FIXED, MAP_PRIVATE};
 use libc::{PROT_EXEC, PROT_READ, PROT_WRITE};
-use std::io;
 
 pub fn page_size() -> usize {
   unsafe { libc::sysconf(libc::_SC_PAGESIZE) as usize }
@@ -33,44 +32,44 @@ pub unsafe fn alloc(base: *const (), size: usize, protection: Protection) -> Res
     flags |= libc::MAP_JIT;
   }
 
-  match libc::mmap(base as *mut _, size, native_prot, flags, -1, 0) {
-    MAP_FAILED => Err(Error::SystemCall(io::Error::last_os_error())),
-    address => Ok(address as *const ()),
+  match unsafe { libc::mmap(base.cast_mut().cast(), size, native_prot, flags, -1, 0) } {
+    MAP_FAILED => Err(Error::last_os_error()),
+    address => Ok(address.cast()),
   }
 }
 
 pub unsafe fn free(base: *const (), size: usize) -> Result<()> {
-  match libc::munmap(base as *mut _, size) {
+  match unsafe { libc::munmap(base.cast_mut().cast(), size) } {
     0 => Ok(()),
-    _ => Err(Error::SystemCall(io::Error::last_os_error())),
+    _ => Err(Error::last_os_error()),
   }
 }
 
 pub unsafe fn protect(base: *const (), size: usize, protection: Protection) -> Result<()> {
-  match libc::mprotect(base as *mut _, size, protection.to_native()) {
+  match unsafe { libc::mprotect(base.cast_mut().cast(), size, protection.to_native()) } {
     0 => Ok(()),
-    _ => Err(Error::SystemCall(io::Error::last_os_error())),
+    _ => Err(Error::last_os_error()),
   }
 }
 
 pub fn lock(base: *const (), size: usize) -> Result<()> {
   match unsafe { libc::mlock(base.cast(), size) } {
     0 => Ok(()),
-    _ => Err(Error::SystemCall(io::Error::last_os_error())),
+    _ => Err(Error::last_os_error()),
   }
 }
 
 pub fn unlock(base: *const (), size: usize) -> Result<()> {
   match unsafe { libc::munlock(base.cast(), size) } {
     0 => Ok(()),
-    _ => Err(Error::SystemCall(io::Error::last_os_error())),
+    _ => Err(Error::last_os_error()),
   }
 }
 
 impl Protection {
   fn to_native(self) -> libc::c_int {
     // This is directly mapped to its native counterpart to allow users to
-    // include non-standard flags with `Protection::from_bits_unchecked`.
+    // include non-standard flags with `Protection::from_bits_retain`.
     self.bits() as libc::c_int
   }
 }

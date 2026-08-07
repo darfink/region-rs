@@ -1,6 +1,7 @@
 use crate::{Error, Protection, Region, Result};
-use libc::{c_int, c_uint, c_ulong, getpid, sysctl, CTL_KERN, KERN_PROC_VMMAP};
-use std::io;
+use core::mem::{MaybeUninit, size_of};
+use core::ptr;
+use libc::{CTL_KERN, KERN_PROC_VMMAP, c_int, c_uint, c_ulong, getpid, sysctl};
 
 pub struct QueryIter {
   mib: [c_int; 3],
@@ -13,7 +14,7 @@ impl QueryIter {
   pub fn new(origin: *const (), size: usize) -> Result<QueryIter> {
     Ok(QueryIter {
       mib: [CTL_KERN, KERN_PROC_VMMAP, unsafe { getpid() }],
-      vmentry: unsafe { std::mem::zeroed() },
+      vmentry: unsafe { MaybeUninit::zeroed().assume_init() },
       upper_bound: (origin as usize).saturating_add(size),
       previous_boundary: 0,
     })
@@ -28,7 +29,7 @@ impl Iterator for QueryIter {
   type Item = Result<Region>;
 
   fn next(&mut self) -> Option<Self::Item> {
-    let mut len = std::mem::size_of::<kinfo_vmentry>();
+    let mut len = size_of::<kinfo_vmentry>();
 
     // Although it would be preferred to query the information for all virtual
     // pages at once, the system call does not seem to respond consistently. If
@@ -42,13 +43,13 @@ impl Iterator for QueryIter {
         self.mib.len() as c_uint,
         &mut self.vmentry as *mut _ as *mut _,
         &mut len,
-        std::ptr::null_mut(),
+        ptr::null_mut(),
         0,
       )
     };
 
     if result == -1 {
-      return Some(Err(Error::SystemCall(io::Error::last_os_error())));
+      return Some(Err(Error::last_os_error()));
     }
 
     if len == 0 || self.vmentry.kve_end as usize == self.previous_boundary {
@@ -88,7 +89,7 @@ impl Protection {
   }
 }
 
-// These defintions come from <sys/sysctl.h>, describing data returned by the
+// These definitions come from <sys/sysctl.h>, describing data returned by the
 // `KERN_PROC_VMMAP` system call.
 #[repr(C)]
 struct kinfo_vmentry {

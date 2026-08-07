@@ -1,9 +1,10 @@
 use crate::{Error, Protection, Region, Result};
+use core::ffi::c_void;
+use core::ptr;
 use libc::{
-  c_int, c_void, free, getpid, kinfo_getvmmap, kinfo_vmentry, KVME_PROT_EXEC, KVME_PROT_READ,
-  KVME_PROT_WRITE, KVME_TYPE_DEFAULT,
+  KVME_PROT_EXEC, KVME_PROT_READ, KVME_PROT_WRITE, KVME_TYPE_DEFAULT, c_int, free, getpid,
+  kinfo_getvmmap, kinfo_vmentry,
 };
-use std::io;
 
 pub struct QueryIter {
   vmmap: *mut kinfo_vmentry,
@@ -18,7 +19,7 @@ impl QueryIter {
     let vmmap = unsafe { kinfo_getvmmap(getpid(), &mut vmmap_len) };
 
     if vmmap.is_null() {
-      return Err(Error::SystemCall(io::Error::last_os_error()));
+      return Err(Error::last_os_error());
     }
 
     Ok(QueryIter {
@@ -49,7 +50,7 @@ impl Iterator for QueryIter {
 
     self.vmmap_index += 1;
     Some(Ok(Region {
-      base: entry.kve_start as *const _,
+      base: ptr::with_exposed_provenance(entry.kve_start as usize),
       protection: Protection::from_native(entry.kve_protection),
       shared: entry.kve_type == KVME_TYPE_DEFAULT,
       size: (entry.kve_end - entry.kve_start) as _,

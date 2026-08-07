@@ -1,4 +1,5 @@
 use crate::{Error, Protection, Region, Result};
+use core::ptr;
 use mach2::vm_prot::*;
 
 pub struct QueryIter {
@@ -9,7 +10,7 @@ pub struct QueryIter {
 impl QueryIter {
   pub fn new(origin: *const (), size: usize) -> Result<QueryIter> {
     Ok(QueryIter {
-      region_address: origin as _,
+      region_address: origin as mach2::vm_types::mach_vm_address_t,
       upper_bound: (origin as usize).saturating_add(size),
     })
   }
@@ -23,24 +24,20 @@ impl Iterator for QueryIter {
   type Item = Result<Region>;
 
   fn next(&mut self) -> Option<Self::Item> {
-    // The possible memory share modes
     const SHARE_MODES: [u8; 3] = [
       mach2::vm_region::SM_SHARED,
       mach2::vm_region::SM_TRUESHARED,
       mach2::vm_region::SM_SHARED_ALIASED,
     ];
 
-    // Check if the search area has been passed
     if self.region_address as usize >= self.upper_bound {
       return None;
     }
 
     let mut region_size: mach2::vm_types::mach_vm_size_t = 0;
-
-    let mut info: mach2::vm_region::vm_region_submap_info_64 =
-      mach2::vm_region::vm_region_submap_info_64::default();
-
+    let mut info = mach2::vm_region::vm_region_submap_info_64::default();
     let mut depth = u32::MAX;
+
     let result = unsafe {
       mach2::vm::mach_vm_region_recurse(
         mach2::traps::mach_task_self(),
@@ -53,17 +50,15 @@ impl Iterator for QueryIter {
     };
 
     match result {
-      // The end of the process' address space has been reached
       mach2::kern_return::KERN_INVALID_ADDRESS => None,
       mach2::kern_return::KERN_SUCCESS => {
-        // The returned region may have a different address than the request
         if self.region_address as usize >= self.upper_bound {
           return None;
         }
 
         let region = Region {
-          base: self.region_address as *const _,
-          guarded: (info.user_tag == mach2::vm_statistics::VM_MEMORY_GUARD),
+          base: ptr::with_exposed_provenance(self.region_address as usize),
+          guarded: info.user_tag == mach2::vm_statistics::VM_MEMORY_GUARD,
           protection: Protection::from_native(info.protection),
           max_protection: Protection::from_native(info.max_protection),
           shared: SHARE_MODES.contains(&info.share_mode),

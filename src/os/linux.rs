@@ -1,5 +1,8 @@
 use crate::{Error, Protection, Region, Result};
-use std::fs;
+use alloc::string::String;
+use alloc::vec::Vec;
+use core::ffi::CStr;
+use core::ptr;
 
 pub struct QueryIter {
   proc_maps: String,
@@ -9,9 +12,9 @@ pub struct QueryIter {
 
 impl QueryIter {
   pub fn new(origin: *const (), size: usize) -> Result<Self> {
-    // Do not use a buffered reader here to avoid multiple read(2) calls to the
-    // proc file, ensuring a consistent snapshot of the virtual memory.
-    let proc_maps = fs::read_to_string("/proc/self/maps").map_err(Error::SystemCall)?;
+    // Read `/proc/self/maps` through libc so query works without depending on
+    // `std::fs` while still capturing a consistent snapshot.
+    let proc_maps = read_proc_maps()?;
 
     Ok(Self {
       proc_maps,
@@ -32,8 +35,42 @@ impl Iterator for QueryIter {
     let (line, _) = self.proc_maps.get(self.offset..)?.split_once('\n')?;
     self.offset += line.len() + 1;
 
-    Some(parse_procfs_line(line).ok_or_else(|| Error::ProcfsInput(line.to_string())))
+    Some(parse_procfs_line(line).ok_or_else(|| Error::ProcfsInput(line.into())))
   }
+}
+
+fn read_proc_maps() -> Result<String> {
+  let path = CStr::from_bytes_with_nul(b"/proc/self/maps\0").expect("static CStr");
+  let fd = unsafe { libc::open(path.as_ptr(), libc::O_RDONLY) };
+  if fd < 0 {
+    return Err(Error::last_os_error());
+  }
+
+  let mut bytes = Vec::new();
+  let mut buffer = [0u8; 4096];
+
+  loop {
+    let read = unsafe { libc::read(fd, buffer.as_mut_ptr().cast(), buffer.len()) };
+    if read < 0 {
+      let err = Error::last_os_error();
+      unsafe {
+        libc::close(fd);
+      }
+      return Err(err);
+    }
+
+    if read == 0 {
+      break;
+    }
+
+    bytes.extend_from_slice(&buffer[..read as usize]);
+  }
+
+  unsafe {
+    libc::close(fd);
+  }
+
+  String::from_utf8(bytes).map_err(|error| Error::ProcfsInput(error.to_string()))
 }
 
 /// Parses flags from /proc/[pid]/maps (e.g 'r--p').
@@ -62,7 +99,7 @@ fn parse_procfs_line(input: &str) -> Option<Region> {
   let (protection, shared) = parse_procfs_flags(flags);
 
   Some(Region {
-    base: lower as *const _,
+    base: ptr::without_provenance(lower),
     protection,
     shared,
     size: upper - lower,
@@ -74,6 +111,7 @@ fn parse_procfs_line(input: &str) -> Option<Region> {
 mod tests {
   use super::{parse_procfs_flags, parse_procfs_line};
   use crate::Protection;
+  use core::ptr;
 
   #[test]
   fn procfs_flags_are_parsed() {
@@ -92,7 +130,7 @@ mod tests {
     let line = "00400000-00409000 r-xs 00000000 08:00 16088 /usr/bin/head";
     let region = parse_procfs_line(line).unwrap();
 
-    assert_eq!(region.as_ptr(), 0x40_0000 as *mut ());
+    assert_eq!(region.as_ptr(), ptr::without_provenance::<()>(0x40_0000));
     assert_eq!(region.protection(), Protection::READ_EXECUTE);
     assert_eq!(region.len(), 0x9000);
     assert!(!region.is_guarded());

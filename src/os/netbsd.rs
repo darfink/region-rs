@@ -1,6 +1,7 @@
 use crate::{Error, Protection, Region, Result};
-use libc::{c_char, c_int, c_void, free, getpid, pid_t};
-use std::io;
+use core::ffi::{c_char, c_int, c_void};
+use core::ptr;
+use libc::{free, getpid, pid_t};
 
 pub struct QueryIter {
   vmmap: *mut kinfo_vmentry,
@@ -15,7 +16,7 @@ impl QueryIter {
     let vmmap = unsafe { kinfo_getvmmap(getpid(), &mut vmmap_len) };
 
     if vmmap.is_null() {
-      return Err(Error::SystemCall(io::Error::last_os_error()));
+      return Err(Error::last_os_error());
     }
 
     Ok(QueryIter {
@@ -39,12 +40,12 @@ impl Iterator for QueryIter {
       return None;
     }
 
-    let offset = self.vmmap_index * std::mem::size_of::<kinfo_vmentry>();
+    let offset = self.vmmap_index * core::mem::size_of::<kinfo_vmentry>();
     let entry = unsafe { &*((self.vmmap as *const c_void).add(offset) as *const kinfo_vmentry) };
 
     self.vmmap_index += 1;
     Some(Ok(Region {
-      base: entry.kve_start as *const _,
+      base: ptr::with_exposed_provenance(entry.kve_start as usize),
       protection: Protection::from_native(entry.kve_protection as i32),
       max_protection: Protection::from_native(entry.kve_max_protection as i32),
       shared: (entry.kve_flags & KVME_FLAG_COW as u32) == 0,
@@ -75,7 +76,7 @@ impl Protection {
   }
 }
 
-// These defintions come from <sys/sysctl.h>, describing data returned by the
+// These definitions come from <sys/sysctl.h>, describing data returned by the
 // `kinfo_getvmmap` system call.
 #[repr(C)]
 struct kinfo_vmentry {
@@ -101,13 +102,13 @@ struct kinfo_vmentry {
   kve_path: [[c_char; 32]; 32],
 }
 
-const KVME_FLAG_COW: c_int = 0x00000001;
-const KVME_PROT_READ: c_int = 0x00000001;
-const KVME_PROT_WRITE: c_int = 0x00000002;
-const KVME_PROT_EXEC: c_int = 0x00000004;
+const KVME_FLAG_COW: c_int = 0x0000_0001;
+const KVME_PROT_READ: c_int = 0x0000_0001;
+const KVME_PROT_WRITE: c_int = 0x0000_0002;
+const KVME_PROT_EXEC: c_int = 0x0000_0004;
 
 #[link(name = "util")]
-extern "C" {
+unsafe extern "C" {
   fn kinfo_getvmmap(pid: pid_t, cntp: *mut c_int) -> *mut kinfo_vmentry;
 }
 
