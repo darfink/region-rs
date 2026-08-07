@@ -3,7 +3,7 @@ use core::cmp::{max, min};
 use core::ffi::c_void;
 use core::mem::{MaybeUninit, size_of};
 use core::ptr;
-use core::sync::OnceLock;
+use core::sync::Once;
 use windows_sys::Win32::System::Memory::{
   MEM_COMMIT, MEM_PRIVATE, MEM_RELEASE, MEM_RESERVE, MEMORY_BASIC_INFORMATION, PAGE_EXECUTE,
   PAGE_EXECUTE_READ, PAGE_EXECUTE_READWRITE, PAGE_EXECUTE_WRITECOPY, PAGE_GUARD, PAGE_NOACCESS,
@@ -155,7 +155,6 @@ pub fn unlock(base: *const (), size: usize) -> Result<()> {
   }
 }
 
-
 // `SYSTEM_INFO` contains two `*mut c_void` pointers, but they are only used as
 // numerical values and never dereferenced. Hence, it's safe to share.
 struct SystemInfo(SYSTEM_INFO);
@@ -164,17 +163,20 @@ unsafe impl Send for SystemInfo {}
 unsafe impl Sync for SystemInfo {}
 
 fn system_info() -> &'static SYSTEM_INFO {
-  static INFO: OnceLock<SystemInfo> = OnceLock::new();
+  static INIT: Once = Once::new();
+  static mut INFO: MaybeUninit<SystemInfo> = MaybeUninit::uninit();
 
-  &INFO
-    .get_or_init(|| {
-      let mut info = MaybeUninit::<SYSTEM_INFO>::uninit();
-      unsafe {
-        GetNativeSystemInfo(info.as_mut_ptr());
-        SystemInfo(info.assume_init())
-      }
-    })
-    .0
+  INIT.call_once(|| {
+    let mut info = MaybeUninit::<SYSTEM_INFO>::uninit();
+    unsafe {
+      GetNativeSystemInfo(info.as_mut_ptr());
+      // SAFETY: call_once guarantees single-threaded initialization.
+      INFO.write(SystemInfo(info.assume_init()));
+    }
+  });
+
+  // SAFETY: INFO is initialized exactly once above before any reader reaches here.
+  unsafe { &INFO.assume_init_ref().0 }
 }
 
 impl Protection {

@@ -59,6 +59,12 @@ jobs:
         with:
           targets: ${{ matrix.target }}
 
+      - name: Install i686 Linux libraries
+        if: matrix.target == 'i686-unknown-linux-gnu'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y gcc-multilib libc6-dev-i386
+
       - name: Install cross
         if: matrix.use-cross
         uses: taiki-e/install-action@v2

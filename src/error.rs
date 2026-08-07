@@ -55,19 +55,21 @@ impl Error {
 fn last_os_error_code() -> i32 {
   #[cfg(unix)]
   {
-    // Prefer the portable errno accessor when available.
     #[cfg(any(target_os = "linux", target_os = "hurd", target_os = "fuchsia"))]
     unsafe {
       *libc::__errno_location()
     }
 
+    // Android / NetBSD / OpenBSD expose `__errno`.
+    #[cfg(any(target_os = "android", target_os = "netbsd", target_os = "openbsd"))]
+    unsafe {
+      *libc::__errno()
+    }
+
     #[cfg(any(
-      target_os = "android",
       target_os = "macos",
       target_os = "ios",
       target_os = "freebsd",
-      target_os = "openbsd",
-      target_os = "netbsd",
       target_os = "dragonfly"
     ))]
     unsafe {
