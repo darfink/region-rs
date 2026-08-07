@@ -146,8 +146,11 @@ pub fn query<T>(address: *const T) -> Result<Region> {
 ///   .collect::<Result<Vec<_>>>()?;
 ///
 /// assert!(!region.is_empty());
-/// assert!(region.iter().any(|r| r.as_range().contains(&(data.as_ptr() as usize))));
-/// assert_eq!(region[0].protection(), region::Protection::READ_WRITE);
+/// let containing = region
+///   .iter()
+///   .find(|r| r.as_range().contains(&(data.as_ptr() as usize)))
+///   .expect("stack data should be mapped");
+/// assert_eq!(containing.protection(), region::Protection::READ_WRITE);
 /// # Ok(())
 /// # }
 /// ```
