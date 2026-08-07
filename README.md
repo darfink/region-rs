@@ -26,7 +26,7 @@ Continuously tested against:
 Also checked / supported where practical:
 
 - Illumos
-- GNU/Hurd
+- GNU/Hurd (code support; `rust-std` is not currently available via rustup CI)
 - Redox (allocation/protection; region querying is not yet available)
 
 ## Installation

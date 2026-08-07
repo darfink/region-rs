@@ -2,7 +2,6 @@ use crate::{Error, Protection, Region, Result};
 use alloc::format;
 use alloc::vec::Vec;
 use core::mem::size_of;
-use core::ptr;
 
 pub struct QueryIter {
   vmmap: Vec<u8>,

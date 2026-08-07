@@ -3,8 +3,7 @@ use core::cmp::{max, min};
 use core::ffi::c_void;
 use core::mem::{MaybeUninit, size_of};
 use core::ptr;
-use core::sync::atomic::{AtomicUsize, Ordering};
-use windows_sys::Win32::Foundation::GetLastError;
+use core::sync::OnceLock;
 use windows_sys::Win32::System::Memory::{
   MEM_COMMIT, MEM_PRIVATE, MEM_RELEASE, MEM_RESERVE, MEMORY_BASIC_INFORMATION, PAGE_EXECUTE,
   PAGE_EXECUTE_READ, PAGE_EXECUTE_READWRITE, PAGE_EXECUTE_WRITECOPY, PAGE_GUARD, PAGE_NOACCESS,
@@ -52,7 +51,7 @@ impl Iterator for QueryIter {
       };
 
       if bytes == 0 {
-        return Some(Err(Error::SystemCall(last_error())));
+        return Some(Err(Error::last_os_error()));
       }
 
       let info = unsafe { info.assume_init() };
@@ -105,7 +104,7 @@ pub unsafe fn alloc(base: *const (), size: usize, protection: Protection) -> Res
   };
 
   if allocation.is_null() {
-    return Err(Error::SystemCall(last_error()));
+    return Err(Error::last_os_error());
   }
 
   Ok(allocation.cast())
@@ -113,7 +112,7 @@ pub unsafe fn alloc(base: *const (), size: usize, protection: Protection) -> Res
 
 pub unsafe fn free(base: *const (), _size: usize) -> Result<()> {
   match unsafe { VirtualFree(base.cast_mut().cast(), 0, MEM_RELEASE) } {
-    0 => Err(Error::SystemCall(last_error())),
+    0 => Err(Error::last_os_error()),
     _ => Ok(()),
   }
 }
@@ -130,7 +129,7 @@ pub unsafe fn protect(base: *const (), size: usize, protection: Protection) -> R
   };
 
   if result == 0 {
-    Err(Error::SystemCall(last_error()))
+    Err(Error::last_os_error())
   } else {
     Ok(())
   }
@@ -140,7 +139,7 @@ pub fn lock(base: *const (), size: usize) -> Result<()> {
   let result = unsafe { VirtualLock(base.cast_mut().cast(), size) };
 
   if result == 0 {
-    Err(Error::SystemCall(last_error()))
+    Err(Error::last_os_error())
   } else {
     Ok(())
   }
@@ -150,15 +149,12 @@ pub fn unlock(base: *const (), size: usize) -> Result<()> {
   let result = unsafe { VirtualUnlock(base.cast_mut().cast(), size) };
 
   if result == 0 {
-    Err(Error::SystemCall(last_error()))
+    Err(Error::last_os_error())
   } else {
     Ok(())
   }
 }
 
-fn last_error() -> i32 {
-  unsafe { GetLastError() as i32 }
-}
 
 // `SYSTEM_INFO` contains two `*mut c_void` pointers, but they are only used as
 // numerical values and never dereferenced. Hence, it's safe to share.
@@ -168,25 +164,17 @@ unsafe impl Send for SystemInfo {}
 unsafe impl Sync for SystemInfo {}
 
 fn system_info() -> &'static SYSTEM_INFO {
-  static INFO: AtomicUsize = AtomicUsize::new(0);
-  static mut STORAGE: MaybeUninit<SystemInfo> = MaybeUninit::uninit();
+  static INFO: OnceLock<SystemInfo> = OnceLock::new();
 
-  let cached = INFO.load(Ordering::Acquire);
-  if cached != 0 {
-    return unsafe { &(*(cached as *const SystemInfo)).0 };
-  }
-
-  let mut info = MaybeUninit::<SYSTEM_INFO>::uninit();
-  unsafe {
-    GetNativeSystemInfo(info.as_mut_ptr());
-    STORAGE.write(SystemInfo(info.assume_init()));
-  }
-
-  let ptr = unsafe { STORAGE.as_ptr() as usize };
-  match INFO.compare_exchange(0, ptr, Ordering::AcqRel, Ordering::Acquire) {
-    Ok(_) => unsafe { &(*STORAGE.as_ptr()).0 },
-    Err(existing) => unsafe { &(*(existing as *const SystemInfo)).0 },
-  }
+  &INFO
+    .get_or_init(|| {
+      let mut info = MaybeUninit::<SYSTEM_INFO>::uninit();
+      unsafe {
+        GetNativeSystemInfo(info.as_mut_ptr());
+        SystemInfo(info.assume_init())
+      }
+    })
+    .0
 }
 
 impl Protection {

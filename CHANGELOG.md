@@ -12,7 +12,7 @@ All notable changes to this project will be documented in this file.
 - Added `#![no_std]` support with an optional `std` feature (enabled by
   default). The crate always uses `core`/`alloc` instead of assuming the
   standard library.
-- Added GNU/Hurd support via the Linux `/proc/self/maps` query backend.
+- Added GNU/Hurd support via the Linux `/proc/self/maps` query backend. CI currently omits a Hurd check job because `rust-std` for the target is not available via rustup.
 - Added Redox OS support for allocation / protection / locking. Region querying
   is not available there yet and returns `Error::UnmappedRegion`.
 - Added `Region::max_protection()`.
