@@ -20,6 +20,7 @@ All notable changes to this project will be documented in this file.
   reservations.
 
 ### Changed
+- OpenBSD now uses `libc::kinfo_vmentry` / `KVE_*` instead of a local copy (thanks [@devnexen](https://github.com/devnexen); closes #20).
 
 - Bumped the crate edition from 2018 to 2024.
 - Upgraded `bitflags` to 2.x.

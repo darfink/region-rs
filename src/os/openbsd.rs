@@ -1,7 +1,10 @@
 use crate::{Error, Protection, Region, Result};
 use core::mem::{MaybeUninit, size_of};
 use core::ptr;
-use libc::{CTL_KERN, KERN_PROC_VMMAP, c_int, c_uint, c_ulong, getpid, sysctl};
+use libc::{
+  CTL_KERN, KERN_PROC_VMMAP, KVE_ET_COPYONWRITE, KVE_PROT_EXEC, KVE_PROT_READ, KVE_PROT_WRITE,
+  c_int, c_uint, getpid, kinfo_vmentry, sysctl,
+};
 
 pub struct QueryIter {
   mib: [c_int; 3],
@@ -57,7 +60,7 @@ impl Iterator for QueryIter {
     }
 
     let region = Region {
-      base: self.vmentry.kve_start as *const _,
+      base: ptr::with_exposed_provenance(self.vmentry.kve_start as usize),
       protection: Protection::from_native(self.vmentry.kve_protection),
       max_protection: Protection::from_native(self.vmentry.kve_max_protection),
       shared: (self.vmentry.kve_etype & KVE_ET_COPYONWRITE) == 0,
@@ -88,30 +91,6 @@ impl Protection {
       .fold(Protection::NONE, |acc, (_, prot)| acc | *prot)
   }
 }
-
-// These definitions come from <sys/sysctl.h>, describing data returned by the
-// `KERN_PROC_VMMAP` system call.
-#[repr(C)]
-struct kinfo_vmentry {
-  kve_start: c_ulong,
-  kve_end: c_ulong,
-  kve_guard: c_ulong,
-  kve_fspace: c_ulong,
-  kve_fspace_augment: c_ulong,
-  kve_offset: u64,
-  kve_wired_count: c_int,
-  kve_etype: c_int,
-  kve_protection: c_int,
-  kve_max_protection: c_int,
-  kve_advice: c_int,
-  kve_inheritance: c_int,
-  kve_flags: u8,
-}
-
-const KVE_PROT_READ: c_int = 1;
-const KVE_PROT_WRITE: c_int = 2;
-const KVE_PROT_EXEC: c_int = 4;
-const KVE_ET_COPYONWRITE: c_int = 4;
 
 #[cfg(test)]
 mod tests {
