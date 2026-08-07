@@ -12,7 +12,7 @@ All notable changes to this project will be documented in this file.
 - Added `#![no_std]` support with an optional `std` feature (enabled by
   default). The crate always uses `core`/`alloc` instead of assuming the
   standard library.
-- Added GNU/Hurd support via the Linux `/proc/self/maps` query backend. CI currently omits a Hurd check job because `rust-std` for the target is not available via rustup.
+- Added GNU/Hurd support via the Linux `/proc/self/maps` query backend. CI compile-checks Hurd with nightly `-Zbuild-std=core,alloc` because prebuilt `rust-std` is unavailable via rustup.
 - Added Redox OS support for allocation / protection / locking. Region querying
   is not available there yet and returns `Error::UnmappedRegion`.
 - Added `Region::max_protection()`.
@@ -32,6 +32,8 @@ All notable changes to this project will be documented in this file.
 - On Windows, `alloc(..., Protection::NONE)` now reserves address space without
   committing pages.
 - Modernized GitHub Actions workflows:
+  - bumped `actions/checkout` to v6 and migrated BSD jobs to CPA custom shell (`cpa.sh`)
+  - added Hurd compile coverage via nightly `-Zbuild-std=core,alloc`
   - moved Android to compile-check coverage while cross linking is broken
   - replaced unmaintained `actions-rs/*` usage
   - updated checkout / toolchain / Pages deploy actions

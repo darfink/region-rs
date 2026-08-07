@@ -25,13 +25,14 @@ jobs:
           - target: x86_64-unknown-linux-musl
             os: ubuntu-latest
 
-          # Cross-compiled Linux / Android
+          # Cross-compiled Linux
           - target: armv7-unknown-linux-gnueabihf
             os: ubuntu-latest
             use-cross: true
           - target: aarch64-unknown-linux-gnu
             os: ubuntu-latest
             use-cross: true
+
           # Windows
           - target: i686-pc-windows-msvc
             os: windows-latest
@@ -48,7 +49,7 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Install Rust toolchain
         uses: dtolnay/rust-toolchain@stable
@@ -78,6 +79,9 @@ jobs:
   test-bsd:
     name: Test (${{ matrix.target }})
     runs-on: ubuntu-latest
+    defaults:
+      run:
+        shell: cpa.sh {0}
     strategy:
       fail-fast: false
       matrix:
@@ -96,21 +100,32 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
-      - name: Run tests
+      - name: Start VM
         uses: cross-platform-actions/action@v1.3.0
         with:
           operating_system: ${{ matrix.os }}
           architecture: x86-64
           version: ${{ matrix.os-version }}
-          run: |
-            ${{ matrix.prepare }}
-            ${{ matrix.install || format('
-              curl https://sh.rustup.rs -sSf | sh -s -- -q -y --profile minimal --default-toolchain stable --target {0}
-              . "$HOME/.cargo/env"
-            ', matrix.target) }}
-            cargo test
+
+      - name: Prepare packages
+        if: matrix.prepare != ''
+        run: ${{ matrix.prepare }}
+
+      - name: Install Rust
+        run: |
+          ${{ matrix.install || format('
+            curl https://sh.rustup.rs -sSf | sh -s -- -q -y --profile minimal --default-toolchain stable --target {0}
+            . "$HOME/.cargo/env"
+          ', matrix.target) }}
+
+      - name: Run tests
+        run: |
+          if [ -f "$HOME/.cargo/env" ]; then
+            . "$HOME/.cargo/env"
+          fi
+          cargo test
 
   check:
     name: Check (${{ matrix.target }})
@@ -130,7 +145,7 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Install Rust toolchain
         uses: dtolnay/rust-toolchain@master
@@ -141,12 +156,34 @@ jobs:
       - name: Check
         run: cargo +${{ matrix.toolchain }} check --target ${{ matrix.target }}
 
+  check-hurd:
+    name: Check (x86_64-unknown-hurd-gnu)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      # Hurd is Tier 3 and does not ship prebuilt rust-std via rustup. Build only the
+      # no_std + alloc core from source so we still get compile coverage for the
+      # Linux-like /proc maps backend without requiring a full std target image.
+      - name: Install nightly + rust-src
+        uses: dtolnay/rust-toolchain@nightly
+        with:
+          components: rust-src
+
+      - name: Check with build-std (no_std)
+        run: >
+          cargo +nightly check
+          -Z build-std=core,alloc
+          --target x86_64-unknown-hurd-gnu
+          --no-default-features
+
   msrv:
     name: MSRV
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Install Rust 1.85.0
         uses: dtolnay/rust-toolchain@1.85.0
@@ -159,7 +196,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Install Rust toolchain
         uses: dtolnay/rust-toolchain@stable

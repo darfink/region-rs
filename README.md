@@ -27,7 +27,7 @@ Also checked / supported where practical:
 
 - Android (compile-checked; full cross tests currently blocked by toolchain linking)
 - Illumos
-- GNU/Hurd (code support; `rust-std` is not currently available via rustup CI)
+- GNU/Hurd (compile-checked via nightly `-Zbuild-std=core,alloc`; no prebuilt `rust-std`)
 - Redox (allocation/protection; region querying is not yet available)
 
 ## Installation
