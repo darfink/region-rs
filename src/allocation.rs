@@ -8,7 +8,6 @@ use crate::{Error, Protection, Result, os, page, util};
 ///
 /// This handle does not dereference to a slice, since the underlying memory may
 /// have been created with [`Protection::NONE`].
-#[allow(clippy::len_without_is_empty)]
 pub struct Allocation {
   base: *const (),
   size: usize,
@@ -63,6 +62,12 @@ impl Allocation {
   #[inline(always)]
   pub fn len(&self) -> usize {
     self.size
+  }
+
+  /// Returns whether the allocation is empty or not.
+  #[inline(always)]
+  pub fn is_empty(&self) -> bool {
+    self.size == 0
   }
 
   /// Decomposes an `Allocation` into its raw components: `(pointer, length)`.

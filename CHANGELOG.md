@@ -16,6 +16,10 @@ All notable changes to this project will be documented in this file.
 - Added Redox OS support for allocation / protection / locking. Region querying
   is not available there yet and returns `Error::UnmappedRegion`.
 - Added `Region::max_protection()`.
+- Added `Allocation::is_empty()`.
+- Under the `std` feature, `Error::SystemCall` displays via `std::io::Error`
+  and converts with `From<Error> for std::io::Error` /
+  `Error::into_os_error()`.
 - Added a Windows-only regression covering large `Protection::NONE` address-space
   reservations.
 
@@ -30,6 +34,7 @@ All notable changes to this project will be documented in this file.
 - Made `unlock` `unsafe`.
 - Changed `Error::SystemCall` to carry a raw OS error code (`i32`) instead of
   `std::io::Error`, so system-call failures remain representable without `std`.
+  With `std` enabled, display/conversion still go through `io::Error`.
 - On Windows, `alloc(..., Protection::NONE)` now reserves address space without
   committing pages.
 - Modernized GitHub Actions workflows:
