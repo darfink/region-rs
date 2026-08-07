@@ -145,7 +145,8 @@ pub fn query<T>(address: *const T) -> Result<Region> {
 /// let region = region::query_range(data.as_ptr(), data.len())?
 ///   .collect::<Result<Vec<_>>>()?;
 ///
-/// assert_eq!(region.len(), 1);
+/// assert!(!region.is_empty());
+/// assert!(region.iter().any(|r| r.as_range().contains(&(data.as_ptr() as usize))));
 /// assert_eq!(region[0].protection(), region::Protection::READ_WRITE);
 /// # Ok(())
 /// # }

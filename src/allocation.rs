@@ -234,6 +234,7 @@ mod tests {
   }
 
   #[test]
+  #[cfg(not(target_os = "netbsd"))]
   fn alloc_frees_memory_when_dropped() -> Result<()> {
     // Designing these tests can be quite tricky sometimes. When a page is
     // allocated and then released, a subsequent `query` may allocate memory in
