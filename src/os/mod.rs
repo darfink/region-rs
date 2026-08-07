@@ -45,3 +45,9 @@ mod netbsd;
 
 #[cfg(target_os = "netbsd")]
 pub use self::netbsd::*;
+
+#[cfg(target_os = "redox")]
+mod redox;
+
+#[cfg(target_os = "redox")]
+pub use self::redox::*;
