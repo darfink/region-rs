@@ -53,7 +53,6 @@ region = { version = "4.0.0", default-features = false }
 ```rust
 use region::Protection;
 
-# fn main() -> region::Result<()> {
 let data = [0xDE, 0xAD, 0xBE, 0xEF];
 
 // Page size
@@ -78,9 +77,6 @@ let handle = unsafe {
 
 // VirtualLock | mlock
 let guard = region::lock(data.as_ptr(), data.len())?;
-# let _ = (pz, q, qr, alloc, handle, guard);
-# Ok(())
-# }
 ```
 
 ## Compatibility notes
