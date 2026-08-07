@@ -239,19 +239,22 @@ mod tests {
     // allocated and then released, a subsequent `query` may allocate memory in
     // the same location that has just been freed. For instance, NetBSD's
     // kinfo_getvmmap uses `mmap` internally, which can lead to potentially
-    // confusing outcomes. To mitigate this, an additional buffer region is
-    // allocated to ensure that any memory allocated indirectly through `query`
-    // occupies a separate location in memory.
-    let (start, _buffer) = (
-      alloc(1, Protection::READ_WRITE)?,
-      alloc(1, Protection::READ_WRITE)?,
-    );
+    // confusing outcomes. Retain several buffer regions so any memory allocated
+    // indirectly through `query` occupies a separate location in memory.
+    let buffers = (0..8)
+      .map(|_| alloc(1, Protection::READ_WRITE))
+      .collect::<Result<alloc::vec::Vec<_>>>()?;
+    let start = alloc(1, Protection::READ_WRITE)?;
 
     let base = start.as_ptr::<()>();
     drop(start);
 
     let query = crate::query(base);
-    assert!(matches!(query, Err(Error::UnmappedRegion)));
+    assert!(
+      matches!(query, Err(Error::UnmappedRegion)),
+      "expected unmapped region after free, got {query:?}; retained {} buffers",
+      buffers.len()
+    );
     Ok(())
   }
 

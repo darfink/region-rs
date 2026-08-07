@@ -295,9 +295,8 @@ mod tests {
       query_range(map.as_ptr(), page::size() * pages.len())?.collect::<Result<Vec<_>>>()?;
 
     // Region descriptors may be merged or split depending on the OS query
-    // backend; compare by page rather than assuming a 1:1 region count.
+    // backend; compare by page rather than assuming a 1:1 region count/base.
     assert!(!regions.is_empty());
-    assert_eq!(regions[0].as_ptr(), map.as_ptr());
     for (index, expected) in pages.iter().enumerate() {
       let address = unsafe { map.as_ptr().add(page::size() * index) };
       let region = regions
