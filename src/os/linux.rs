@@ -1,7 +1,6 @@
 use crate::{Error, Protection, Region, Result};
 use alloc::string::{String, ToString};
 use alloc::vec::Vec;
-use core::ffi::CStr;
 use core::ptr;
 
 pub struct QueryIter {
@@ -40,8 +39,7 @@ impl Iterator for QueryIter {
 }
 
 fn read_proc_maps() -> Result<String> {
-  let path = CStr::from_bytes_with_nul(b"/proc/self/maps\0").expect("static CStr");
-  let fd = unsafe { libc::open(path.as_ptr(), libc::O_RDONLY) };
+  let fd = unsafe { libc::open(c"/proc/self/maps".as_ptr(), libc::O_RDONLY) };
   if fd < 0 {
     return Err(Error::last_os_error());
   }

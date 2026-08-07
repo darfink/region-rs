@@ -1,9 +1,10 @@
 use crate::{Error, Protection, Region, Result};
+use alloc::boxed::Box;
 use core::cmp::{max, min};
 use core::ffi::c_void;
 use core::mem::{MaybeUninit, size_of};
 use core::ptr;
-use core::sync::Once;
+use core::sync::atomic::{AtomicPtr, Ordering};
 use windows_sys::Win32::System::Memory::{
   MEM_COMMIT, MEM_PRIVATE, MEM_RELEASE, MEM_RESERVE, MEMORY_BASIC_INFORMATION, PAGE_EXECUTE,
   PAGE_EXECUTE_READ, PAGE_EXECUTE_READWRITE, PAGE_EXECUTE_WRITECOPY, PAGE_GUARD, PAGE_NOACCESS,
@@ -163,20 +164,34 @@ unsafe impl Send for SystemInfo {}
 unsafe impl Sync for SystemInfo {}
 
 fn system_info() -> &'static SYSTEM_INFO {
-  static INIT: Once = Once::new();
-  static mut INFO: MaybeUninit<SystemInfo> = MaybeUninit::uninit();
+  // `Once` / `OnceLock` live in `std` on the Windows targets we support, so use
+  // atomics for a `no_std`-friendly one-time cache.
+  static CACHED: AtomicPtr<SystemInfo> = AtomicPtr::new(core::ptr::null_mut());
 
-  INIT.call_once(|| {
-    let mut info = MaybeUninit::<SYSTEM_INFO>::uninit();
-    unsafe {
-      GetNativeSystemInfo(info.as_mut_ptr());
-      // SAFETY: call_once guarantees single-threaded initialization.
-      INFO.write(SystemInfo(info.assume_init()));
-    }
-  });
+  let cached = CACHED.load(Ordering::Acquire);
+  if !cached.is_null() {
+    return unsafe { &(*cached).0 };
+  }
 
-  // SAFETY: INFO is initialized exactly once above before any reader reaches here.
-  unsafe { &INFO.assume_init_ref().0 }
+  let mut info = MaybeUninit::<SYSTEM_INFO>::uninit();
+  unsafe {
+    GetNativeSystemInfo(info.as_mut_ptr());
+  }
+
+  let boxed = Box::new(SystemInfo(unsafe { info.assume_init() }));
+  let ptr = Box::into_raw(boxed);
+  match CACHED.compare_exchange(
+    core::ptr::null_mut(),
+    ptr,
+    Ordering::AcqRel,
+    Ordering::Acquire,
+  ) {
+    Ok(_) => unsafe { &(*ptr).0 },
+    Err(existing) => unsafe {
+      drop(Box::from_raw(ptr));
+      &(*existing).0
+    },
+  }
 }
 
 impl Protection {

@@ -32,6 +32,7 @@ All notable changes to this project will be documented in this file.
 - On Windows, `alloc(..., Protection::NONE)` now reserves address space without
   committing pages.
 - Modernized GitHub Actions workflows:
+  - moved Android to compile-check coverage while cross linking is broken
   - replaced unmaintained `actions-rs/*` usage
   - updated checkout / toolchain / Pages deploy actions
   - added an explicit MSRV CI job

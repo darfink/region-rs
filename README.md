@@ -16,7 +16,7 @@ manipulating virtual memory. It is a thin abstraction over platform APIs such as
 
 Continuously tested against:
 
-- Linux (`gnu` / `musl`, including Android)
+- Linux (`gnu` / `musl`)
 - Windows (`gnu` / `msvc`)
 - macOS
 - FreeBSD
@@ -25,6 +25,7 @@ Continuously tested against:
 
 Also checked / supported where practical:
 
+- Android (compile-checked; full cross tests currently blocked by toolchain linking)
 - Illumos
 - GNU/Hurd (code support; `rust-std` is not currently available via rustup CI)
 - Redox (allocation/protection; region querying is not yet available)

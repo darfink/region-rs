@@ -179,7 +179,7 @@ mod tests {
     all(target_vendor = "apple", target_arch = "aarch64")
   )))]
   fn protect_can_alter_text_segments() {
-    let address = &mut protect_can_alter_text_segments as *mut _ as *mut u8;
+    let address = (&raw mut protect_can_alter_text_segments).cast::<u8>();
     unsafe {
       protect(address, 1, Protection::READ_WRITE_EXECUTE).unwrap();
       *address = 0x90;
@@ -291,10 +291,17 @@ mod tests {
     let regions =
       query_range(map.as_ptr(), page::size() * pages.len())?.collect::<Result<Vec<_>>>()?;
 
-    assert_eq!(regions.len(), 5);
+    // Region descriptors may be merged or split depending on the OS query
+    // backend; compare by page rather than assuming a 1:1 region count.
+    assert!(!regions.is_empty());
     assert_eq!(regions[0].as_ptr(), map.as_ptr());
-    for (page, region) in pages.iter().zip(regions.iter()) {
-      assert_eq!(region.protection(), *page);
+    for (index, expected) in pages.iter().enumerate() {
+      let address = unsafe { map.as_ptr().add(page::size() * index) };
+      let region = regions
+        .iter()
+        .find(|region| region.as_range().contains(&address.addr()))
+        .expect("expected region covering page");
+      assert_eq!(region.protection(), *expected);
     }
 
     Ok(())

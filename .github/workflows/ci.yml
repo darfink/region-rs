@@ -32,10 +32,6 @@ jobs:
           - target: aarch64-unknown-linux-gnu
             os: ubuntu-latest
             use-cross: true
-          - target: aarch64-linux-android
-            os: ubuntu-latest
-            use-cross: true
-
           # Windows
           - target: i686-pc-windows-msvc
             os: windows-latest
@@ -126,6 +122,10 @@ jobs:
           - target: x86_64-unknown-illumos
             toolchain: stable
           - target: x86_64-unknown-redox
+            toolchain: stable
+          # Android runtime testing via cross currently fails to link libunwind in
+          # the stock image; keep compile coverage here instead.
+          - target: aarch64-linux-android
             toolchain: stable
 
     steps:
