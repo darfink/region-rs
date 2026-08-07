@@ -1,3 +1,5 @@
+<div align="center">
+
 # `region-rs`
 
 ## Cross-platform virtual memory API
@@ -6,6 +8,8 @@
 [![crates.io version][crate-shield]][crate]
 [![Documentation][docs-shield]][docs]
 [![License][license-shield]][license]
+
+</div>
 
 This crate provides a cross-platform Rust API for allocating, querying and
 manipulating virtual memory. It is a thin abstraction over platform APIs such as
