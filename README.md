@@ -38,14 +38,14 @@ Also checked / supported where practical:
 
 ```toml
 [dependencies]
-region = "4.0.0"
+region = "4.0.1"
 ```
 
 The default feature set includes `std`. Disable it to use the crate as
 `#![no_std]` + `alloc`:
 
 ```toml
-region = { version = "4.0.0", default-features = false }
+region = { version = "4.0.1", default-features = false }
 ```
 
 ## Example

@@ -31,7 +31,7 @@
 //!
 //! ```toml
 //! [dependencies]
-//! region = "4.0.0"
+//! region = "4.0.1"
 //! ```
 //!
 //! # Features
@@ -41,7 +41,7 @@
 //!
 //! ```toml
 //! [dependencies]
-//! region = { version = "4.0.0", default-features = false }
+//! region = { version = "4.0.1", default-features = false }
 //! ```
 //!
 //! With `std` enabled, [`Error`] implements [`std::error::Error`].
