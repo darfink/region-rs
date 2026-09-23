@@ -6,8 +6,8 @@ All notable changes to this project will be documented in this file.
 
 ### Changed
 
-- Upgraded `mach2` from 0.4 to 0.7 (macOS & iOS), allowing dependents to
-  share a single `mach2` version.
+- Widened the `mach2` requirement from 0.4 to `>=0.4.2, <0.8` (macOS & iOS),
+  allowing dependents to share a single `mach2` version.
 - Depend on `libc` & `mach2` without their default (`std`) features.
 
 ### Fixed
