@@ -4,6 +4,16 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+### Changed
+
+- Widened the `mach2` requirement from 0.4 to `>=0.4.2, <0.8` (macOS & iOS),
+  allowing dependents to share a single `mach2` version.
+- Depend on `libc` & `mach2` without their default (`std`) features.
+
+### Fixed
+
+- Resolved Clippy `ptr_as_ptr` violations on FreeBSD, NetBSD & Windows.
+
 ## [4.0.0] - 2026-08-07
 
 ### Added

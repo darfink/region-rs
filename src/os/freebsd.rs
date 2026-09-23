@@ -1,5 +1,4 @@
 use crate::{Error, Protection, Region, Result};
-use core::ffi::c_void;
 use core::ptr;
 use libc::{
   KVME_PROT_EXEC, KVME_PROT_READ, KVME_PROT_WRITE, KVME_TYPE_DEFAULT, c_int, free, getpid,
@@ -46,7 +45,7 @@ impl Iterator for QueryIter {
     // Since the struct size is given in the struct, it can be used future-proof
     // (the definition is not required to be updated when new fields are added).
     let offset = unsafe { self.vmmap_index * (*self.vmmap).kve_structsize as usize };
-    let entry = unsafe { &*((self.vmmap as *const c_void).add(offset) as *const kinfo_vmentry) };
+    let entry = unsafe { &*self.vmmap.cast::<u8>().add(offset).cast::<kinfo_vmentry>() };
 
     self.vmmap_index += 1;
     Some(Ok(Region {
@@ -61,7 +60,7 @@ impl Iterator for QueryIter {
 
 impl Drop for QueryIter {
   fn drop(&mut self) {
-    unsafe { free(self.vmmap as *mut c_void) }
+    unsafe { free(self.vmmap.cast()) }
   }
 }
 

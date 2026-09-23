@@ -156,6 +156,33 @@ jobs:
       - name: Check
         run: cargo +${{ matrix.toolchain }} check --target ${{ matrix.target }}
 
+  check-mach2:
+    name: Check (mach2 ${{ matrix.mach2 }})
+    runs-on: macos-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        # The oldest and newest versions accepted by the `mach2` requirement
+        mach2: ["0.4.3", "0.7.0"]
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: aarch64-apple-ios
+
+      - name: Pin mach2
+        run: cargo update -p mach2 --precise ${{ matrix.mach2 }}
+
+      - name: Test
+        run: cargo test -- --test-threads=1
+
+      - name: Check iOS
+        run: cargo check --target aarch64-apple-ios --all-targets
+
   check-hurd:
     name: Check (x86_64-unknown-hurd-gnu)
     runs-on: ubuntu-latest

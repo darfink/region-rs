@@ -250,18 +250,24 @@ mod tests {
     let buffers = (0..8)
       .map(|_| alloc(1, Protection::READ_WRITE))
       .collect::<Result<alloc::vec::Vec<_>>>()?;
-    let start = alloc(1, Protection::READ_WRITE)?;
+    // Tests run concurrently, so another thread may map memory at the freed
+    // address before it is queried. Retry to rule out such a race.
+    let mut query = Ok(crate::Region::default());
+    for _ in 0..16 {
+      let start = alloc(1, Protection::READ_WRITE)?;
+      let base = start.as_ptr::<()>();
+      drop(start);
 
-    let base = start.as_ptr::<()>();
-    drop(start);
+      query = crate::query(base);
+      if matches!(query, Err(Error::UnmappedRegion)) {
+        return Ok(());
+      }
+    }
 
-    let query = crate::query(base);
-    assert!(
-      matches!(query, Err(Error::UnmappedRegion)),
+    panic!(
       "expected unmapped region after free, got {query:?}; retained {} buffers",
       buffers.len()
     );
-    Ok(())
   }
 
   #[test]
