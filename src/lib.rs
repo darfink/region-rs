@@ -467,7 +467,7 @@ mod tests {
           )
         };
         assert_eq!(address, page_address);
-        page_address = unsafe { (address as *mut u8).add(page::size()) }.cast();
+        page_address = unsafe { address.cast::<u8>().add(page::size()) }.cast();
       }
 
       AllocatedPages(allocation_base.cast(), total_size)

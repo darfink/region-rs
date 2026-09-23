@@ -1,5 +1,5 @@
 use crate::{Error, Protection, Region, Result};
-use core::ffi::{c_char, c_int, c_void};
+use core::ffi::{c_char, c_int};
 use core::ptr;
 use libc::{free, getpid, pid_t};
 
@@ -41,7 +41,7 @@ impl Iterator for QueryIter {
     }
 
     let offset = self.vmmap_index * core::mem::size_of::<kinfo_vmentry>();
-    let entry = unsafe { &*((self.vmmap as *const c_void).add(offset) as *const kinfo_vmentry) };
+    let entry = unsafe { &*self.vmmap.cast::<u8>().add(offset).cast::<kinfo_vmentry>() };
 
     self.vmmap_index += 1;
     Some(Ok(Region {
@@ -57,7 +57,7 @@ impl Iterator for QueryIter {
 
 impl Drop for QueryIter {
   fn drop(&mut self) {
-    unsafe { free(self.vmmap as *mut c_void) }
+    unsafe { free(self.vmmap.cast()) }
   }
 }
 
