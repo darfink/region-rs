@@ -1,5 +1,5 @@
 (function() {
-    const implementors = Object.fromEntries([["region",[["impl <a class=\"trait\" href=\"https://doc.rust-lang.org/1.97.1/core/ops/bit/trait.BitXorAssign.html\" title=\"trait core::ops::bit::BitXorAssign\">BitXorAssign</a> for <a class=\"struct\" href=\"region/struct.Protection.html\" title=\"struct region::Protection\">Protection</a>",0]]]]);
+    const implementors = Object.fromEntries([["region",[["impl <a class=\"trait\" href=\"https://doc.rust-lang.org/1.99.1/core/ops/bit/trait.BitXorAssign.html\" title=\"trait core::ops::bit::BitXorAssign\">BitXorAssign</a> for <a class=\"struct\" href=\"region/struct.Protection.html\" title=\"struct region::Protection\">Protection</a>",0]]]]);
     if (window.register_implementors) {
         window.register_implementors(implementors);
     } else {
