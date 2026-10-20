@@ -93,7 +93,7 @@ impl Error {
   /// Converts this error into a [`std::io::Error`].
   ///
   /// System-call failures preserve the raw OS code. Other variants become
-  /// [`std::io::Error::other`].
+  /// [`std::io::Error::other`](https://doc.rust-lang.org/std/io/struct.Error.html#method.other).
   #[cfg(feature = "std")]
   #[inline]
   pub fn into_io_error(self) -> std::io::Error {
