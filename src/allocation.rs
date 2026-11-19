@@ -64,7 +64,7 @@ impl Allocation {
     self.size
   }
 
-  /// Returns whether the allocation is empty or not.
+  /// Returns whether the allocation is empty.
   #[inline(always)]
   pub fn is_empty(&self) -> bool {
     self.size == 0
@@ -72,26 +72,27 @@ impl Allocation {
 
   /// Decomposes an `Allocation` into its raw components: `(pointer, length)`.
   ///
-  /// After calling this function, the caller is responsible for the previously
-  /// managed allocation.
+  /// After calling this function, the caller is responsible for freeing the
+  /// underlying allocation.
   ///
-  /// For creating an `Allocation` from raw components, see [`Self::from_raw_parts`].
+  /// To reconstruct an `Allocation` from raw components, see
+  /// [`Self::from_raw_parts`].
   #[inline]
   pub fn into_raw_parts<T>(self) -> (*mut T, usize) {
     let mut this = ManuallyDrop::new(self);
     (this.as_mut_ptr(), this.len())
   }
 
-  /// Creates a `Allocation` directly from a pointer, and a length.
+  /// Creates an `Allocation` directly from a raw pointer and length.
   ///
-  /// For decomposing an `Allocation` into raw components, see
+  /// To decompose an `Allocation` into raw components, see
   /// [`Self::into_raw_parts`].
   ///
   /// # Safety
   ///
-  /// This is highly unsafe because given `ptr` and `length` could not
-  /// be checked as valid allocation, and the caller should guarantee
-  /// that they are valid parts.
+  /// The caller must guarantee that `ptr` and `length` came from a valid
+  /// [`Self::into_raw_parts`] call (or an equivalent OS mapping that can be
+  /// freed by the platform release routine) and have not already been freed.
   #[inline(always)]
   pub unsafe fn from_raw_parts<T>(ptr: *mut T, length: usize) -> Self {
     Self {
@@ -173,10 +174,9 @@ pub fn alloc(size: usize, protection: Protection) -> Result<Allocation> {
 /// Allocates one or more pages of memory, at a specific address, with a defined
 /// protection.
 ///
-/// The returned memory allocation is not guaranteed to reside at the provided
-/// address. E.g. on Windows, new allocations that do not reside within already
-/// reserved memory, are aligned to the operating system's allocation
-/// granularity (most commonly 64KB).
+/// The returned allocation is not guaranteed to reside at the requested
+/// address. For example, on Windows, new allocations outside already-reserved
+/// memory are aligned to the OS allocation granularity (typically 64 KiB).
 ///
 /// # Implementation
 ///

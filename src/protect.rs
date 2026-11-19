@@ -72,13 +72,13 @@ pub unsafe fn protect<T>(address: *const T, size: usize, protection: Protection)
 ///
 /// # Guard
 ///
-/// Remember not to conflate the *black hole* syntax with the ignored, but
-/// unused, variable syntax. Otherwise the [`ProtectGuard`] instantly resets the
-/// protection flags of all pages.
+/// Bind the returned guard to a named variable (such as `_guard`), not `_`.
+/// Assigning to `_` drops the [`ProtectGuard`] immediately and restores the
+/// previous permissions right away:
 ///
 /// ```ignore
-/// let _ = protect_with_handle(...);      // Pages are instantly reset
-/// let _guard = protect_with_handle(...); // Pages are reset once `_guard` is dropped.
+/// let _ = protect_with_handle(...);      // Pages are reset immediately
+/// let _guard = protect_with_handle(...); // Pages are reset when `_guard` drops
 /// ```
 ///
 /// # Parameters
@@ -99,7 +99,7 @@ pub unsafe fn protect<T>(address: *const T, size: usize, protection: Protection)
 ///
 /// # Safety
 ///
-/// See [protect].
+/// See [`protect`].
 #[allow(clippy::missing_inline_in_public_items)]
 pub unsafe fn protect_with_handle<T>(
   address: *const T,
@@ -129,10 +129,10 @@ pub unsafe fn protect_with_handle<T>(
   Ok(ProtectGuard::new(regions))
 }
 
-/// A RAII implementation of a scoped protection guard.
+/// An RAII guard for a scoped protection change.
 ///
-/// When this structure is dropped (falls out of scope), the memory regions'
-/// protection will be reset.
+/// When this guard is dropped, each affected region's previous protection is
+/// restored.
 #[must_use]
 pub struct ProtectGuard {
   regions: Vec<Region>,

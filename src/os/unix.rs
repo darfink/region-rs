@@ -28,7 +28,7 @@ pub unsafe fn alloc(base: *const (), size: usize, protection: Protection) -> Res
     protection,
     Protection::WRITE_EXECUTE | Protection::READ_WRITE_EXECUTE
   ) {
-    // On hardened context, MAP_JIT is necessary (on arm64) to allow W/X'ed regions.
+    // Under macOS Hardened Runtime on arm64, MAP_JIT is required for writable + executable regions.
     flags |= libc::MAP_JIT;
   }
 

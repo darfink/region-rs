@@ -71,7 +71,7 @@ fn read_proc_maps() -> Result<String> {
   String::from_utf8(bytes).map_err(|error| Error::ProcfsInput(error.to_string()))
 }
 
-/// Parses flags from /proc/[pid]/maps (e.g 'r--p').
+/// Parses flags from `/proc/[pid]/maps` (e.g., `'r--p'`).
 fn parse_procfs_flags(protection: &str) -> (Protection, bool) {
   const MAPPINGS: &[Protection] = &[Protection::READ, Protection::WRITE, Protection::EXECUTE];
 

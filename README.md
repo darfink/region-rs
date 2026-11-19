@@ -2,7 +2,7 @@
 
 # `region-rs`
 
-## Cross-platform virtual memory API
+## Cross-platform virtual memory API for Rust
 
 [![GitHub CI Status][github-shield]][github]
 [![crates.io version][crate-shield]][crate]
@@ -11,41 +11,29 @@
 
 </div>
 
-This crate provides a cross-platform Rust API for allocating, querying and
-manipulating virtual memory. It is a thin abstraction over platform APIs such as
-`VirtualQuery`/`VirtualAlloc`/`VirtualLock` on Windows and
-`mprotect`/`mmap`/`mlock` (and friends) on Unix-like systems.
+`region` is a cross-platform Rust API for allocating, querying, locking, and modifying the protection of virtual memory pages. It wraps native OS primitives—such as `VirtualAlloc`, `VirtualQuery`, `VirtualProtect`, and `VirtualLock` on Windows, and `mmap`, `mprotect`, `mlock`, and platform map queries on Unix-like systems—behind one small, `#![no_std]`-compatible interface.
 
-## Platforms
+## Platform support
 
-Continuously tested against:
-
-- Linux (`gnu` / `musl`)
-- Windows (`gnu` / `msvc`)
-- macOS
-- FreeBSD
-- OpenBSD
-- NetBSD
-
-Also checked / supported where practical:
-
-- Android (compile-checked; full cross tests currently blocked by toolchain linking)
-- Illumos
-- GNU/Hurd (compile-checked via nightly `-Zbuild-std=core,alloc`; no prebuilt `rust-std`)
-- Redox (allocation/protection; region querying is not yet available)
+| Tier | Platforms | Notes |
+| --- | --- | --- |
+| Tested in CI | Linux (`gnu`, `musl`), Windows (`msvc`, `gnu`), macOS, FreeBSD, OpenBSD, NetBSD | Full test suite on every push |
+| Compile-checked | iOS, Android, illumos, GNU/Hurd, Redox | Redox supports allocation, protection, and locking; region querying returns `Error::UnmappedRegion`. GNU/Hurd is checked with `-Zbuild-std=core,alloc`. |
 
 ## Installation
 
+Add `region` to your `Cargo.toml`:
+
 ```toml
 [dependencies]
-region = "4.0.1"
+region = "4"
 ```
 
-The default feature set includes `std`. Disable it to use the crate as
-`#![no_std]` + `alloc`:
+The `std` feature is enabled by default (adding `std::error::Error` and `std::io::Error` conversions). Disable default features for `#![no_std]` + `alloc`:
 
 ```toml
-region = { version = "4.0.1", default-features = false }
+[dependencies]
+region = { version = "4", default-features = false }
 ```
 
 ## Example
@@ -53,40 +41,47 @@ region = { version = "4.0.1", default-features = false }
 ```rust
 use region::Protection;
 
-let data = [0xDE, 0xAD, 0xBE, 0xEF];
+fn main() -> region::Result<()> {
+  let data = [0xDE, 0xAD, 0xBE, 0xEF];
 
-// Page size
-let pz = region::page::size();
+  // Query the OS page size
+  let page_size = region::page::size();
 
-// VirtualQuery | '/proc/self/maps'
-let q  = region::query(data.as_ptr())?;
-let qr = region::query_range(data.as_ptr(), data.len())?;
+  // Query mapped memory (VirtualQuery / procfs / mach_vm_region / kinfo)
+  let region = region::query(data.as_ptr())?;
+  let regions = region::query_range(data.as_ptr(), data.len())?;
 
-// VirtualAlloc | mmap
-let alloc = region::alloc(100, Protection::READ_WRITE)?;
+  // Allocate anonymous pages (VirtualAlloc / mmap)
+  let alloc = region::alloc(100, Protection::READ_WRITE)?;
 
-// VirtualProtect | mprotect
-unsafe {
-  region::protect(data.as_ptr(), data.len(), Protection::READ_WRITE_EXECUTE)?;
+  // Change page protection (VirtualProtect / mprotect)
+  unsafe {
+    region::protect(data.as_ptr(), data.len(), Protection::READ_WRITE_EXECUTE)?;
+  }
+
+  // Temporarily change protection; restored when `_guard` is dropped
+  let _guard = unsafe {
+    region::protect_with_handle(data.as_ptr(), data.len(), Protection::READ_WRITE_EXECUTE)?
+  };
+
+  // Lock pages in RAM (VirtualLock / mlock); unlocked when `_lock` is dropped
+  let _lock = region::lock(data.as_ptr(), data.len())?;
+
+  let _ = (page_size, region, regions, alloc);
+  Ok(())
 }
-
-// Temporarily change one or more pages' protection
-let handle = unsafe {
-  region::protect_with_handle(data.as_ptr(), data.len(), Protection::READ_WRITE_EXECUTE)?
-};
-
-// VirtualLock | mlock
-let guard = region::lock(data.as_ptr(), data.len())?;
 ```
 
 ## Compatibility notes
 
-- This is a major release (`4.0.0`): Rust edition is `2024`, MSRV is `1.85`, and
-  a few APIs/error types changed for `no_std` friendliness and safer locking
-  semantics.
-- `bitflags` is now `2.x`. Prefer `Protection::from_bits_retain` over the
-  deprecated `from_bits_unchecked`.
-- `windows-sys` accepts `>=0.52, <=0.61` so dependents can unify versions.
+- **MSRV & edition:** Rust 1.85+, edition 2024.
+- **`bitflags` 2.x:** Prefer the safe `Protection::from_bits_retain` over the deprecated `from_bits_unchecked`.
+- **Dependency ranges:** `windows-sys` accepts `>=0.52, <=0.61` and `mach2` accepts `>=0.4.2, <0.8` so downstream crates can unify on one version.
+- **Upgrading from 3.x:** `unlock` is now `unsafe`, `Error::SystemCall` stores a raw `i32` OS error code (with `as_io_error` / `into_io_error` under `std`), and allocating with `Protection::NONE` on Windows reserves address space without committing physical pages. See [CHANGELOG.md](CHANGELOG.md) for full details.
+
+## License
+
+MIT. See [LICENSE](LICENSE).
 
 <!-- Links -->
 [github-shield]: https://img.shields.io/github/actions/workflow/status/darfink/region-rs/ci.yml?branch=master&label=actions&logo=github&style=for-the-badge
@@ -96,4 +91,4 @@ let guard = region::lock(data.as_ptr(), data.len())?;
 [docs-shield]: https://img.shields.io/badge/docs-crates-green.svg?style=for-the-badge
 [docs]: https://docs.rs/region/
 [license-shield]: https://img.shields.io/crates/l/region.svg?style=for-the-badge
-[license]: https://github.com/darfink/region-rs
+[license]: LICENSE

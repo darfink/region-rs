@@ -12,7 +12,7 @@ pub enum Error {
   ///
   /// This does not necessarily mean that the memory region is available for
   /// allocation. Besides OS-specific semantics, queried addresses outside of a
-  /// process' address range are also identified as unmapped regions.
+  /// process's address range are also reported as unmapped regions.
   UnmappedRegion,
   /// A supplied parameter is invalid.
   InvalidParameter(&'static str),
@@ -24,7 +24,7 @@ pub enum Error {
   /// `errno` on Unix-like platforms, or `GetLastError` on Windows).
   ///
   /// With the `std` feature enabled, use [`Error::raw_os_error`],
-  /// [`Error::as_io_error`], or `Into<std::io::Error>` for richer I/O errors.
+  /// `Error::as_io_error`, or `Into<std::io::Error>` for richer I/O errors.
   SystemCall(i32),
   /// A macOS kernel call failed.
   MachCall(i32),
@@ -64,7 +64,7 @@ impl From<Error> for std::io::Error {
 }
 
 impl Error {
-  /// Creates a [`Error::SystemCall`] from the current operating system error.
+  /// Creates an [`Error::SystemCall`] from the current operating system error.
   #[inline]
   pub(crate) fn last_os_error() -> Self {
     Self::SystemCall(last_os_error_code())

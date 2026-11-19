@@ -11,8 +11,8 @@ pub struct QueryIter {
 
 impl QueryIter {
   pub fn new(origin: *const (), size: usize) -> Result<QueryIter> {
-    // Do not use a buffered reader here to avoid multiple read(2) calls to the
-    // proc file, ensuring a consistent snapshot of the virtual memory.
+    // Read `/proc/self/map` directly through libc so querying works without
+    // `std::fs`.
     let mut file = File::open("/proc/self/map")?;
     let mut vmmap = Vec::with_capacity(8 * PRMAP_SIZE);
 

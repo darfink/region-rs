@@ -1,4 +1,4 @@
-//! Page related functions.
+//! Page-alignment and page-size utilities.
 
 use crate::os;
 use core::sync::atomic::{AtomicUsize, Ordering};

@@ -4,6 +4,13 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [4.0.2] - 2026-11-19
+
+### Changed
+
+- Polished README and rustdoc copy across the crate, fixing typos, duplicated doc lines on `Protection::from_bits_unchecked`, and inaccurate fault/compatibility wording.
+- Fixed the `std::io::Error::other` documentation link on `Error::into_io_error`.
+
 ## [4.0.1] - 2026-09-23
 
 ### Changed
@@ -116,7 +123,8 @@ All notable changes to this project will be documented in this file.
 - Removed `page::size_from_range`.
 - Removed deprecated functionality.
 
-[unreleased]: https://github.com/darfink/region-rs/compare/v4.0.1...HEAD
+[unreleased]: https://github.com/darfink/region-rs/compare/v4.0.2...HEAD
+[4.0.2]: https://github.com/darfink/region-rs/compare/v4.0.1...v4.0.2
 [4.0.1]: https://github.com/darfink/region-rs/compare/v4.0.0...v4.0.1
 [4.0.0]: https://github.com/darfink/region-rs/compare/v3.0.2...v4.0.0
 [3.0.2]: https://github.com/darfink/region-rs/compare/v3.0.1...v3.0.2

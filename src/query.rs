@@ -66,11 +66,10 @@ impl core::iter::FusedIterator for QueryIter {}
 unsafe impl Send for QueryIter {}
 unsafe impl Sync for QueryIter {}
 
-/// Queries the OS with an address, returning the region it resides within.
+/// Queries the OS for the mapped region containing `address`.
 ///
-/// If the queried address does not reside within any mapped region, or if it's
-/// outside the process' address space, the function will error with
-/// [`Error::UnmappedRegion`].
+/// If `address` does not lie within any mapped region, or is outside the
+/// process's address space, this returns [`Error::UnmappedRegion`].
 ///
 /// # Parameters
 ///
@@ -105,18 +104,17 @@ pub fn query<T>(address: *const T) -> Result<Region> {
     .ok_or(Error::UnmappedRegion)?
 }
 
-/// Queries the OS for mapped regions that overlap with the specified range.
+/// Queries the OS for mapped regions overlapping the specified range.
 ///
-/// The implementation clamps any input that exceeds the boundaries of a
-/// process' address space. Therefore it's safe to, e.g., pass in
-/// [`core::ptr::null`] and [`usize::MAX`] to iterate the mapped memory pages of
-/// an entire process.
+/// Any input exceeding the boundaries of the process's address space is
+/// clamped, so passing [`core::ptr::null`] and [`usize::MAX`] safely iterates
+/// all mapped regions in the process.
 ///
-/// If an error is encountered during iteration, the error will be the last item
-/// that is yielded. Thereafter the iterator becomes fused.
+/// If an error occurs during iteration, that error is the final item yielded
+/// before the iterator becomes fused.
 ///
-/// A 2-byte range straddling a page boundary, will return both pages (or one
-/// region, if the pages share the same properties).
+/// A 2-byte range straddling a page boundary returns both pages (or one region
+/// if the adjacent pages share the same properties).
 ///
 /// This function only returns mapped regions. If required, unmapped regions can
 /// be manually identified by inspecting the potential gaps between two

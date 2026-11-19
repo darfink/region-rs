@@ -1,11 +1,10 @@
 use crate::{Result, os, util};
 
-/// Locks one or more memory regions to RAM.
+/// Locks one or more memory regions in RAM.
 ///
-/// The memory pages within the address range is guaranteed to stay in RAM
-/// except for specials cases, such as hibernation and memory starvation. It
-/// returns a [`LockGuard`], which [`unlock`]s the affected regions once
-/// dropped.
+/// Memory pages within the address range stay resident in RAM except in special
+/// cases such as hibernation or severe memory pressure. Returns a
+/// [`LockGuard`], which [`unlock`]s the affected regions when dropped.
 ///
 /// # Parameters
 ///
@@ -71,10 +70,9 @@ pub unsafe fn unlock<T>(address: *const T, size: usize) -> Result<()> {
   os::unlock(address.cast(), size)
 }
 
-/// A RAII implementation of a scoped lock.
+/// An RAII guard for a scoped memory lock.
 ///
-/// When this structure is dropped (falls out of scope), the virtual lock will be
-/// released.
+/// When this guard is dropped, the locked memory range is unlocked.
 #[must_use]
 pub struct LockGuard {
   address: *const (),

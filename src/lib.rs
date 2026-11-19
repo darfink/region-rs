@@ -1,50 +1,48 @@
 //! Cross-platform virtual memory API.
 //!
-//! This crate provides a cross-platform Rust API for querying and manipulating
-//! virtual memory. It is a thin abstraction, with the underlying interaction
-//! implemented using platform specific APIs (e.g `VirtualQuery`, `VirtualLock`,
-//! `mprotect`, `mlock`). Albeit not all OS specific quirks are abstracted away;
-//! for instance, some OSs enforce memory pages to be readable, whilst other may
-//! prevent pages from becoming executable (i.e DEP).
+//! This crate provides a cross-platform Rust API for allocating, querying,
+//! locking, and manipulating virtual memory. It is a thin abstraction over
+//! platform-specific APIs (e.g., `VirtualAlloc`, `VirtualQuery`, `VirtualLock`
+//! on Windows; `mmap`, `mprotect`, `mlock` on Unix-like systems). Not all
+//! OS-specific quirks are abstracted away: for instance, some OSs enforce that
+//! executable pages are readable, while others prevent pages from becoming
+//! executable at all (e.g., DEP or W^X).
 //!
-//! This implementation operates with memory pages, which are aligned to the
-//! operating system's page size. On some systems, but not all, the system calls
-//! for these operations require input to be aligned to a page boundary. To
-//! remedy this inconsistency, whenever applicable, input is aligned to its
-//! closest page boundary.
+//! Operations work on memory pages aligned to the operating system's page size.
+//! Because some platforms require page-aligned arguments for these system calls
+//! and others do not, inputs are rounded to page boundaries automatically where
+//! applicable.
 //!
-//! *Note: a region is a collection of one or more pages laying consecutively in
-//! memory, with the same properties.*
+//! *Note: a region is a collection of one or more pages lying consecutively in
+//! memory with the same properties.*
 //!
-//! # Parallelism
+//! # Concurrency
 //!
-//! The properties of virtual memory pages can change at any time, unless all
-//! threads that are unaccounted for in a process are stopped. Therefore to
-//! obtain, e.g., a true picture of a process' virtual memory, all other threads
-//! must be halted. Otherwise, a region descriptor only represents a snapshot in
-//! time.
+//! Virtual memory mappings can change at any time unless all other threads in
+//! the process are stopped. Any queried [`Region`] therefore represents a
+//! point-in-time snapshot of the process's address space.
 //!
 //! # Installation
 //!
-//! This crate is [on crates.io](https://crates.io/crates/region) and can be
-//! used by adding `region` to your dependencies in your project's `Cargo.toml`.
+//! Add `region` to your `Cargo.toml`:
 //!
 //! ```toml
 //! [dependencies]
-//! region = "4.0.1"
+//! region = "4"
 //! ```
 //!
 //! # Features
 //!
-//! By default this crate enables the `std` feature. Disable default features to
-//! use it as `#![no_std]` with the `alloc` crate:
+//! The `std` feature is enabled by default. Disable default features to use
+//! this crate as `#![no_std]` with `alloc`:
 //!
 //! ```toml
 //! [dependencies]
-//! region = { version = "4.0.1", default-features = false }
+//! region = { version = "4", default-features = false }
 //! ```
 //!
-//! With `std` enabled, [`Error`] implements [`std::error::Error`].
+//! With `std` enabled, [`Error`] implements `std::error::Error` and converts
+//! into `std::io::Error`.
 //!
 //! # Examples
 //!
@@ -166,10 +164,10 @@ impl Region {
     start..start.saturating_add(self.size)
   }
 
-  /// Returns whether the region is committed or not.
+  /// Returns whether the region is committed.
   ///
-  /// This is always true for all operating system's, the exception being
-  /// `MEM_RESERVE` pages on Windows.
+  /// This is always `true` on Unix-like operating systems; on Windows it is
+  /// `false` for reserved-only (`MEM_RESERVE`) pages.
   #[inline(always)]
   pub fn is_committed(&self) -> bool {
     !self.reserved
@@ -214,7 +212,7 @@ impl Region {
     self.size
   }
 
-  /// Returns whether region is empty or not.
+  /// Returns whether the region is empty.
   #[inline(always)]
   pub fn is_empty(&self) -> bool {
     self.size == 0
@@ -257,14 +255,15 @@ unsafe impl Sync for Region {}
 bitflags::bitflags! {
   /// A bitflag of zero or more protection attributes.
   ///
-  /// Determines the access rights for a specific page and/or region. Some
-  /// combination of flags may not be applicable, depending on the OS (e.g macOS
-  /// enforces executable pages to be readable, OpenBSD requires W^X).
+  /// Determines the access rights for a specific page or region. Some
+  /// combinations of flags may not be supported depending on the OS (e.g.,
+  /// macOS enforces that executable pages are readable, and OpenBSD enforces
+  /// W^X).
   ///
   /// # OS-Specific Behavior
   ///
-  /// On Unix [`Protection::from_bits_retain`] can be used to apply non-standard
-  /// flags (e.g. `PROT_BTI`).
+  /// On Unix, [`Protection::from_bits_retain`] can be used to apply
+  /// non-standard flags (e.g., `PROT_BTI`).
   ///
   /// # Examples
   ///
@@ -278,11 +277,11 @@ bitflags::bitflags! {
   pub struct Protection: usize {
     /// No access allowed at all.
     const NONE = 0;
-    /// Read access; writing and/or executing data will panic.
+    /// Read access; writing or executing triggers a memory fault (e.g., SIGSEGV / access violation).
     const READ = 1 << 0;
     /// Write access; this flag alone may not be supported on all OSs.
     const WRITE = 1 << 1;
-    /// Execute access; this may not be allowed depending on DEP.
+    /// Execute access; this may not be allowed depending on DEP / W^X.
     const EXECUTE = 1 << 2;
     /// Read and execute shorthand.
     const READ_EXECUTE = Self::READ.bits() | Self::EXECUTE.bits();
@@ -296,9 +295,7 @@ bitflags::bitflags! {
 }
 
 impl Protection {
-  /// Convert from underlying bit representation, preserving all bits (even
-  /// those not corresponding to a defined flag).
-  /// Convert from underlying bit representation, preserving all bits (even
+  /// Converts from an underlying bit representation, preserving all bits (even
   /// those not corresponding to a defined flag).
   ///
   /// # Safety

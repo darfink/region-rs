@@ -34,12 +34,10 @@ impl Iterator for QueryIter {
   fn next(&mut self) -> Option<Self::Item> {
     let mut len = size_of::<kinfo_vmentry>();
 
-    // Although it would be preferred to query the information for all virtual
-    // pages at once, the system call does not seem to respond consistently. If
-    // called once during a process' lifetime, it returns all pages, but if
-    // called again, it returns an empty buffer. This may be caused due to an
-    // oversight, but in this case, the solution is to query one memory region
-    // at a time.
+    // Although querying all virtual pages at once would be preferable, the
+    // syscall does not behave consistently across repeated calls in the same
+    // process's lifetime (subsequent calls can return an empty buffer). Query
+    // one memory region at a time instead.
     let result = unsafe {
       sysctl(
         self.mib.as_ptr(),

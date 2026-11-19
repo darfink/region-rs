@@ -42,8 +42,8 @@ impl Iterator for QueryIter {
       return None;
     }
 
-    // Since the struct size is given in the struct, it can be used future-proof
-    // (the definition is not required to be updated when new fields are added).
+    // Advance using the kernel-reported `kve_structsize` so layout growth in
+    // newer FreeBSD kernels stays safe.
     let offset = unsafe { self.vmmap_index * (*self.vmmap).kve_structsize as usize };
     let entry = unsafe { &*self.vmmap.cast::<u8>().add(offset).cast::<kinfo_vmentry>() };
 
